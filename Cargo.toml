@@ -1,0 +1,19 @@
+[package]
+name = "chess"
+version = "0.0.1"
+authors = ["Jordan Bray <jordanbray@gmail.com>"]
+
+[profile.release]
+opt-level = 3
+debug = false
+
+[profile.dev]
+opt-level = 3
+debug = true
+
+
+[dependencies]
+rand = "0.3"
+lazy_static = "0.1.*"
+time = "0.1.35"
+
