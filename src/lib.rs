@@ -9,6 +9,10 @@ pub mod castle_rights;
 pub mod board;
 pub mod magic;
 pub mod construct;
+pub mod rank;
+pub mod file;
+pub mod zobrist;
+
 extern crate rand;
 #[macro_use]
 extern crate lazy_static;

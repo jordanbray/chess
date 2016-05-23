@@ -1,7 +1,8 @@
 use bitboard::{BitBoard, EMPTY};
 use color::Color;
 use square::Square;
-
+use rank::Rank;
+use file::File;
 /// What castle rights does a particular player have?
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
 pub enum CastleRights {
@@ -10,6 +11,8 @@ pub enum CastleRights {
     QueenSide,
     Both,
 }
+
+pub const NUM_CASTLE_RIGHTS: usize = 4;
 
 impl CastleRights {
     /// Can I castle kingside?
@@ -24,15 +27,15 @@ impl CastleRights {
 
     /// What squares need to be empty to castle kingside?
     pub fn kingside_squares(&self, color: Color) -> BitBoard {
-        BitBoard::set(color.to_my_backrank(), 6) ^
-        BitBoard::set(color.to_my_backrank(), 5)
+        BitBoard::set(color.to_my_backrank(), File::F) ^
+        BitBoard::set(color.to_my_backrank(), File::G)
     }
 
     /// What squares need to be empty to castle queenside?
     pub fn queenside_squares(&self, color: Color) -> BitBoard {
-        BitBoard::set(color.to_my_backrank(), 1) ^
-        BitBoard::set(color.to_my_backrank(), 2) ^
-        BitBoard::set(color.to_my_backrank(), 3)
+        BitBoard::set(color.to_my_backrank(), File::B) ^
+        BitBoard::set(color.to_my_backrank(), File::C) ^
+        BitBoard::set(color.to_my_backrank(), File::D)
     }
 
     /// Remove castle rights, and return a new `CastleRights`.
@@ -60,10 +63,10 @@ impl CastleRights {
     pub fn unmoved_rooks(&self, color: Color) -> BitBoard {
         match *self {
             CastleRights::NoRights => EMPTY,
-            CastleRights::KingSide => BitBoard::set(color.to_my_backrank(), 7),
-            CastleRights::QueenSide => BitBoard::set(color.to_my_backrank(), 0),
-            CastleRights::Both => BitBoard::set(color.to_my_backrank(), 0) ^
-                                  BitBoard::set(color.to_my_backrank(), 7)
+            CastleRights::KingSide => BitBoard::set(color.to_my_backrank(), File::H),
+            CastleRights::QueenSide => BitBoard::set(color.to_my_backrank(), File::A),
+            CastleRights::Both => BitBoard::set(color.to_my_backrank(), File::A) ^
+                                  BitBoard::set(color.to_my_backrank(), File::H)
         }
     }
 
@@ -71,9 +74,9 @@ impl CastleRights {
     /// Note: It is invalid to pass in a non-rook square.  The code may panic.
     pub fn rook_square_to_castle_rights(square: Square) -> CastleRights {
         match square.file() {
-            0 => CastleRights::QueenSide,
-            7 => CastleRights::KingSide,
-            _ => unreachable!()
+            File::A => CastleRights::QueenSide,
+            File::H => CastleRights::KingSide,
+            _       => unreachable!()
         }
     }
 }

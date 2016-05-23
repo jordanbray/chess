@@ -6,6 +6,8 @@ use square::Square;
 use magic::Magic;
 use chess_move::ChessMove;
 use std::fmt;
+use rank::Rank;
+use file::File;
 use construct;
 
 /// A representation of a chess board.  That's why you're here, right?
@@ -264,8 +266,8 @@ impl Board {
 
     /// Construct a board from a FEN string.
     pub fn from_fen(fen: String) -> Board {
-        let mut cur_rank = 7;
-        let mut cur_file = 0;
+        let mut cur_rank = Rank::Eighth;
+        let mut cur_file = File::A;
         let mut board: Board = Board::new();
 
         let tokens: Vec<&str> = fen.split(' ').collect();
@@ -281,46 +283,46 @@ impl Board {
         for x in pieces.chars() {
             match x {
                 '/' => {
-                    cur_rank -= 1;
-                    cur_file = 0
+                    cur_rank = cur_rank.down();
+                    cur_file = File::A;
                 }, '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {
-                    cur_file += (x as u8) - ('0' as u8);
+                    cur_file = File::from_index(cur_file.to_index() + (x as usize) - ('0' as usize));
                 }, 'r' => { 
                     board.xor(Piece::Rook, BitBoard::set(cur_rank, cur_file), Color::Black);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'R' => {
                     board.xor(Piece::Rook, BitBoard::set(cur_rank, cur_file), Color::White);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'n' => {
                     board.xor(Piece::Knight, BitBoard::set(cur_rank, cur_file), Color::Black);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'N' => {
                     board.xor(Piece::Knight, BitBoard::set(cur_rank, cur_file), Color::White);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'b' => {
                     board.xor(Piece::Bishop, BitBoard::set(cur_rank, cur_file), Color::Black);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'B' => {
                     board.xor(Piece::Bishop, BitBoard::set(cur_rank, cur_file), Color::White);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'p' => {
                     board.xor(Piece::Pawn, BitBoard::set(cur_rank, cur_file), Color::Black);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'P' => {
                     board.xor(Piece::Pawn, BitBoard::set(cur_rank, cur_file), Color::White);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'q' => {
                     board.xor(Piece::Queen, BitBoard::set(cur_rank, cur_file), Color::Black);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'Q' => {
                     board.xor(Piece::Queen, BitBoard::set(cur_rank, cur_file), Color::White);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'k' => {
                     board.xor(Piece::King, BitBoard::set(cur_rank, cur_file), Color::Black);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, 'K' => {
                     board.xor(Piece::King, BitBoard::set(cur_rank, cur_file), Color::White);
-                    cur_file += 1;
+                    cur_file = cur_file.right();
                 }, _ => { panic!(); }
             }
         }
@@ -521,12 +523,14 @@ impl Board {
         match moved {
             Piece::King => {
                 result.remove_my_castle_rights(CastleRights::Both);
-                if m.get_source().file().wrapping_sub(m.get_dest().file()) == 2 { // queenside castle
-                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), 0), self.side_to_move);
-                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), 3), self.side_to_move);
-                } else if m.get_dest().file().wrapping_sub(m.get_source().file()) == 2 { // kingside castle
-                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), 7), self.side_to_move);
-                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), 5), self.side_to_move);
+
+                // if we castle, move the rook over too!
+                if m.get_source().file() == File::E && m.get_dest().file() == File::C { // queenside castle
+                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::A), self.side_to_move);
+                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::D), self.side_to_move);
+                } else if m.get_source().file() == File::E && m.get_dest().file() == File::G { // kingside castle
+                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::H), self.side_to_move);
+                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::F), self.side_to_move);
                 }
             }
 
@@ -540,8 +544,8 @@ impl Board {
                 match m.get_promotion() {
                     None => {
                         // double-move
-                        let ranks = (m.get_source().rank() as i8) - (m.get_dest().rank() as i8);
-                        if ranks == 2 || ranks == -2 {
+                        if (m.get_source().rank() == Rank::Second && m.get_dest().rank() == Rank::Fourth) ||
+                           (m.get_source().rank() == Rank::Seventh && m.get_dest().rank() == Rank::Fifth) {
                             result.en_passant = Some(m.get_dest());
                         }
 
@@ -903,7 +907,7 @@ impl fmt::Display for Board {
             s.push_str(&rank.to_string());
             s.push_str(" ");
             for file in 0..8 {
-                let sq = Square::make_square(rank as u8, file as u8);
+                let sq = Square::make_square(Rank::from_index(rank), File::from_index(file));
                 let bb = BitBoard::from_square(sq);
                 if self.combined() & bb == EMPTY {
                     s.push_str(" . ");

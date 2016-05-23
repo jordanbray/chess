@@ -2,6 +2,8 @@ use square::*;
 use std::ops::{BitAnd, BitOr, BitXor, BitAndAssign, BitOrAssign, BitXorAssign, Mul, Not};
 use std::fmt;
 use std::sync::{Once, ONCE_INIT};
+use rank::Rank;
+use file::File;
 
 /// A good old-fashioned bitboard
 /// You do *not* have access to the actual value.  You *do* have access to operators
@@ -95,7 +97,7 @@ impl BitBoard {
     }
 
     /// Construct a new BitBoard with a particular 'Square' set
-    pub fn set(rank: u8, file: u8) -> BitBoard {
+    pub fn set(rank: Rank, file: File) -> BitBoard {
         BitBoard::from_square(Square::make_square(rank, file))
     }
 
@@ -130,26 +132,24 @@ impl BitBoard {
     }
 
     /// Get a `BitBoard` that represents a particular rank.
-    /// Note: passing a number not between 0-7 inclusive will seg. fault.
-    pub fn get_rank(f: u8) -> BitBoard {
+    pub fn get_rank(rank: Rank) -> BitBoard {
         unsafe {
-            *RANKS.get_unchecked(f as usize)
+            *RANKS.get_unchecked(rank.to_index())
         }
     }
 
     /// Get a `BitBoard` that represents a particular file.
-    /// Note: passing a number not between 0-7 inclusive will seg. fault.
-    pub fn get_file(f: u8) -> BitBoard {
+    pub fn get_file(file: File) -> BitBoard {
         unsafe {
-            *FILES.get_unchecked(f as usize)
+            *FILES.get_unchecked(file.to_index())
         }
     }
 
     /// Get a `BitBoard` that represents the files next to this file.
     /// Note: passing a number not between 0-7 inclusive will seg. fault.
-    pub fn get_adjacent_files(f: u8) -> BitBoard {
+    pub fn get_adjacent_files(file: File) -> BitBoard {
         unsafe {
-            *ADJACENT_FILES.get_unchecked(f as usize)
+            *ADJACENT_FILES.get_unchecked(file.to_index())
         }
     }
 
@@ -158,19 +158,22 @@ impl BitBoard {
         SETUP.call_once(|| {
             unsafe {
                 EDGES = ALL_SQUARES.iter()
-                                   .filter(|x| x.rank() == 0 || x.rank() == 7 || x.file() == 0 || x.file() == 7)
+                                   .filter(|x| x.rank() == Rank::First ||
+                                               x.rank() == Rank::Eighth ||
+                                               x.file() == File::A ||
+                                               x.file() == File::H)
                                    .fold(EMPTY, |v, s| v | BitBoard::from_square(*s)); 
                 for i in 0..8 {
-                    RANKS[i as usize] = ALL_SQUARES.iter()
-                                                   .filter(|x| x.rank() == i)
+                    RANKS[i] = ALL_SQUARES.iter()
+                                          .filter(|x| x.rank().to_index() == i)
+                                          .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+                    FILES[i] = ALL_SQUARES.iter()
+                                          .filter(|x| x.file().to_index() == i)
+                                          .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+                    ADJACENT_FILES[i] = ALL_SQUARES.iter()
+                                                   .filter(|y| ((y.file().to_index() as i8) == (i as i8) - 1) ||
+                                                               ((y.file().to_index() as i8) == (i as i8) + 1))
                                                    .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-                    FILES[i as usize] = ALL_SQUARES.iter()
-                                                   .filter(|x| x.file() == i)
-                                                   .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-                    ADJACENT_FILES[i as usize] = ALL_SQUARES.iter()
-                                                            .filter(|y| (y.file() as i8) == (i as i8) - 1 ||
-                                                                        (y.file() as i8) == (i as i8) + 1)
-                                                            .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
                 }
             }
         });

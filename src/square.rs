@@ -1,4 +1,6 @@
 use color::Color;
+use rank::Rank;
+use file::File;
 
 /// Represent a square on the chess board
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
@@ -15,18 +17,16 @@ impl Square {
     }
 
     /// Make a square given a rank and a file
-    /// Note: It is invalid, but allowed, to pass in a rank or file >= 8.  Doing so will crash
-    /// stuff.
-    pub fn make_square(rank: u8, file: u8) -> Square {
-        Square(rank<<3 | file)
+    pub fn make_square(rank: Rank, file: File) -> Square {
+        Square((rank.to_index() as u8)<<3 | (file.to_index() as u8))
     }
 
     /// If there is a square above me, return that.  Otherwise, None.
     pub fn up(&self) -> Option<Square> {
-        if self.rank() == 7 {
+        if self.rank() == Rank::Eighth {
             None
         } else {
-            Some(Square::make_square(self.rank() + 1, self.file()))
+            Some(Square::make_square(self.rank().up(), self.file()))
         }
     }
 
@@ -48,53 +48,53 @@ impl Square {
 
     /// If there is a square below me, return that.  Otherwise, None.
     pub fn down(&self) -> Option<Square> {
-        if self.rank() == 0 {
+        if self.rank() == Rank::First {
             None
         } else {
-            Some(Square::make_square(self.rank() - 1, self.file()))
+            Some(Square::make_square(self.rank().down(), self.file()))
         }
     }
 
     /// If there is a square to the left of me, return that.  Otherwise, None.
     pub fn left(&self) -> Option<Square> {
-        if self.file() == 0 {
+        if self.file() == File::A {
             None
         } else {
-            Some(Square::make_square(self.rank(), self.file() - 1))
+            Some(Square::make_square(self.rank(), self.file().left()))
         }
     }
 
     /// If there is a square to the right of me, return that.  Otherwise, None.
     pub fn right(&self) -> Option<Square> {
-        if self.file() == 7 {
+        if self.file() == File::H {
             None
         } else {
-            Some(Square::make_square(self.rank(), self.file() + 1))
+            Some(Square::make_square(self.rank(), self.file().right()))
         }
     }
 
     /// If there is a square above me, return that.  Otherwise, return invalid data to crash the
     /// program.
     pub fn uup(&self) -> Square {
-        Square::make_square(self.rank() + 1, self.file())
+        Square::make_square(self.rank().up(), self.file())
     }
 
     /// If there is a square below me, return that.  Otherwise, return invalid data to crash the
     /// program.
     pub fn udown(&self) -> Square {
-        Square::make_square(self.rank() - 1, self.file())
+        Square::make_square(self.rank().down(), self.file())
     }
 
     /// If there is a square to the left of me, return that.  Otherwise, return invalid data to
     /// crash the program.
     pub fn uleft(&self) -> Square {
-        Square::make_square(self.rank(), self.file() - 1)
+        Square::make_square(self.rank(), self.file().left())
     }
 
     /// If there is a square to the right of me, return that.  Otherwise, return invalid data to
     /// crash the program.
     pub fn uright(&self) -> Square {
-        Square::make_square(self.rank(), self.file() + 1)
+        Square::make_square(self.rank(), self.file().right())
     }
 
     /// If there is a square "forward", given my color, return that.  Otherwise, return invalid
@@ -116,13 +116,13 @@ impl Square {
     }
 
     /// Return the rank given this square.
-    pub fn rank(&self) -> u8 {
-        self.0 >> 3
+    pub fn rank(&self) -> Rank {
+        Rank::from_index((self.0 >> 3) as usize)
     }
 
     /// Return the file given this square.
-    pub fn file(&self) -> u8 {
-        self.0 & 7
+    pub fn file(&self) -> File {
+        File::from_index((self.0 & 7) as usize)
     }
 
     /// Convert this square to an integer.
@@ -149,7 +149,8 @@ impl Square {
             '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {},
             _ => { return None; }
         }
-        Some(Square::make_square((ch[1] as u8) - ('1' as u8), (ch[0] as u8) - ('a' as u8)))
+        Some(Square::make_square(Rank::from_index((ch[1] as usize) - ('1' as usize)),
+                                 File::from_index((ch[0] as usize) - ('a' as usize))))
     }
 }
 

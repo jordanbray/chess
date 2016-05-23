@@ -1,4 +1,6 @@
 use std::ops::Not;
+use rank::Rank;
+use file::File;
 
 /// Represent a color.
 #[derive(PartialOrd, PartialEq, Copy, Clone)]
@@ -20,20 +22,28 @@ impl Color {
 
     /// Covert the `Color` to a rank, which reperesnts the starting position
     /// for that colors pieces.
-    pub fn to_my_backrank(&self) -> u8 {
-        (self.to_index() * 7) as u8
+    pub fn to_my_backrank(&self) -> Rank {
+        match *self {
+            Color::White => Rank::First,
+            Color::Black => Rank::Eighth
+        }
     }
 
     /// Convert a `Color` to my opponents backrank, which represents the starting position for the
     /// opponents pieces.
-    pub fn to_their_backrank(&self) -> u8 {
-        // if self == Color::White { 7 } else { 0 }
-        ((1 - self.to_index()) * 7) as u8
+    pub fn to_their_backrank(&self) -> Rank {
+        match *self {
+            Color::White => Rank::Eighth,
+            Color::Black => Rank::First
+        }
     }
 
     /// Convert a `Color` to my second rank, which represents the starting position for my pawns.
-    pub fn to_second_rank(&self) -> u8 {
-        (self.to_index() * 5 + 1) as u8
+    pub fn to_second_rank(&self) -> Rank {
+        match *self {
+            Color::White => Rank::Second,
+            Color::Black => Rank::Seventh
+        }
     }
 }
 
