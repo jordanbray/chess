@@ -8,6 +8,7 @@ pub mod bitboard;
 pub mod castle_rights;
 pub mod board;
 pub mod magic;
+pub mod construct;
 extern crate rand;
 #[macro_use]
 extern crate lazy_static;

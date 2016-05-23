@@ -1,11 +1,14 @@
 use square::*;
 use std::ops::{BitAnd, BitOr, BitXor, BitAndAssign, BitOrAssign, BitXorAssign, Mul, Not};
 use std::fmt;
+use std::sync::{Once, ONCE_INIT};
 
 /// A good old-fashioned bitboard
 /// You do *not* have access to the actual value.  You *do* have access to operators
 #[derive(PartialEq, PartialOrd, Clone, Copy)]
 pub struct BitBoard(u64);
+
+static SETUP: Once = ONCE_INIT;
 
 /// An empty bitboard
 pub const EMPTY: BitBoard = BitBoard(0);
@@ -152,23 +155,25 @@ impl BitBoard {
 
     /// Perform initialization.  Must be called before some functions can be used.
     pub fn construct() {
-        unsafe {
-            EDGES = ALL_SQUARES.iter()
-                               .filter(|x| x.rank() == 0 || x.rank() == 7 || x.file() == 0 || x.file() == 7)
-                               .fold(EMPTY, |v, s| v | BitBoard::from_square(*s)); 
-            for i in 0..8 {
-                RANKS[i as usize] = ALL_SQUARES.iter()
-                                               .filter(|x| x.rank() == i)
-                                               .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-                FILES[i as usize] = ALL_SQUARES.iter()
-                                               .filter(|x| x.file() == i)
-                                               .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-                ADJACENT_FILES[i as usize] = ALL_SQUARES.iter()
-                                                        .filter(|y| (y.file() as i8) == (i as i8) - 1 ||
-                                                                    (y.file() as i8) == (i as i8) + 1)
-                                                        .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+        SETUP.call_once(|| {
+            unsafe {
+                EDGES = ALL_SQUARES.iter()
+                                   .filter(|x| x.rank() == 0 || x.rank() == 7 || x.file() == 0 || x.file() == 7)
+                                   .fold(EMPTY, |v, s| v | BitBoard::from_square(*s)); 
+                for i in 0..8 {
+                    RANKS[i as usize] = ALL_SQUARES.iter()
+                                                   .filter(|x| x.rank() == i)
+                                                   .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+                    FILES[i as usize] = ALL_SQUARES.iter()
+                                                   .filter(|x| x.file() == i)
+                                                   .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+                    ADJACENT_FILES[i as usize] = ALL_SQUARES.iter()
+                                                            .filter(|y| (y.file() as i8) == (i as i8) - 1 ||
+                                                                        (y.file() as i8) == (i as i8) + 1)
+                                                            .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+                }
             }
-        }
+        });
     }
 }
 

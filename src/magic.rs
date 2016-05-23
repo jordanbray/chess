@@ -2,6 +2,7 @@ use bitboard::{BitBoard, EMPTY};
 use square::{Square, NUM_SQUARES, ALL_SQUARES};
 use color::{Color, ALL_COLORS};
 use rand::{Rng, thread_rng};
+use std::sync::{Once, ONCE_INIT};
 
 #[derive(Copy, Clone)]
 pub struct Magic {
@@ -34,6 +35,8 @@ static mut PAWN_ATTACKS: [[BitBoard; 64]; 2] = [[EMPTY; 64]; 2];
 static mut LINE: [[BitBoard; 64]; 64] = [[EMPTY; 64]; 64];
 static mut BETWEEN: [[BitBoard; 64]; 64] = [[EMPTY; 64]; 64];
 static mut RAYS: [[BitBoard; 64]; 2] = [[EMPTY; 64]; 2];
+
+static SETUP: Once = ONCE_INIT;
 
 impl Magic {
     /// generate a random bitboard with few bits
@@ -385,28 +388,32 @@ impl Magic {
     }
 
     /// Initialize all the magic numbers and lookup tables.
+    /// Note: You want to call construct::construct() instead.  It's easier, and you must call
+    /// BitBoard::construct() before calling this, so just rely on the other one.
     pub fn construct() {
-        let mut index: usize = 0;
-        for sq in (*ALL_SQUARES).iter() {
-            index = Magic::gen_rooks(*sq, index);
-        }
-        for sq in (*ALL_SQUARES).iter() {
-            index = Magic::gen_bishops(*sq, index);
-        }
-
-        for sq1 in (*ALL_SQUARES).iter() {
-            for sq2 in (*ALL_SQUARES).iter() {
-                Magic::gen_line_and_between(*sq1, *sq2);
+        SETUP.call_once(|| {
+            let mut index: usize = 0;
+            for sq in (*ALL_SQUARES).iter() {
+                index = Magic::gen_rooks(*sq, index);
             }
-        }
+            for sq in (*ALL_SQUARES).iter() {
+                index = Magic::gen_bishops(*sq, index);
+            }
 
-        for sq in (*ALL_SQUARES).iter() {
-            Magic::gen_king_moves(*sq);
-            Magic::gen_knight_moves(*sq);
-        }
+            for sq1 in (*ALL_SQUARES).iter() {
+                for sq2 in (*ALL_SQUARES).iter() {
+                    Magic::gen_line_and_between(*sq1, *sq2);
+                }
+            }
 
-        Magic::gen_pawn_moves();
-        Magic::gen_pawn_attacks();
+            for sq in (*ALL_SQUARES).iter() {
+                Magic::gen_king_moves(*sq);
+                Magic::gen_knight_moves(*sq);
+            }
+
+            Magic::gen_pawn_moves();
+            Magic::gen_pawn_attacks();
+        });
     }
 
     /// Get the rays for a bishop on a particular square.
