@@ -1,6 +1,6 @@
 [package]
 name = "chess"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Jordan Bray <jordanbray@gmail.com>"]
 description = "Fast Chess Move Generator"
 
@@ -9,6 +9,7 @@ repository = "https://github.com/jordanbray/chess"
 readme = "README.md"
 keywords = ["chess", "move", "generator"]
 license = "LGPL-3.0+"
+documentation = "https://jordanbray.github.io/chess/chess/index.html"
 
 [profile.release]
 opt-level = 3
@@ -18,6 +19,8 @@ debug = false
 opt-level = 3
 debug = true
 
+[profile.test]
+opt-level = 3
 
 [dependencies]
 rand = "0.3"
