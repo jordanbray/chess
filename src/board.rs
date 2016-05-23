@@ -2,7 +2,7 @@ use bitboard::{BitBoard, EMPTY};
 use piece::{Piece, NUM_PIECES, ALL_PIECES};
 use color::{Color, NUM_COLORS};
 use castle_rights::CastleRights;
-use square::{Square, NUM_SQUARES};
+use square::Square;
 use magic::Magic;
 use chess_move::ChessMove;
 use std::fmt;
@@ -227,7 +227,7 @@ macro_rules! enumerate_moves_one_piece {
                 // legal_ep_move.
                 if $piece_type == Piece::Pawn && $board.en_passant.is_some() {
                     let ep_sq = $board.en_passant.unwrap();
-                    if ($in_check && (checkers & BitBoard::from_square(ep_sq)) != EMPTY) || !$in_check {
+                    if !$in_check || ($in_check && (checkers & BitBoard::from_square(ep_sq)) != EMPTY) {
                         let rank = BitBoard::get_rank(ep_sq.rank());
                         let passed_pawn_pieces = pieces & !pinned & BitBoard::get_adjacent_files(ep_sq.file()) & rank;
                         let dest = ep_sq.uforward($color);
@@ -350,7 +350,10 @@ impl Board {
             board.castle_rights[Color::Black.to_index()] = CastleRights::NoRights;
         }
 
-        board.en_passant = Square::from_string(ep.to_owned());
+        board.en_passant = match Square::from_string(ep.to_owned()) {
+            None => None,
+            Some(sq) => Some(sq.ubackward(board.side_to_move))
+        };
 
         board.update_pin_info();
 
@@ -679,7 +682,7 @@ impl Board {
     /// Run a perft-test.
     pub fn perft(&self, depth: u64) -> u64{
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
-        for x in 0..depth {
+        for _ in 0..depth {
             move_list.push([ChessMove::new(Square::new(0), Square::new(0), None); 256]);
         }
         self.internal_perft(depth, &mut move_list)
