@@ -9,4 +9,5 @@ pub mod magic;
 extern crate rand;
 #[macro_use]
 extern crate lazy_static;
+#![doc(html_root_url = "https://jordanbray.github.io/chess/")]
 
