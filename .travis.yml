@@ -1,4 +1,5 @@
 language: rust
+sudo: false
 before_script:
 - pip install 'travis-cargo' --user && export PATH=$HOME/.local/bin/$PATH
 script:
