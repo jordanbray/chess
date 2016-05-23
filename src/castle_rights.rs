@@ -1,7 +1,6 @@
 use bitboard::{BitBoard, EMPTY};
 use color::Color;
 use square::Square;
-use rank::Rank;
 use file::File;
 /// What castle rights does a particular player have?
 #[derive(Copy, Clone, PartialEq, PartialOrd)]

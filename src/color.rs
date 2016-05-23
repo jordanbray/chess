@@ -1,6 +1,5 @@
 use std::ops::Not;
 use rank::Rank;
-use file::File;
 
 /// Represent a color.
 #[derive(PartialOrd, PartialEq, Copy, Clone)]

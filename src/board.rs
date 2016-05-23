@@ -760,7 +760,6 @@ impl Board {
     pub fn perft_test(fen: String, depth: u64, result: u64) {
         construct::construct();
         let board = Board::from_fen(fen);
-        println!("Board:\n{}", board);
         assert_eq!(board.perft(depth), result);
     }
 }
