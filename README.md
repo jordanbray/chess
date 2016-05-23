@@ -16,6 +16,11 @@ This library has very fast move generation (the primary purposes of its existanc
 
 This is not a chess engine, just the move generator.  This is not a chess UI, just the move generator.  This is not a chess PGN parser, database, UCI communicator, XBOARD/WinBoard protocol, website or grandmaster.  Just a humble move generator.
 
+## API Documentation
+
+... is available at http://jordanbray.github.io/chess/.
+
 ## Anything Else
 
 Nope.  Have fun.
+
