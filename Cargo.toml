@@ -24,6 +24,5 @@ opt-level = 3
 
 [dependencies]
 rand = "0.3"
-lazy_static = "0.1.*"
-time = "0.1.35"
+lazy_static = "0.2"
 
