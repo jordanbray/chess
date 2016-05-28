@@ -16,7 +16,7 @@ impl <T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
         }
         let mut res = CacheTable::<T> { table: Vec::with_capacity(size),
                                         mask: size - 1 };
-        for _ in 0..65536 {
+        for _ in 0..size {
             res.table.push(CacheTableEntry { hash: 0, entry: default });
         }
         res
