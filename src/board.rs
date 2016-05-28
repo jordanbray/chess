@@ -1,8 +1,8 @@
 use bitboard::{BitBoard, EMPTY};
 use piece::{Piece, NUM_PIECES, ALL_PIECES};
-use color::{Color, NUM_COLORS};
+use color::{Color, NUM_COLORS, ALL_COLORS};
 use castle_rights::CastleRights;
-use square::Square;
+use square::{Square, ALL_SQUARES};
 use magic::Magic;
 use chess_move::ChessMove;
 use std::fmt;
@@ -25,6 +25,14 @@ pub struct Board {
     hash: u64,
     pawn_hash: u64,
     en_passant: Option<Square>,
+}
+
+/// What is the status of this game?
+#[derive(Copy, Clone, PartialEq, PartialOrd)]
+pub enum BoardStatus {
+    Ongoing,
+    Stalemate,
+    Checkmate
 }
 
 /// Never Call Directly!
@@ -273,13 +281,13 @@ impl Board {
     }
 
     /// Construct a board from a FEN string.
-    pub fn from_fen(fen: String) -> Board {
+    pub fn from_fen(fen: String) -> Option<Board> {
         let mut cur_rank = Rank::Eighth;
         let mut cur_file = File::A;
         let mut board: Board = Board::new();
 
         let tokens: Vec<&str> = fen.split(' ').collect();
-        if tokens.len() != 6 { panic!(); }
+        if tokens.len() != 6 { return None; }
 
         let pieces = tokens[0];
         let side = tokens[1];
@@ -367,7 +375,28 @@ impl Board {
 
         board.update_pin_info();
 
-        board
+        if board.is_sane() {
+            Some(board)
+        } else {
+            None
+        }
+    }
+
+    /// Is this game Ongoing, is it Stalemate, or is it Checkmate?
+    pub fn status(&self) -> BoardStatus {
+        let moves = self.enumerate_moves(&mut [ChessMove::new(Square::new(0), Square::new(0), None); 256]);
+        match moves {
+            0 => {
+                if self.checkers == EMPTY {
+                    BoardStatus::Stalemate
+                } else {
+                    BoardStatus::Checkmate
+                }
+            },
+            _ => {
+                BoardStatus::Ongoing
+            }
+        }
     }
 
     /// Grab the "combined" `BitBoard`.  This is a `BitBoard` with every piece
@@ -381,6 +410,10 @@ impl Board {
         unsafe {
             *self.color_combined.get_unchecked(color.to_index())
         }
+    }
+
+    pub fn king_square(&self, color: Color) -> Square {
+        (self.pieces(Piece::King) & self.color_combined(color)).to_square()
     }
 
     /// Grab the "pieces" `BitBoard`.  This is a `BitBoard` with every piece of a particular type.
@@ -553,6 +586,7 @@ impl Board {
     /// Do all the pieces make sense, do the bitboards combine correctly, etc?
     /// This is for sanity checking.
     pub fn is_sane(&self) -> bool {
+        // make sure there is no square with multiple pieces on it
         for x in ALL_PIECES.iter() {
             for y in ALL_PIECES.iter() {
                 if *x != *y {
@@ -563,13 +597,79 @@ impl Board {
             }
         }
 
+        // make sure the colors don't overlap, either
         if self.color_combined(Color::White) & self.color_combined(Color::Black) != EMPTY {
             return false;
         }
 
+
+        // grab all the pieces by OR'ing together each piece() BitBoard
         let combined = ALL_PIECES.iter().fold(EMPTY, |cur, next| cur | self.pieces(*next));
 
-        return combined == self.combined();
+        // make sure that's equal to the combined bitboard
+        if combined != self.combined() {
+            return false;
+        }
+
+        // make sure there is exactly one white king
+        if (self.pieces(Piece::King) & self.color_combined(Color::White)).popcnt() != 1 {
+            return false;
+        }
+
+        // make sure there is exactly one black king
+        if (self.pieces(Piece::King) & self.color_combined(Color::Black)).popcnt() != 1 {
+            return false;
+        }
+
+        // make sure the en_passant square has a pawn on it of the right color
+        match self.en_passant {
+            None => {},
+            Some(x) => {
+                if self.pieces(Piece::Pawn) & self.color_combined(!self.side_to_move) & BitBoard::from_square(x) == EMPTY {
+                    return false;
+                }
+            }
+        }
+
+        // make sure my opponent is not currently in check (because that would be illegal)
+        let mut board_copy = *self;
+        board_copy.side_to_move = !board_copy.side_to_move;
+        board_copy.update_pin_info();
+        if board_copy.checkers != EMPTY {
+            return false;
+        }
+
+        // for each color, verify that, if they have castle rights, that they haven't moved their
+        // rooks or king
+        for color in ALL_COLORS.iter() {
+            // get the castle rights
+            let castle_rights = self.castle_rights(*color);
+
+            // the castle rights object will tell us which rooks shouldn't have moved yet.
+            // verify there are rooks on all those squares
+            if castle_rights.unmoved_rooks(*color) &
+               self.pieces(Piece::Rook) &
+               self.color_combined(*color) !=
+                castle_rights.unmoved_rooks(*color) {
+                return false;
+            }
+            // if we have castle rights, make sure we have a king on the (E, {1,8}) square,
+            // depending on the color
+            if castle_rights != CastleRights::NoRights {
+                if self.pieces(Piece::King) & self.color_combined(*color) !=
+                    BitBoard::get_file(File::E) & BitBoard::get_rank(color.to_my_backrank()) {
+                    return false;
+                }
+            }
+        }
+
+        // we must make sure the kings aren't touching
+        if Magic::get_king_moves(self.king_square(Color::White)) & self.pieces(Piece::King) != EMPTY {
+            return false;
+        }
+
+        // it checks out
+        return true;
     }
 
     pub fn get_hash(&self) -> u64 {
@@ -613,6 +713,26 @@ impl Board {
         }
     }
 
+    /// Test the legal move generation by brute-forcing all legal moves
+    fn enumerate_moves_brute_force(&self, moves: &mut [ChessMove; 256]) -> usize {
+        let mut index = 0;
+        for source in ALL_SQUARES.iter() {
+            for dest in ALL_SQUARES.iter() {
+                if self.legal(ChessMove::new(*source, *dest, None)) {
+                    moves[index] = ChessMove::new(*source, *dest, None);
+                    index += 1;
+                }
+                for promotion in ALL_PIECES.iter() {
+                    if self.legal(ChessMove::new(*source, *dest, Some(*promotion))) {
+                        moves[index] = ChessMove::new(*source, *dest, Some(*promotion));
+                        index += 1;
+                    }
+                }
+            }
+        }
+        index
+    }
+
     /// Give me all the legal moves for this board.
     pub fn enumerate_moves(&self, moves: &mut [ChessMove; 256]) -> usize {
         let mut index = 0usize;
@@ -638,6 +758,175 @@ impl Board {
         self.en_passant = Some(sq);
         self.hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
         self.pawn_hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
+    }
+
+    /// Is a particular move legal?
+    pub fn legal(&self, m: ChessMove) -> bool {
+        // Do you have a piece on that source square?
+        if self.color_combined(self.side_to_move) & BitBoard::from_square(m.get_source()) == EMPTY {
+            return false;
+        }
+
+        if m.get_source() == m.get_dest() {
+            return false;
+        }
+
+        let piece = self.piece_on(m.get_source()).unwrap();
+
+        // Are you trying to promote?  Also, can you promote?
+        match m.get_promotion() {
+            None => {
+                if piece == Piece::Pawn && (m.get_dest().rank() == self.side_to_move.to_their_backrank()) {
+                    return false;
+                }
+            }
+            Some(Piece::Pawn) => { return false; },
+            Some(Piece::King) => { return false; },
+            Some(_) => {
+                if piece != Piece::Pawn {
+                    return false;
+                }
+                if m.get_dest().rank() != self.side_to_move.to_their_backrank() {
+                    return false;
+                }
+            }
+        }
+
+        if self.checkers.popcnt() >= 2 || piece == Piece::King { // double-check means only the king can move anyways
+              if self.checkers == EMPTY { // must be a king move, because popcnt() == 0
+                // If the piece is a king, can we castle?
+                let ksq = m.get_source();
+
+                // If we can castle kingside, and we're trying to castle kingside
+                if self.my_castle_rights().has_kingside() &&
+                    m.get_dest() == ksq.uright().uright() {
+                    
+                    // make sure the squares that need to be empty are empty
+                    if (self.combined() & self.my_castle_rights().kingside_squares(self.side_to_move)) == EMPTY {
+                        
+                        // is the castle legal?
+                        if self.legal_king_move(ksq.uright()) &&
+                           self.legal_king_move(ksq.uright().uright()) {
+                            return true;
+                        }
+                    }
+                }
+
+                // same thing, but queenside
+                if self.my_castle_rights().has_queenside() &&
+                    m.get_dest() == ksq.uleft().uleft() {
+
+                    // are the squares empty?
+                    if (self.combined() & self.my_castle_rights().queenside_squares(self.side_to_move)) == EMPTY {
+
+                        // is the queenside castle legal?
+                        if self.legal_king_move(ksq.uleft()) &&
+                           self.legal_king_move(ksq.uleft().uleft()) {
+                           return true;
+                        }
+                    }
+                }
+            }
+
+            // only king moves are legal, and even then, you need to check to see if that
+            // particular king move is legal
+            match piece {
+                Piece::King => {
+                    let moves = pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined()) &
+                                !self.color_combined(self.side_to_move);
+                    return moves & BitBoard::from_square(m.get_dest()) != EMPTY &&
+                           self.legal_king_move(m.get_dest());
+                },
+                _ => { return false; }
+            };
+        } else if self.checkers != EMPTY { // single-check
+            // Are you pinned?  Because, if so, you can't move at all (because we are in check)
+            if self.pinned & BitBoard::from_square(m.get_source()) != EMPTY {
+                return false;
+            }
+
+            // If it's a pawn, and the en_passant rule is in effect, and the passed pawn is the
+            // checker, see if this is said legal passed pawn move
+            if piece == Piece::Pawn && self.en_passant.is_some() {
+                // grab the passed pawn square
+                let ep_sq = self.en_passant.unwrap();
+
+                // make sure the passed pawn is the checker
+                if (self.checkers & BitBoard::from_square(ep_sq)) != EMPTY {
+                    // grab the rank for the passed pawn (to see if we can capture it)
+                    let rank = BitBoard::get_rank(ep_sq.rank());
+
+                    // get all the squares where a pawn could be to capture this passed pawn
+                    let passed_pawn_pieces = BitBoard::get_adjacent_files(ep_sq.file()) & rank;
+
+                    // if we are on one of those squares...
+                    if passed_pawn_pieces & BitBoard::from_square(m.get_source()) != EMPTY {
+                        // get the destination square we'd have to be trying to move to in order to
+                        // capture this passed pawn
+                        let dest = ep_sq.uforward(self.side_to_move);
+
+                        // if we are trying to move there...
+                        if dest == m.get_dest() {
+                            // see if the move is legal (in that it doesn't leave us in check).
+                            return self.legal_ep_move(m.get_source(), m.get_dest());
+                        }
+                    }
+                }
+            }
+
+
+            // Ok, you can move, but only if that move captures the checker OR places the piece
+            // between the checker and the king
+            // Also, you can't capture your own pieces (not sure if that's actually relevant here)
+            let moves = pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined()) &
+                        !self.color_combined(self.side_to_move) &
+                        (self.checkers | Magic::between(self.checkers.to_square(),
+                                                        (self.pieces(Piece::King) &
+                                                         self.color_combined(self.side_to_move)).to_square()));
+            return moves & BitBoard::from_square(m.get_dest()) != EMPTY;
+        } else { // not in check
+            // check for the passed pawn rule (similar to above, but slightly faster)
+
+            // If it's a pawn, and the en_passant rule is in effect, and the passed pawn is the
+            // checker, see if this is said legal passed pawn move
+            if piece == Piece::Pawn && self.en_passant.is_some() {
+                // grab the passed pawn square
+                let ep_sq = self.en_passant.unwrap();
+
+                // grab the rank for the passed pawn (to see if we can capture it)
+                let rank = BitBoard::get_rank(ep_sq.rank());
+
+                // get all the squares where a pawn could be to capture this passed pawn
+                let passed_pawn_pieces = BitBoard::get_adjacent_files(ep_sq.file()) & rank;
+
+                // if we are on one of those squares...
+                if passed_pawn_pieces & BitBoard::from_square(m.get_source()) != EMPTY {
+                    // get the destination square we'd have to be trying to move to in order to
+                    // capture this passed pawn
+                    let dest = ep_sq.uforward(self.side_to_move);
+
+                    // if we are trying to move there...
+                    if dest == m.get_dest() {
+                        // see if the move is legal (in that it doesn't leave us in check).
+                        return self.legal_ep_move(m.get_source(), m.get_dest());
+                    }
+                }
+            }
+
+            // If you are pinned, you can move, but only along the line between your king and
+            // yourself
+            // If you are not pinned, you can move anywhere
+            // BUT, you cannot capture your own pieces
+            let move_mask = !self.color_combined(self.side_to_move) &
+                            if self.pinned & BitBoard::from_square(m.get_source()) != EMPTY {
+                                Magic::line(m.get_source(),
+                                            (self.pieces(Piece::King) & self.color_combined(self.side_to_move)).to_square())
+                            } else {
+                                !EMPTY
+                            };
+            let moves = pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined()) & move_mask;
+            return moves & BitBoard::from_square(m.get_dest()) != EMPTY;
+        }
     }
 
     /// Make a chess move
@@ -850,6 +1139,41 @@ impl Board {
         }
     }
 
+    /// Run a perft-test with the [ChessMove; 256] already allocated for each depth... BUT: brute
+    /// force the move list
+    fn internal_perft_brute_force(&self, depth: u64, move_list: &mut Vec<[ChessMove; 256]>) -> u64 {
+        let mut result = 0;
+        let actual = if depth == 0 {
+            1
+        } else if depth == 1 {
+            unsafe {
+                self.enumerate_moves_brute_force(move_list.get_unchecked_mut(depth as usize)) as u64
+            }
+        } else {
+            let length = unsafe { self.enumerate_moves_brute_force(move_list.get_unchecked_mut(depth as usize)) };
+            for x in 0..length {
+                let m = unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
+                let cur = self.make_move(m).internal_perft(depth - 1, move_list);
+                result += cur;
+            }
+            result
+        };
+
+        // test the result with the perft() function
+        if actual != self.perft(depth) {
+            if depth == 1 {
+                println!("Got {} moves. Correct is {} moves\n{}", actual, self.perft(depth), self);
+            } else {
+                let good = self.enumerate_moves(&mut move_list[depth as usize]);
+                let bad = self.enumerate_moves_brute_force(&mut move_list[depth as usize]);
+                if good != bad {
+                    println!("Got {} moves. Correct is {} moves\n{}", bad, good, self);
+                }
+            }
+        }
+        result
+    }
+
     /// Run a perft-test.
     pub fn perft(&self, depth: u64) -> u64 {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
@@ -857,6 +1181,15 @@ impl Board {
             move_list.push([ChessMove::new(Square::new(0), Square::new(0), None); 256]);
         }
         self.internal_perft(depth, &mut move_list)
+    }
+
+    /// Run a perft-test using brute force move generation
+    pub fn perft_brute_force(&self, depth: u64) -> u64 {
+        let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
+        for _ in 0..(depth+1) {
+            move_list.push([ChessMove::new(Square::new(0), Square::new(0), None); 256]);
+        }
+        self.internal_perft_brute_force(depth, &mut move_list)
     }
 
     /// Run a perft test with a cache table
@@ -937,9 +1270,10 @@ impl Board {
 
     pub fn perft_test(fen: String, depth: u64, result: u64) {
         construct::construct();
-        let board = Board::from_fen(fen);
+        let board = Board::from_fen(fen).unwrap();
         assert_eq!(board.perft(depth), result);
         assert_eq!(board.perft_cache(depth, 65536), result);
+        assert_eq!(board.perft_brute_force(depth), result);
     }
 }
 
@@ -950,22 +1284,22 @@ fn perft_kiwipete() {
 
 #[test]
 fn perft_1() {
-    Board::perft_test("8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1".to_owned(), 6, 824064);
+    Board::perft_test("8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1".to_owned(), 6, 824064); // Invalid FEN
 }
 
 #[test]
 fn perft_2() {
-    Board::perft_test("8/8/1k6/8/2pP4/8/5BK1/8 b - d3 0 1".to_owned(), 6, 824064);
+    Board::perft_test("8/8/1k6/8/2pP4/8/5BK1/8 b - d3 0 1".to_owned(), 6, 824064); // Invalid FEN
 }
 
 #[test]
 fn perft_3() {
-    Board::perft_test("8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1".to_owned(), 6, 1440467); // INVALID FEN
+    Board::perft_test("8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1".to_owned(), 6, 1440467);
 }
 
 #[test]
 fn perft_4() {
-    Board::perft_test("8/5k2/8/2Pp4/2B5/1K6/8/8 w - d6 0 1".to_owned(), 6, 1440467); // INVALID FEN
+    Board::perft_test("8/5k2/8/2Pp4/2B5/1K6/8/8 w - d6 0 1".to_owned(), 6, 1440467);
 }
 
 #[test]
