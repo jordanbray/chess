@@ -131,22 +131,21 @@ impl BitBoard {
         (self.0 >> rightshift) as usize
     }
 
-    /// Get a `BitBoard` that represents a particular rank.
+    /// Get a `BitBoard` that represents all the squares on a particular rank.
     pub fn get_rank(rank: Rank) -> BitBoard {
         unsafe {
             *RANKS.get_unchecked(rank.to_index())
         }
     }
 
-    /// Get a `BitBoard` that represents a particular file.
+    /// Get a `BitBoard` that represents all the squares on a particular file.
     pub fn get_file(file: File) -> BitBoard {
         unsafe {
             *FILES.get_unchecked(file.to_index())
         }
     }
 
-    /// Get a `BitBoard` that represents the files next to this file.
-    /// Note: passing a number not between 0-7 inclusive will seg. fault.
+    /// Get a `BitBoard` that represents the squares on the 1 or 2 files next to this file.
     pub fn get_adjacent_files(file: File) -> BitBoard {
         unsafe {
             *ADJACENT_FILES.get_unchecked(file.to_index())

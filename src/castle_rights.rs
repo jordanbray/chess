@@ -12,6 +12,7 @@ pub enum CastleRights {
 }
 
 pub const NUM_CASTLE_RIGHTS: usize = 4;
+pub const ALL_CASTLE_RIGHTS: [CastleRights; NUM_CASTLE_RIGHTS] = [CastleRights::NoRights, CastleRights::KingSide, CastleRights::QueenSide, CastleRights::Both];
 
 impl CastleRights {
     /// Can I castle kingside?
@@ -40,6 +41,11 @@ impl CastleRights {
     /// Remove castle rights, and return a new `CastleRights`.
     pub fn remove(&self, remove: CastleRights) -> CastleRights {
         CastleRights::from_index(self.to_index() & !remove.to_index())
+    }
+
+    /// Add some castle rights, and return a new `CastleRights`.
+    pub fn add(&self, add: CastleRights) -> CastleRights {
+        CastleRights::from_index(self.to_index() | add.to_index())
     }
 
     /// Convert `CastleRights` to `usize` for table lookups

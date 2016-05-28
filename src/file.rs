@@ -10,6 +10,9 @@ pub enum File {
     H,
 }
 
+pub const NUM_FILES: usize = 8;
+pub const ALL_FILES: [File; NUM_FILES] = [File::A, File::B, File::C, File::D, File::E, File::F, File::G, File::H];
+
 impl File {
     pub fn from_index(i: usize) -> File {
         match i & 7 {

@@ -8,6 +8,7 @@ use chess_move::ChessMove;
 use std::fmt;
 use rank::Rank;
 use file::File;
+use zobrist::Zobrist;
 use construct;
 
 /// A representation of a chess board.  That's why you're here, right?
@@ -25,6 +26,8 @@ pub struct Board {
     en_passant: Option<Square>,
 }
 
+/// Never Call Directly!
+///
 /// Generate the pseudo-legal moves (moves that *may* leave you in check) for a particular piece
 /// Do this as a macro for optimization purposes.
 ///
@@ -43,6 +46,8 @@ macro_rules! pseudo_legal_moves {
     };
 }
 
+/// Never Call Directly!
+///
 /// Enumerate all legal moves for a particular board.
 ///
 /// You must pass in:
@@ -73,6 +78,8 @@ macro_rules! enumerate_moves {
     } };
 }
 
+/// Never Call Directly!
+///
 /// Note: It is absolutely wrong to call the `enumerate_moves_one_piece` macro by itself.  You will
 /// get invalid results due to some internal assumptions about when it will be called.
 ///
@@ -389,6 +396,25 @@ impl Board {
         }
     }
 
+    /// Add castle rights for a particular side.
+    pub fn add_castle_rights(&mut self, color: Color, add: CastleRights) {
+        unsafe {
+            self.hash ^= Zobrist::castles(self.castle_rights(color), color);
+            *self.castle_rights.get_unchecked_mut(color.to_index()) = self.castle_rights(color).add(add);
+            self.hash ^= Zobrist::castles(self.castle_rights(color), color);
+        }
+    }
+
+
+    /// Remove castle rights for a particular side.
+    pub fn remove_castle_rights(&mut self, color: Color, remove: CastleRights) {
+        unsafe {
+            self.hash ^= Zobrist::castles(self.castle_rights(color), color);
+            *self.castle_rights.get_unchecked_mut(color.to_index()) = self.castle_rights(color).remove(remove);
+            self.hash ^= Zobrist::castles(self.castle_rights(color), color);
+        }
+    }
+
     /// Who's turn is it?
     pub fn side_to_move(&self) -> Color {
         self.side_to_move
@@ -399,11 +425,16 @@ impl Board {
         self.castle_rights(self.side_to_move())
     }
 
+    /// Add to my `CastleRights`.
+    pub fn add_my_castle_rights(&mut self, add: CastleRights) {
+        let color = self.side_to_move();
+        self.add_castle_rights(color, add);
+    }
+
     /// Remove some of my `CastleRights`.
-    fn remove_my_castle_rights(&mut self, remove: CastleRights) {
-        unsafe {
-            *self.castle_rights.get_unchecked_mut(self.side_to_move.to_index()) = self.my_castle_rights().remove(remove);
-        }
+    pub fn remove_my_castle_rights(&mut self, remove: CastleRights) {
+        let color = self.side_to_move();
+        self.remove_castle_rights(color, remove);
     }
 
     /// My opponents `CastleRights`.
@@ -411,11 +442,16 @@ impl Board {
         self.castle_rights(!self.side_to_move())
     }
 
+    /// Ad to my opponents `CastleRights`
+    pub fn add_their_castle_rights(&mut self, add: CastleRights) {
+        let color = !self.side_to_move();
+        self.add_castle_rights(color, add)
+    }
+
     /// Remove some of my opponents `CastleRights`.
     fn remove_their_castle_rights(&mut self, remove: CastleRights) {
-        unsafe {
-            *self.castle_rights.get_unchecked_mut((!self.side_to_move).to_index()) = self.their_castle_rights().remove(remove);
-        }
+        let color = !self.side_to_move();
+        self.remove_castle_rights(color, remove);
     }
 
     /// Add or remove a piece from the bitboards in this struct.
@@ -424,8 +460,93 @@ impl Board {
             *self.pieces.get_unchecked_mut(piece.to_index()) ^= bb;
             *self.color_combined.get_unchecked_mut(color.to_index()) ^= bb;
             self.combined ^= bb;
+            match piece {
+                Piece::Pawn => {
+                    self.hash ^= Zobrist::piece(piece, bb.to_square(), color);
+                    self.pawn_hash ^= Zobrist::piece(piece, bb.to_square(), color);
+                } _ => {
+                    self.hash ^= Zobrist::piece(piece, bb.to_square(), color);
+                }
+            }
         }
     }
+
+    /// For a chess UI: set a piece on a particular square
+    pub fn set_piece(&self, piece: Piece, color: Color, square: Square) -> Option<Board> {
+        let mut result = *self;
+        let square_bb = BitBoard::from_square(square);
+        match self.piece_on(square) {
+            None => result.xor(piece, square_bb, color),
+            Some(x) => {
+                // remove x from the bitboard
+                if self.color_combined(Color::White) & square_bb == square_bb {
+                    result.xor(x, square_bb, Color::White);
+                } else {
+                    result.xor(x, square_bb, Color::Black);
+                }
+                // add piece to the bitboard
+                result.xor(piece, square_bb, color);
+            }
+        }
+
+        // If setting this piece down leaves my opponent in check, and it's my move, then the
+        // position is not a valid chess board
+        result.side_to_move = !result.side_to_move;
+        result.update_pin_info();
+        if result.checkers != EMPTY {
+            return None;
+        }
+
+        // undo our damage
+        result.side_to_move = !result.side_to_move;
+        result.update_pin_info();
+
+        Some(result)
+    }
+
+    /// For a chess UI: clear a particular square
+    pub fn clear_square(&self, square: Square) -> Option<Board> {
+        let mut result = *self;
+        let square_bb = BitBoard::from_square(square);
+        match self.piece_on(square) {
+            None => {}
+            Some(x) => {
+                // remove x from the bitboard
+                if self.color_combined(Color::White) & square_bb == square_bb {
+                    result.xor(x, square_bb, Color::White);
+                } else {
+                    result.xor(x, square_bb, Color::Black);
+                }
+            }
+        }
+
+        // If setting this piece down leaves my opponent in check, and it's my move, then the
+        // position is not a valid chess board
+        result.side_to_move = !result.side_to_move;
+        result.update_pin_info();
+        if result.checkers != EMPTY {
+            return None;
+        }
+
+        // undo our damage
+        result.side_to_move = !result.side_to_move;
+        result.update_pin_info();
+
+        Some(result)
+ 
+    }
+
+    /// Switch the color of the player without actually making a move
+    pub fn null_move(&self) -> Option<Board> {
+        if self.checkers != EMPTY {
+            None
+        } else {
+            let mut result = *self;
+            result.side_to_move = !result.side_to_move;
+            Some(result)
+        }
+    }
+    
 
     /// Does this board "make sense"?
     /// Do all the pieces make sense, do the bitboards combine correctly, etc?
@@ -491,8 +612,27 @@ impl Board {
         index
     }
 
+    fn remove_ep(&mut self) {
+        match self.en_passant {
+            None => {},
+            Some(sq) => {
+                self.en_passant = None;
+                self.hash ^= Zobrist::en_passant(sq.file(), !self.side_to_move);
+                self.pawn_hash ^= Zobrist::en_passant(sq.file(), !self.side_to_move);
+            }
+        }
+    }
+
+    /// Set the en_passant square.  Note: This must only be called when self.en_passant is already
+    /// None
+    fn set_ep(&mut self, sq: Square) {
+        self.en_passant = Some(sq);
+        self.hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
+        self.pawn_hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
+    }
+
     /// Make a chess move
-    pub fn next(&self, m: ChessMove) -> Board {
+    pub fn make_move(&self, m: ChessMove) -> Board {
         let mut result = *self;
         let source = BitBoard::from_square(m.get_source());
         let dest = BitBoard::from_square(m.get_dest());
@@ -516,7 +656,7 @@ impl Board {
             }
         }
 
-        result.en_passant = None;
+        result.remove_ep();
         result.checkers = EMPTY;
         result.pinned = EMPTY;
 
@@ -546,7 +686,7 @@ impl Board {
                         // double-move
                         if (m.get_source().rank() == Rank::Second && m.get_dest().rank() == Rank::Fourth) ||
                            (m.get_source().rank() == Rank::Seventh && m.get_dest().rank() == Rank::Fifth) {
-                            result.en_passant = Some(m.get_dest());
+                            result.set_ep(m.get_dest());
                         }
 
                         // could be check!
@@ -615,17 +755,7 @@ impl Board {
             }
         }
 
-/*
-        if result.in_check() {
-            println!("Move left me in check!\nBefore\n{}\nAfter\n{}", self, result);
-            panic!();
-        } */
-
         result.side_to_move = !result.side_to_move;
-/*
-        if !result.is_sane() {
-            println!("Insane Board!");
-        } */
 
         result
     }
@@ -676,7 +806,7 @@ impl Board {
             let length = unsafe { self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) };
             for x in 0..length {
                 let m = unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
-                let cur = self.next(m).internal_perft(depth - 1, move_list);
+                let cur = self.make_move(m).internal_perft(depth - 1, move_list);
                 result += cur;
             }
             result
