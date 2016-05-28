@@ -755,9 +755,15 @@ impl Board {
     /// Set the en_passant square.  Note: This must only be called when self.en_passant is already
     /// None
     fn set_ep(&mut self, sq: Square) {
-        self.en_passant = Some(sq);
-        self.hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
-        self.pawn_hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
+        // Only set self.en_passant if the pawn can actually be captured next move.
+        if BitBoard::get_adjacent_files(sq.file()) &
+           BitBoard::get_rank(sq.rank()) &
+           self.pieces(Piece::Pawn) &
+           self.color_combined(!self.side_to_move) != EMPTY {
+            self.en_passant = Some(sq);
+            self.hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
+            self.pawn_hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
+        }
     }
 
     /// Is a particular move legal?
