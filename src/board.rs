@@ -9,6 +9,7 @@ use std::fmt;
 use rank::Rank;
 use file::File;
 use zobrist::Zobrist;
+use cache_table::CacheTable;
 use construct;
 
 /// A representation of a chess board.  That's why you're here, right?
@@ -571,6 +572,14 @@ impl Board {
         return combined == self.combined();
     }
 
+    pub fn get_hash(&self) -> u64 {
+        self.hash
+    }
+
+    pub fn get_pawn_hash(&self) -> u64 {
+        self.pawn_hash
+    }
+
     /// What piece is on a particular `Square`?  Is there even one?
     pub fn piece_on(&self, square: Square) -> Option<Piece> {
         let opp = BitBoard::from_square(square);
@@ -793,6 +802,34 @@ impl Board {
                                                  self.color_combined(!self.side_to_move) & self.pieces(Piece::Pawn));
     }
 
+    /// Run a perft-test with a cache and the chess moves and cache tables already allocated for
+    /// each depth
+    fn internal_perft_cache(&self, depth: u64, move_list: &mut Vec<[ChessMove; 256]>, caches: &mut Vec<CacheTable<u64>>) -> u64 {
+        let cur = unsafe { caches.get_unchecked(depth as usize) }.get(self.hash);
+        match cur {
+            Some(x) => x,
+            None => { 
+                let mut result = 0;
+                if depth == 0 {
+                    result = 1;
+                } else if depth == 1 {
+                    unsafe {
+                        result = self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) as u64;
+                    }
+                } else {
+                    let length = unsafe { self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) };
+                    for x in 0..length {
+                        let m = unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
+                        let cur = self.make_move(m).internal_perft_cache(depth - 1, move_list, caches);
+                        result += cur;
+                    }
+                }
+                unsafe {caches.get_unchecked_mut(depth as usize) }.add(self.hash, result);
+                result
+            }
+        }
+    }
+
     /// Run a perft-test with the [ChessMove; 256] already allocated for each depth.
     fn internal_perft(&self, depth: u64, move_list: &mut Vec<[ChessMove; 256]>) -> u64 {
         let mut result = 0;
@@ -814,12 +851,23 @@ impl Board {
     }
 
     /// Run a perft-test.
-    pub fn perft(&self, depth: u64) -> u64{
+    pub fn perft(&self, depth: u64) -> u64 {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
-        for _ in 0..depth {
+        for _ in 0..(depth+1) {
             move_list.push([ChessMove::new(Square::new(0), Square::new(0), None); 256]);
         }
         self.internal_perft(depth, &mut move_list)
+    }
+
+    /// Run a perft test with a cache table
+    pub fn perft_cache(&self, depth: u64, cache_size_per_depth: usize) -> u64 {
+        let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
+        let mut caches: Vec<CacheTable<u64>> = Vec::new();
+        for _ in 0..(depth+1) {
+            move_list.push([ChessMove::new(Square::new(0), Square::new(0), None); 256]);
+            caches.push(CacheTable::new(cache_size_per_depth, 0));
+        }
+        self.internal_perft_cache(depth, &mut move_list, &mut caches)
     }
 
     /// Is a particular king move legal?
@@ -891,6 +939,7 @@ impl Board {
         construct::construct();
         let board = Board::from_fen(fen);
         assert_eq!(board.perft(depth), result);
+        assert_eq!(board.perft_cache(depth, 65536), result);
     }
 }
 

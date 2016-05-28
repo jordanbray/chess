@@ -23,7 +23,7 @@ pub struct Zobrist;
 impl Zobrist {
     /// Initialized zobrist numbers for incremental update hashing.  Must be called before hashes can be
     /// used for board objects.
-    pub fn costruct() {
+    pub fn construct() {
         SETUP.call_once(|| {
             let mut rng = weak_rng();
             rng.reseed([0xDEADBEEF, 0xBEEFDEAD, 0xABCDEFAB, 0x12345678]);

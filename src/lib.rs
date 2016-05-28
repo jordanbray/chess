@@ -12,6 +12,7 @@ pub mod construct;
 pub mod rank;
 pub mod file;
 pub mod zobrist;
+pub mod cache_table;
 
 extern crate rand;
 #[macro_use]

@@ -1,5 +1,6 @@
 use magic::Magic;
 use bitboard::BitBoard;
+use zobrist::Zobrist;
 use std::sync::{Once, ONCE_INIT};
 
 static SETUP: Once = ONCE_INIT;
@@ -9,6 +10,7 @@ static SETUP: Once = ONCE_INIT;
 /// Can be called more than once, and is thread safe.
 pub fn construct() {
     SETUP.call_once(|| {
+        Zobrist::construct();
         BitBoard::construct();
         Magic::construct();
     });
