@@ -78,7 +78,7 @@ impl CastleRights {
     /// Given a square of a rook, which side is it on?
     /// Note: It is invalid to pass in a non-rook square.  The code may panic.
     pub fn rook_square_to_castle_rights(square: Square) -> CastleRights {
-        match square.file() {
+        match square.get_file() {
             File::A => CastleRights::QueenSide,
             File::H => CastleRights::KingSide,
             _       => unreachable!()

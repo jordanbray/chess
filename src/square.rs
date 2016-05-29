@@ -21,12 +21,50 @@ impl Square {
         Square((rank.to_index() as u8)<<3 | (file.to_index() as u8))
     }
 
+
+    /// Return the rank given this square.
+    pub fn get_rank(&self) -> Rank {
+        Rank::from_index((self.0 >> 3) as usize)
+    }
+
+    /// Return the file given this square.
+    pub fn get_file(&self) -> File {
+        File::from_index((self.0 & 7) as usize)
+    }
+
     /// If there is a square above me, return that.  Otherwise, None.
     pub fn up(&self) -> Option<Square> {
-        if self.rank() == Rank::Eighth {
+        if self.get_rank() == Rank::Eighth {
             None
         } else {
-            Some(Square::make_square(self.rank().up(), self.file()))
+            Some(Square::make_square(self.get_rank().up(), self.get_file()))
+        }
+    }
+
+    /// If there is a square below me, return that.  Otherwise, None.
+    pub fn down(&self) -> Option<Square> {
+        if self.get_rank() == Rank::First {
+            None
+        } else {
+            Some(Square::make_square(self.get_rank().down(), self.get_file()))
+        }
+    }
+
+    /// If there is a square to the left of me, return that.  Otherwise, None.
+    pub fn left(&self) -> Option<Square> {
+        if self.get_file() == File::A {
+            None
+        } else {
+            Some(Square::make_square(self.get_rank(), self.get_file().left()))
+        }
+    }
+
+    /// If there is a square to the right of me, return that.  Otherwise, None.
+    pub fn right(&self) -> Option<Square> {
+        if self.get_file() == File::H {
+            None
+        } else {
+            Some(Square::make_square(self.get_rank(), self.get_file().right()))
         }
     }
 
@@ -46,55 +84,29 @@ impl Square {
         }
     }
 
-    /// If there is a square below me, return that.  Otherwise, None.
-    pub fn down(&self) -> Option<Square> {
-        if self.rank() == Rank::First {
-            None
-        } else {
-            Some(Square::make_square(self.rank().down(), self.file()))
-        }
-    }
-
-    /// If there is a square to the left of me, return that.  Otherwise, None.
-    pub fn left(&self) -> Option<Square> {
-        if self.file() == File::A {
-            None
-        } else {
-            Some(Square::make_square(self.rank(), self.file().left()))
-        }
-    }
-
-    /// If there is a square to the right of me, return that.  Otherwise, None.
-    pub fn right(&self) -> Option<Square> {
-        if self.file() == File::H {
-            None
-        } else {
-            Some(Square::make_square(self.rank(), self.file().right()))
-        }
-    }
 
     /// If there is a square above me, return that.  Otherwise, return invalid data to crash the
     /// program.
     pub fn uup(&self) -> Square {
-        Square::make_square(self.rank().up(), self.file())
+        Square::make_square(self.get_rank().up(), self.get_file())
     }
 
     /// If there is a square below me, return that.  Otherwise, return invalid data to crash the
     /// program.
     pub fn udown(&self) -> Square {
-        Square::make_square(self.rank().down(), self.file())
+        Square::make_square(self.get_rank().down(), self.get_file())
     }
 
     /// If there is a square to the left of me, return that.  Otherwise, return invalid data to
     /// crash the program.
     pub fn uleft(&self) -> Square {
-        Square::make_square(self.rank(), self.file().left())
+        Square::make_square(self.get_rank(), self.get_file().left())
     }
 
     /// If there is a square to the right of me, return that.  Otherwise, return invalid data to
     /// crash the program.
     pub fn uright(&self) -> Square {
-        Square::make_square(self.rank(), self.file().right())
+        Square::make_square(self.get_rank(), self.get_file().right())
     }
 
     /// If there is a square "forward", given my color, return that.  Otherwise, return invalid
@@ -113,16 +125,6 @@ impl Square {
             Color::White => self.udown(),
             Color::Black => self.uup()
         }
-    }
-
-    /// Return the rank given this square.
-    pub fn rank(&self) -> Rank {
-        Rank::from_index((self.0 >> 3) as usize)
-    }
-
-    /// Return the file given this square.
-    pub fn file(&self) -> File {
-        File::from_index((self.0 & 7) as usize)
     }
 
     /// Convert this square to an integer.

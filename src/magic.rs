@@ -144,7 +144,7 @@ impl Magic {
                 for c in ALL_COLORS.iter() {
                     if (BitBoard::from_square(*sq) & BitBoard::get_rank(c.to_their_backrank())) != EMPTY {
                         continue;
-                    } else if sq.rank() == c.to_second_rank() {
+                    } else if sq.get_rank() == c.to_second_rank() {
                         PAWN_MOVES[c.to_index()][sq.to_index()] = BitBoard::from_square(sq.uforward(*c).uforward(*c));
                     }
                     PAWN_MOVES[c.to_index()][sq.to_index()] ^= BitBoard::from_square(sq.uforward(*c));
@@ -161,8 +161,8 @@ impl Magic {
                     if (BitBoard::from_square(*sq) & BitBoard::get_rank(c.to_their_backrank())) != EMPTY {
                         continue;
                     }
-                    PAWN_ATTACKS[c.to_index()][sq.to_index()] = BitBoard::get_rank(sq.uforward(*c).rank()) &
-                                                                BitBoard::get_adjacent_files(sq.file());
+                    PAWN_ATTACKS[c.to_index()][sq.to_index()] = BitBoard::get_rank(sq.uforward(*c).get_rank()) &
+                                                                BitBoard::get_adjacent_files(sq.get_file());
                 }
             }
         }

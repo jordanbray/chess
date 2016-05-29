@@ -246,8 +246,8 @@ macro_rules! enumerate_moves_one_piece {
                 if $piece_type == Piece::Pawn && $board.en_passant.is_some() {
                     let ep_sq = $board.en_passant.unwrap();
                     if !$in_check || ($in_check && (checkers & BitBoard::from_square(ep_sq)) != EMPTY) {
-                        let rank = BitBoard::get_rank(ep_sq.rank());
-                        let passed_pawn_pieces = pieces & !pinned & BitBoard::get_adjacent_files(ep_sq.file()) & rank;
+                        let rank = BitBoard::get_rank(ep_sq.get_rank());
+                        let passed_pawn_pieces = pieces & !pinned & BitBoard::get_adjacent_files(ep_sq.get_file()) & rank;
                         let dest = ep_sq.uforward($color);
                         for src in passed_pawn_pieces {
                             if $board.legal_ep_move(src, dest) {
@@ -746,8 +746,8 @@ impl Board {
             None => {},
             Some(sq) => {
                 self.en_passant = None;
-                self.hash ^= Zobrist::en_passant(sq.file(), !self.side_to_move);
-                self.pawn_hash ^= Zobrist::en_passant(sq.file(), !self.side_to_move);
+                self.hash ^= Zobrist::en_passant(sq.get_file(), !self.side_to_move);
+                self.pawn_hash ^= Zobrist::en_passant(sq.get_file(), !self.side_to_move);
             }
         }
     }
@@ -756,13 +756,13 @@ impl Board {
     /// None
     fn set_ep(&mut self, sq: Square) {
         // Only set self.en_passant if the pawn can actually be captured next move.
-        if BitBoard::get_adjacent_files(sq.file()) &
-           BitBoard::get_rank(sq.rank()) &
+        if BitBoard::get_adjacent_files(sq.get_file()) &
+           BitBoard::get_rank(sq.get_rank()) &
            self.pieces(Piece::Pawn) &
            self.color_combined(!self.side_to_move) != EMPTY {
             self.en_passant = Some(sq);
-            self.hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
-            self.pawn_hash ^= Zobrist::en_passant(sq.file(), self.side_to_move);
+            self.hash ^= Zobrist::en_passant(sq.get_file(), self.side_to_move);
+            self.pawn_hash ^= Zobrist::en_passant(sq.get_file(), self.side_to_move);
         }
     }
 
@@ -782,7 +782,7 @@ impl Board {
         // Are you trying to promote?  Also, can you promote?
         match m.get_promotion() {
             None => {
-                if piece == Piece::Pawn && (m.get_dest().rank() == self.side_to_move.to_their_backrank()) {
+                if piece == Piece::Pawn && (m.get_dest().get_rank() == self.side_to_move.to_their_backrank()) {
                     return false;
                 }
             }
@@ -792,7 +792,7 @@ impl Board {
                 if piece != Piece::Pawn {
                     return false;
                 }
-                if m.get_dest().rank() != self.side_to_move.to_their_backrank() {
+                if m.get_dest().get_rank() != self.side_to_move.to_their_backrank() {
                     return false;
                 }
             }
@@ -860,10 +860,10 @@ impl Board {
                 // make sure the passed pawn is the checker
                 if (self.checkers & BitBoard::from_square(ep_sq)) != EMPTY {
                     // grab the rank for the passed pawn (to see if we can capture it)
-                    let rank = BitBoard::get_rank(ep_sq.rank());
+                    let rank = BitBoard::get_rank(ep_sq.get_rank());
 
                     // get all the squares where a pawn could be to capture this passed pawn
-                    let passed_pawn_pieces = BitBoard::get_adjacent_files(ep_sq.file()) & rank;
+                    let passed_pawn_pieces = BitBoard::get_adjacent_files(ep_sq.get_file()) & rank;
 
                     // if we are on one of those squares...
                     if passed_pawn_pieces & BitBoard::from_square(m.get_source()) != EMPTY {
@@ -900,10 +900,10 @@ impl Board {
                 let ep_sq = self.en_passant.unwrap();
 
                 // grab the rank for the passed pawn (to see if we can capture it)
-                let rank = BitBoard::get_rank(ep_sq.rank());
+                let rank = BitBoard::get_rank(ep_sq.get_rank());
 
                 // get all the squares where a pawn could be to capture this passed pawn
-                let passed_pawn_pieces = BitBoard::get_adjacent_files(ep_sq.file()) & rank;
+                let passed_pawn_pieces = BitBoard::get_adjacent_files(ep_sq.get_file()) & rank;
 
                 // if we are on one of those squares...
                 if passed_pawn_pieces & BitBoard::from_square(m.get_source()) != EMPTY {
@@ -969,10 +969,10 @@ impl Board {
                 result.remove_my_castle_rights(CastleRights::Both);
 
                 // if we castle, move the rook over too!
-                if m.get_source().file() == File::E && m.get_dest().file() == File::C { // queenside castle
+                if m.get_source().get_file() == File::E && m.get_dest().get_file() == File::C { // queenside castle
                     result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::A), self.side_to_move);
                     result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::D), self.side_to_move);
-                } else if m.get_source().file() == File::E && m.get_dest().file() == File::G { // kingside castle
+                } else if m.get_source().get_file() == File::E && m.get_dest().get_file() == File::G { // kingside castle
                     result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::H), self.side_to_move);
                     result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::F), self.side_to_move);
                 }
@@ -981,15 +981,15 @@ impl Board {
             Piece::Pawn => {
                 // e.p. capture.  the capture variable is 'None' because no piece is on the
                 // destination square
-                if m.get_source().file() != m.get_dest().file() && captured.is_none() {
+                if m.get_source().get_file() != m.get_dest().get_file() && captured.is_none() {
                     result.xor(Piece::Pawn, BitBoard::from_square(self.en_passant.unwrap()), !self.side_to_move);
                 }
 
                 match m.get_promotion() {
                     None => {
                         // double-move
-                        if (m.get_source().rank() == Rank::Second && m.get_dest().rank() == Rank::Fourth) ||
-                           (m.get_source().rank() == Rank::Seventh && m.get_dest().rank() == Rank::Fifth) {
+                        if (m.get_source().get_rank() == Rank::Second && m.get_dest().get_rank() == Rank::Fourth) ||
+                           (m.get_source().get_rank() == Rank::Seventh && m.get_dest().get_rank() == Rank::Fifth) {
                             result.set_ep(m.get_dest());
                         }
 

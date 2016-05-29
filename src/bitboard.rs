@@ -157,21 +157,21 @@ impl BitBoard {
         SETUP.call_once(|| {
             unsafe {
                 EDGES = ALL_SQUARES.iter()
-                                   .filter(|x| x.rank() == Rank::First ||
-                                               x.rank() == Rank::Eighth ||
-                                               x.file() == File::A ||
-                                               x.file() == File::H)
+                                   .filter(|x| x.get_rank() == Rank::First ||
+                                               x.get_rank() == Rank::Eighth ||
+                                               x.get_file() == File::A ||
+                                               x.get_file() == File::H)
                                    .fold(EMPTY, |v, s| v | BitBoard::from_square(*s)); 
                 for i in 0..8 {
                     RANKS[i] = ALL_SQUARES.iter()
-                                          .filter(|x| x.rank().to_index() == i)
+                                          .filter(|x| x.get_rank().to_index() == i)
                                           .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
                     FILES[i] = ALL_SQUARES.iter()
-                                          .filter(|x| x.file().to_index() == i)
+                                          .filter(|x| x.get_file().to_index() == i)
                                           .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
                     ADJACENT_FILES[i] = ALL_SQUARES.iter()
-                                                   .filter(|y| ((y.file().to_index() as i8) == (i as i8) - 1) ||
-                                                               ((y.file().to_index() as i8) == (i as i8) + 1))
+                                                   .filter(|y| ((y.get_file().to_index() as i8) == (i as i8) - 1) ||
+                                                               ((y.get_file().to_index() as i8) == (i as i8) + 1))
                                                    .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
                 }
             }
