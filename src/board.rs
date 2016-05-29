@@ -394,7 +394,7 @@ impl Board {
 
     /// Is this game Ongoing, is it Stalemate, or is it Checkmate?
     pub fn status(&self) -> BoardStatus {
-        let moves = self.enumerate_moves(&mut [ChessMove::new(Square::new(0), Square::new(0), None); 256]);
+        let moves = self.enumerate_moves(&mut [ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
         match moves {
             0 => {
                 if self.checkers == EMPTY {
@@ -1200,7 +1200,7 @@ impl Board {
     pub fn perft(&self, depth: u64) -> u64 {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
         for _ in 0..(depth+1) {
-            move_list.push([ChessMove::new(Square::new(0), Square::new(0), None); 256]);
+            move_list.push([ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
         }
         self.internal_perft(depth, &mut move_list)
     }
@@ -1209,7 +1209,7 @@ impl Board {
     pub fn perft_brute_force(&self, depth: u64) -> u64 {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
         for _ in 0..(depth+1) {
-            move_list.push([ChessMove::new(Square::new(0), Square::new(0), None); 256]);
+            move_list.push([ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
         }
         self.internal_perft_brute_force(depth, &mut move_list)
     }
@@ -1219,7 +1219,7 @@ impl Board {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
         let mut caches: Vec<CacheTable<u64>> = Vec::new();
         for _ in 0..(depth+1) {
-            move_list.push([ChessMove::new(Square::new(0), Square::new(0), None); 256]);
+            move_list.push([ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
             caches.push(CacheTable::new(cache_size_per_depth, 0));
         }
         self.internal_perft_cache(depth, &mut move_list, &mut caches)

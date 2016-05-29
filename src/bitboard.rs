@@ -113,7 +113,9 @@ impl BitBoard {
 
     /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`
     pub fn to_square(&self) -> Square {
-        Square::new(self.0.trailing_zeros() as u8)
+        unsafe {
+            Square::new(self.0.trailing_zeros() as u8)
+        }
     }
 
     /// Count the number of `Squares` set in this `BitBoard`

@@ -12,7 +12,7 @@ pub const NUM_SQUARES: usize = 64;
 impl Square {
     /// Create a new square, given an index.
     /// Note: It is invalid, but allowed, to pass in a number >= 64.  Doing so will crash stuff.
-    pub fn new(sq: u8) -> Square {
+    pub unsafe fn new(sq: u8) -> Square {
         Square(sq)
     }
 
@@ -85,32 +85,29 @@ impl Square {
     }
 
 
-    /// If there is a square above me, return that.  Otherwise, return invalid data to crash the
-    /// program.
+    /// If there is a square above me, return that.  If not, wrap around to the other side.
     pub fn uup(&self) -> Square {
         Square::make_square(self.get_rank().up(), self.get_file())
     }
 
-    /// If there is a square below me, return that.  Otherwise, return invalid data to crash the
-    /// program.
+    /// If there is a square below me, return that.  If not, wrap around to the other side.
     pub fn udown(&self) -> Square {
         Square::make_square(self.get_rank().down(), self.get_file())
     }
 
-    /// If there is a square to the left of me, return that.  Otherwise, return invalid data to
-    /// crash the program.
+    /// If there is a square to the left of me, return that. If not, wrap around to the other side.
     pub fn uleft(&self) -> Square {
         Square::make_square(self.get_rank(), self.get_file().left())
     }
 
-    /// If there is a square to the right of me, return that.  Otherwise, return invalid data to
-    /// crash the program.
+    /// If there is a square to the right of me, return that.  If not, wrap around to the other
+    /// side.
     pub fn uright(&self) -> Square {
         Square::make_square(self.get_rank(), self.get_file().right())
     }
 
-    /// If there is a square "forward", given my color, return that.  Otherwise, return invalid
-    /// data to crash the program.
+    /// If there is a square "forward", given my color, return that.  If not, wrap around to the
+    /// other side.
     pub fn uforward(&self, color: Color) -> Square {
         match color {
             Color::White => self.uup(),
@@ -118,8 +115,8 @@ impl Square {
         }
     }
 
-    /// If there is a square "backward", given my color, return that.  Otherwise, return invalid
-    /// data to crash the program.
+    /// If there is a square "backward", given my color, return that.  If not, wrap around to the
+    /// other side.
     pub fn ubackward(&self, color: Color) -> Square {
         match color {
             Color::White => self.udown(),
