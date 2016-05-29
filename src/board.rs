@@ -1290,6 +1290,8 @@ impl Board {
         return true;
     }
 
+    /// Run every type of perft test, and panic! if the leaf-node count of any version is not equal
+    /// to `result`.
     pub fn perft_test(fen: String, depth: u64, result: u64) {
         construct::construct();
         let board = Board::from_fen(fen).unwrap();
