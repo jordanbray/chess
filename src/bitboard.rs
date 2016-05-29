@@ -184,6 +184,7 @@ static mut RANKS: [BitBoard; 8] = [EMPTY; 8];
 static mut FILES: [BitBoard; 8] = [EMPTY; 8];
 static mut ADJACENT_FILES: [BitBoard; 8] = [EMPTY; 8];
 
+/// For the `BitBoard`, iterate over every `Square` set.
 impl Iterator for BitBoard {
     type Item = Square;
 
