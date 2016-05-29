@@ -11,7 +11,10 @@ pub enum CastleRights {
     Both,
 }
 
+/// How many different types of `CastleRights` are there?
 pub const NUM_CASTLE_RIGHTS: usize = 4;
+
+/// Enumerate all castle rights.
 pub const ALL_CASTLE_RIGHTS: [CastleRights; NUM_CASTLE_RIGHTS] = [CastleRights::NoRights, CastleRights::KingSide, CastleRights::QueenSide, CastleRights::Both];
 
 impl CastleRights {

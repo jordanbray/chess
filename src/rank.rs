@@ -11,7 +11,10 @@ pub enum Rank {
     Eighth,
 }
 
+/// How many ranks are there?
 pub const NUM_RANKS: usize = 8;
+
+/// Enumerate all ranks
 pub const ALL_RANKS: [Rank; NUM_RANKS] = [Rank::First, Rank::Second, Rank::Third, Rank::Fourth, Rank::Fifth, Rank::Sixth, Rank::Seventh, Rank::Eighth];
 
 impl Rank {

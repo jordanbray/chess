@@ -11,7 +11,10 @@ pub enum File {
     H,
 }
 
+/// How many files are there?
 pub const NUM_FILES: usize = 8;
+
+/// Enumerate all files
 pub const ALL_FILES: [File; NUM_FILES] = [File::A, File::B, File::C, File::D, File::E, File::F, File::G, File::H];
 
 impl File {
