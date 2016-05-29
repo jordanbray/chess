@@ -1,7 +1,7 @@
-use magic::Magic;
 use bitboard::BitBoard;
 use zobrist::Zobrist;
 use std::sync::{Once, ONCE_INIT};
+use magic;
 
 static SETUP: Once = ONCE_INIT;
 
@@ -12,6 +12,6 @@ pub fn construct() {
     SETUP.call_once(|| {
         Zobrist::construct();
         BitBoard::construct();
-        Magic::construct();
+        magic::construct();
     });
 }

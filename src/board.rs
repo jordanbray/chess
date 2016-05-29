@@ -3,7 +3,7 @@ use piece::{Piece, NUM_PIECES, ALL_PIECES};
 use color::{Color, NUM_COLORS, ALL_COLORS};
 use castle_rights::CastleRights;
 use square::{Square, ALL_SQUARES};
-use magic::Magic;
+use magic::{get_bishop_rays, get_rook_rays, get_rook_moves, get_bishop_moves, get_king_moves, get_knight_moves, get_pawn_attacks, get_pawn_moves, line, between};
 use chess_move::ChessMove;
 use std::fmt;
 use rank::Rank;
@@ -45,12 +45,12 @@ pub enum BoardStatus {
 macro_rules! pseudo_legal_moves {
     ($piece_type:expr, $src:expr, $color:expr, $combined:expr) => {
         match $piece_type {
-            Piece::Pawn => Magic::get_pawn_moves($src, $color, $combined),
-            Piece::Knight => Magic::get_knight_moves($src),
-            Piece::Bishop => Magic::get_bishop_moves($src, $combined),
-            Piece::Rook => Magic::get_rook_moves($src, $combined),
-            Piece::Queen => Magic::get_bishop_moves($src, $combined) ^ Magic::get_rook_moves($src, $combined),
-            Piece::King => Magic::get_king_moves($src)
+            Piece::Pawn => get_pawn_moves($src, $color, $combined),
+            Piece::Knight => get_knight_moves($src),
+            Piece::Bishop => get_bishop_moves($src, $combined),
+            Piece::Rook => get_rook_moves($src, $combined),
+            Piece::Queen => get_bishop_moves($src, $combined) ^ get_rook_moves($src, $combined),
+            Piece::King => get_king_moves($src)
         } 
     };
 }
@@ -169,7 +169,7 @@ macro_rules! enumerate_moves_one_piece {
                 for src in pieces & !pinned { 
                     let moves = pseudo_legal_moves!($piece_type, src, $color, combined) &
                                 $dest_mask &
-                                (if $in_check { Magic::between(checkers.to_square(), ksq) ^ checkers } else { !EMPTY });
+                                (if $in_check { between(checkers.to_square(), ksq) ^ checkers } else { !EMPTY });
 
                     // If I'm not a pawn, just add each move to the move list.
                     if $piece_type != Piece::Pawn {
@@ -211,7 +211,7 @@ macro_rules! enumerate_moves_one_piece {
                         //         second definition because it's easier to code.
                         let moves = pseudo_legal_moves!($piece_type, src, $color, combined) &
                                     $dest_mask &
-                                    Magic::line(src, king_sq);
+                                    line(src, king_sq);
 
                         // Same as above.  If I'm not a pawn, just add all the moves to the moves
                         // list
@@ -676,7 +676,7 @@ impl Board {
         }
 
         // we must make sure the kings aren't touching
-        if Magic::get_king_moves(self.king_square(Color::White)) & self.pieces(Piece::King) != EMPTY {
+        if get_king_moves(self.king_square(Color::White)) & self.pieces(Piece::King) != EMPTY {
             return false;
         }
 
@@ -898,7 +898,7 @@ impl Board {
             // Also, you can't capture your own pieces (not sure if that's actually relevant here)
             let moves = pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined()) &
                         !self.color_combined(self.side_to_move) &
-                        (self.checkers | Magic::between(self.checkers.to_square(),
+                        (self.checkers | between(self.checkers.to_square(),
                                                         (self.pieces(Piece::King) &
                                                          self.color_combined(self.side_to_move)).to_square()));
             return moves & BitBoard::from_square(m.get_dest()) != EMPTY;
@@ -937,7 +937,7 @@ impl Board {
             // BUT, you cannot capture your own pieces
             let move_mask = !self.color_combined(self.side_to_move) &
                             if self.pinned & BitBoard::from_square(m.get_source()) != EMPTY {
-                                Magic::line(m.get_source(),
+                                line(m.get_source(),
                                             (self.pieces(Piece::King) & self.color_combined(self.side_to_move)).to_square())
                             } else {
                                 !EMPTY
@@ -1006,7 +1006,7 @@ impl Board {
                         }
 
                         // could be check!
-                        if Magic::get_pawn_attacks(m.get_dest(),
+                        if get_pawn_attacks(m.get_dest(),
                                                    result.side_to_move,
                                                    result.pieces(Piece::King) &
                                                    result.color_combined(!result.side_to_move)) != EMPTY {
@@ -1020,7 +1020,7 @@ impl Board {
 
                         // promotion to a knight check is handled specially because checks from all other
                         // pieces are handled down below automatically
-                        if (Magic::get_knight_moves(m.get_dest()) &
+                        if (get_knight_moves(m.get_dest()) &
                             result.pieces(Piece::King) &
                             result.color_combined(!result.side_to_move)) != EMPTY {
                             result.checkers ^= BitBoard::from_square(m.get_dest());
@@ -1035,7 +1035,7 @@ impl Board {
             }
 
             Piece::Knight => {
-                if (Magic::get_knight_moves(m.get_dest()) &
+                if (get_knight_moves(m.get_dest()) &
                     result.pieces(Piece::King) &
                     result.color_combined(!result.side_to_move)) != EMPTY {
                     result.checkers ^= BitBoard::from_square(m.get_dest());
@@ -1055,15 +1055,15 @@ impl Board {
         let ksq = (result.pieces(Piece::King) & result.color_combined(!result.side_to_move)).to_square();
 
         let pinners = result.color_combined(result.side_to_move) & (
-                        (Magic::get_bishop_rays(ksq) &
+                        (get_bishop_rays(ksq) &
                             (result.pieces(Piece::Bishop)|result.pieces(Piece::Queen))
-                        )|(Magic::get_rook_rays(ksq) &
+                        )|(get_rook_rays(ksq) &
                             (result.pieces(Piece::Rook)|result.pieces(Piece::Queen))
                         )
                       );
 
         for sq in pinners {
-            let between = Magic::between(sq, ksq) & result.combined();
+            let between = between(sq, ksq) & result.combined();
             if between == EMPTY {
                 result.checkers ^= BitBoard::from_square(sq);
             } else if between.popcnt() == 1 {
@@ -1086,15 +1086,15 @@ impl Board {
         let ksq = (self.pieces(Piece::King) & self.color_combined(self.side_to_move)).to_square();
 
         let pinners = self.color_combined(!self.side_to_move) & (
-                        (Magic::get_bishop_rays(ksq) &
+                        (get_bishop_rays(ksq) &
                             (self.pieces(Piece::Bishop)|self.pieces(Piece::Queen))
-                        )|(Magic::get_rook_rays(ksq) &
+                        )|(get_rook_rays(ksq) &
                             (self.pieces(Piece::Rook)|self.pieces(Piece::Queen))
                         )
                       );
 
         for sq in pinners {
-            let between = Magic::between(sq, ksq) & self.combined();
+            let between = between(sq, ksq) & self.combined();
             if between == EMPTY {
                 self.checkers ^= BitBoard::from_square(sq);
             } else if between.popcnt() == 1 {
@@ -1102,11 +1102,11 @@ impl Board {
             }
         }
 
-        self.checkers ^= Magic::get_knight_moves(ksq) &
+        self.checkers ^= get_knight_moves(ksq) &
                          self.color_combined(!self.side_to_move) &
                          self.pieces(Piece::Knight);
 
-        self.checkers ^= Magic::get_pawn_attacks(ksq,
+        self.checkers ^= get_pawn_attacks(ksq,
                                                  self.side_to_move,
                                                  self.color_combined(!self.side_to_move) & self.pieces(Piece::Pawn));
     }
@@ -1233,27 +1233,27 @@ impl Board {
 
         let rooks = (self.pieces(Piece::Rook) | self.pieces(Piece::Queen)) & self.color_combined(!self.side_to_move);
 
-        if (Magic::get_rook_rays(dest) & rooks) != EMPTY {
-            attackers |= Magic::get_rook_moves(dest, combined) & rooks;
+        if (get_rook_rays(dest) & rooks) != EMPTY {
+            attackers |= get_rook_moves(dest, combined) & rooks;
         }
 
         let bishops = (self.pieces(Piece::Bishop) | self.pieces(Piece::Queen)) & self.color_combined(!self.side_to_move);
 
-        if (Magic::get_bishop_rays(dest) & bishops) != EMPTY {
-            attackers |= Magic::get_bishop_moves(dest, combined) & bishops;
+        if (get_bishop_rays(dest) & bishops) != EMPTY {
+            attackers |= get_bishop_moves(dest, combined) & bishops;
         }
 
-        let knight_rays = Magic::get_knight_moves(dest);
+        let knight_rays = get_knight_moves(dest);
         attackers |= knight_rays &
                      self.pieces(Piece::Knight) &
                      self.color_combined(!self.side_to_move);
 
-        let king_rays = Magic::get_king_moves(dest);
+        let king_rays = get_king_moves(dest);
         attackers |= king_rays &
                      self.pieces(Piece::King) &
                      self.color_combined(!self.side_to_move);
 
-        attackers |= Magic::get_pawn_attacks(dest,
+        attackers |= get_pawn_attacks(dest,
                                              self.side_to_move,
                                              self.pieces(Piece::Pawn) & self.color_combined(!self.side_to_move));
 
@@ -1271,16 +1271,16 @@ impl Board {
 
         let rooks = (self.pieces(Piece::Rook) | self.pieces(Piece::Queen)) & self.color_combined(!self.side_to_move);
 
-        if (Magic::get_rook_rays(ksq) & rooks) != EMPTY {
-            if (Magic::get_rook_moves(ksq, combined) & rooks) != EMPTY {
+        if (get_rook_rays(ksq) & rooks) != EMPTY {
+            if (get_rook_moves(ksq, combined) & rooks) != EMPTY {
                 return false;
             }
         }
 
         let bishops = (self.pieces(Piece::Bishop) | self.pieces(Piece::Queen)) & self.color_combined(!self.side_to_move);
 
-        if (Magic::get_bishop_rays(ksq) & bishops) != EMPTY {
-            if (Magic::get_bishop_moves(ksq, combined) & bishops) != EMPTY {
+        if (get_bishop_rays(ksq) & bishops) != EMPTY {
+            if (get_bishop_moves(ksq, combined) & bishops) != EMPTY {
                 return false;
             }
         }

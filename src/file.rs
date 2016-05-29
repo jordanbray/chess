@@ -1,3 +1,4 @@
+/// Describe a file (column) on a chess board
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
 pub enum File {
     A,
