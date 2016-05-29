@@ -12,7 +12,7 @@ pub struct CacheTable<T: Copy + Clone + PartialEq + PartialOrd> {
 
 impl <T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
     /// Create a new `CacheTable` with each associated entry initialized with a hash of '0'
-    /// Note: Y ou must pass in a size where only 1 bit is set. (AKA: 2, 4, 8, 16, 1024, 65536,
+    /// Note: You must pass in a size where only 1 bit is set. (AKA: 2, 4, 8, 16, 1024, 65536,
     /// etc.)
     /// Panics when size is invalid.
     pub fn new(size: usize, default: T) -> CacheTable<T> {

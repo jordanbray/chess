@@ -10,7 +10,7 @@ pub struct ChessMove {
 }
 
 impl ChessMove {
-    /// Create a new chess move, given a source `Square`, a destination `Square, and an optional
+    /// Create a new chess move, given a source `Square`, a destination `Square`, and an optional
     /// promotion `Piece`
     pub fn new(source: Square, dest: Square, promotion: Option<Piece>) -> ChessMove {
         ChessMove { source: source, dest: dest, promotion: promotion }
