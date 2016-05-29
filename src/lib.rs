@@ -1,5 +1,6 @@
 #![doc(html_root_url = "https://jordanbray.github.io/chess/")]
 
+/// This is a rust chess move generator.
 pub mod color;
 pub mod piece;
 pub mod square;
