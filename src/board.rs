@@ -344,9 +344,10 @@ impl Board {
         }
         match side {
             "w" | "W" => board.side_to_move = Color::White,
-            "b" | "B" => board.side_to_move = Color::Black,
+            "b" | "B" => { board.side_to_move = Color::Black; board.hash ^= Zobrist::color(); board.pawn_hash ^= Zobrist::color(); },
             _ => panic!()
         }
+
 
         if castles.contains("K") && castles.contains("Q") {
             board.castle_rights[Color::White.to_index()] = CastleRights::Both;
@@ -368,9 +369,18 @@ impl Board {
             board.castle_rights[Color::Black.to_index()] = CastleRights::NoRights;
         }
 
-        board.en_passant = match Square::from_string(ep.to_owned()) {
-            None => None,
-            Some(sq) => Some(sq.ubackward(board.side_to_move))
+        board.hash ^= Zobrist::castles(board.castle_rights[Color::Black.to_index()], Color::Black);
+        board.hash ^= Zobrist::castles(board.castle_rights[Color::White.to_index()], Color::White);
+
+        let color = board.side_to_move;
+
+        match Square::from_string(ep.to_owned()) {
+            None => {},
+            Some(sq) => {
+                board.side_to_move = !board.side_to_move;
+                board.set_ep(sq.ubackward(color));
+                board.side_to_move = !board.side_to_move;
+            }
         };
 
         board.update_pin_info();
@@ -577,6 +587,8 @@ impl Board {
         } else {
             let mut result = *self;
             result.side_to_move = !result.side_to_move;
+            result.hash ^= Zobrist::color();
+            result.pawn_hash ^= Zobrist::color();
             Some(result)
         }
     }
@@ -1060,6 +1072,8 @@ impl Board {
         }
 
         result.side_to_move = !result.side_to_move;
+        result.hash ^= Zobrist::color();
+        result.pawn_hash ^= Zobrist::color();
 
         result
     }
