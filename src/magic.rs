@@ -44,20 +44,20 @@ static SETUP: Once = ONCE_INIT;
 pub fn construct() {
     SETUP.call_once(|| {
         let mut index: usize = 0;
-        for sq in (*ALL_SQUARES).iter() {
+        for sq in ALL_SQUARES.iter() {
             index = gen_rooks(*sq, index);
         }
-        for sq in (*ALL_SQUARES).iter() {
+        for sq in ALL_SQUARES.iter() {
             index = gen_bishops(*sq, index);
         }
 
-        for sq1 in (*ALL_SQUARES).iter() {
-            for sq2 in (*ALL_SQUARES).iter() {
+        for sq1 in ALL_SQUARES.iter() {
+            for sq2 in ALL_SQUARES.iter() {
                 gen_line_and_between(*sq1, *sq2);
             }
         }
 
-        for sq in (*ALL_SQUARES).iter() {
+        for sq in ALL_SQUARES.iter() {
             gen_king_moves(*sq);
             gen_knight_moves(*sq);
         }
@@ -253,7 +253,7 @@ fn gen_rays(sq: Square, blockers: BitBoard, directions: &Vec<fn(Square) -> Optio
 /// Generate the 'quiet' (non-capture) pawn moves for every square.  Ignore potential blockers.
 fn gen_pawn_moves() {
     unsafe {
-        for sq in (*ALL_SQUARES).iter() {
+        for sq in ALL_SQUARES.iter() {
             for c in ALL_COLORS.iter() {
                 if (BitBoard::from_square(*sq) & get_rank(c.to_their_backrank())) != EMPTY {
                     continue;
@@ -269,7 +269,7 @@ fn gen_pawn_moves() {
 /// Generate the capture pawn moves for every square.
 fn gen_pawn_attacks() {
     unsafe {
-        for sq in (*ALL_SQUARES).iter() {
+        for sq in ALL_SQUARES.iter() {
             for c in ALL_COLORS.iter() {
                 if (BitBoard::from_square(*sq) & get_rank(c.to_their_backrank())) != EMPTY {
                     continue;

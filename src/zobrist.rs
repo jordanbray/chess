@@ -33,7 +33,7 @@ impl Zobrist {
             }
 
             for color in ALL_COLORS.iter() {
-                for sq in (*ALL_SQUARES).iter() {
+                for sq in ALL_SQUARES.iter() {
                     for piece in ALL_PIECES.iter() {
                         unsafe {
                             ZOBRIST_PIECES[color.to_index()][piece.to_index()][sq.to_index()] = rng.next_u64();
