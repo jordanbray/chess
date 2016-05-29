@@ -96,12 +96,12 @@ impl BitBoard {
         BitBoard(b)
     }
 
-    /// Construct a new BitBoard with a particular 'Square' set
+    /// Construct a new `BitBoard` with a particular `Square` set
     pub fn set(rank: Rank, file: File) -> BitBoard {
         BitBoard::from_square(Square::make_square(rank, file))
     }
 
-    /// Convert a `Square` to a BitBoard
+    /// Construct a new `BitBoard` with a particular `Square` set
     pub fn from_square(sq: Square) -> BitBoard {
         BitBoard(1u64 << sq.to_int())
     }
@@ -130,53 +130,53 @@ impl BitBoard {
     pub fn to_size(&self, rightshift: u8) -> usize {
         (self.0 >> rightshift) as usize
     }
+}
 
-    /// Get a `BitBoard` that represents all the squares on a particular rank.
-    pub fn get_rank(rank: Rank) -> BitBoard {
-        unsafe {
-            *RANKS.get_unchecked(rank.to_index())
-        }
+/// Get a `BitBoard` that represents all the squares on a particular rank.
+pub fn get_rank(rank: Rank) -> BitBoard {
+    unsafe {
+        *RANKS.get_unchecked(rank.to_index())
     }
+}
 
-    /// Get a `BitBoard` that represents all the squares on a particular file.
-    pub fn get_file(file: File) -> BitBoard {
-        unsafe {
-            *FILES.get_unchecked(file.to_index())
-        }
+/// Get a `BitBoard` that represents all the squares on a particular file.
+pub fn get_file(file: File) -> BitBoard {
+    unsafe {
+        *FILES.get_unchecked(file.to_index())
     }
+}
 
-    /// Get a `BitBoard` that represents the squares on the 1 or 2 files next to this file.
-    pub fn get_adjacent_files(file: File) -> BitBoard {
-        unsafe {
-            *ADJACENT_FILES.get_unchecked(file.to_index())
-        }
+/// Get a `BitBoard` that represents the squares on the 1 or 2 files next to this file.
+pub fn get_adjacent_files(file: File) -> BitBoard {
+    unsafe {
+        *ADJACENT_FILES.get_unchecked(file.to_index())
     }
+}
 
-    /// Perform initialization.  Must be called before some functions can be used.
-    pub fn construct() {
-        SETUP.call_once(|| {
-            unsafe {
-                EDGES = ALL_SQUARES.iter()
-                                   .filter(|x| x.get_rank() == Rank::First ||
-                                               x.get_rank() == Rank::Eighth ||
-                                               x.get_file() == File::A ||
-                                               x.get_file() == File::H)
-                                   .fold(EMPTY, |v, s| v | BitBoard::from_square(*s)); 
-                for i in 0..8 {
-                    RANKS[i] = ALL_SQUARES.iter()
-                                          .filter(|x| x.get_rank().to_index() == i)
-                                          .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-                    FILES[i] = ALL_SQUARES.iter()
-                                          .filter(|x| x.get_file().to_index() == i)
-                                          .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-                    ADJACENT_FILES[i] = ALL_SQUARES.iter()
-                                                   .filter(|y| ((y.get_file().to_index() as i8) == (i as i8) - 1) ||
-                                                               ((y.get_file().to_index() as i8) == (i as i8) + 1))
-                                                   .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-                }
+/// Perform initialization.  Must be called before some functions can be used.
+pub fn construct() {
+    SETUP.call_once(|| {
+        unsafe {
+            EDGES = ALL_SQUARES.iter()
+                               .filter(|x| x.get_rank() == Rank::First ||
+                                           x.get_rank() == Rank::Eighth ||
+                                           x.get_file() == File::A ||
+                                           x.get_file() == File::H)
+                               .fold(EMPTY, |v, s| v | BitBoard::from_square(*s)); 
+            for i in 0..8 {
+                RANKS[i] = ALL_SQUARES.iter()
+                                      .filter(|x| x.get_rank().to_index() == i)
+                                      .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+                FILES[i] = ALL_SQUARES.iter()
+                                      .filter(|x| x.get_file().to_index() == i)
+                                      .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+                ADJACENT_FILES[i] = ALL_SQUARES.iter()
+                                               .filter(|y| ((y.get_file().to_index() as i8) == (i as i8) - 1) ||
+                                                           ((y.get_file().to_index() as i8) == (i as i8) + 1))
+                                               .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
             }
-        });
-    }
+        }
+    });
 }
 
 static mut EDGES: BitBoard = EMPTY;

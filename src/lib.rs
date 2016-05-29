@@ -7,7 +7,7 @@ mod board;
 pub use board::*;
 
 mod bitboard;
-pub use bitboard::*;
+pub use bitboard::{BitBoard, EMPTY, get_rank, get_file, get_adjacent_files};
 
 mod cache_table;
 pub use cache_table::*;

@@ -1,4 +1,4 @@
-use bitboard::{BitBoard, EMPTY};
+use bitboard::{BitBoard, EMPTY, get_rank, get_adjacent_files};
 use square::{Square, NUM_SQUARES, ALL_SQUARES};
 use color::{Color, ALL_COLORS};
 use rand::{Rng, thread_rng};
@@ -255,7 +255,7 @@ fn gen_pawn_moves() {
     unsafe {
         for sq in (*ALL_SQUARES).iter() {
             for c in ALL_COLORS.iter() {
-                if (BitBoard::from_square(*sq) & BitBoard::get_rank(c.to_their_backrank())) != EMPTY {
+                if (BitBoard::from_square(*sq) & get_rank(c.to_their_backrank())) != EMPTY {
                     continue;
                 } else if sq.get_rank() == c.to_second_rank() {
                     PAWN_MOVES[c.to_index()][sq.to_index()] = BitBoard::from_square(sq.uforward(*c).uforward(*c));
@@ -271,11 +271,11 @@ fn gen_pawn_attacks() {
     unsafe {
         for sq in (*ALL_SQUARES).iter() {
             for c in ALL_COLORS.iter() {
-                if (BitBoard::from_square(*sq) & BitBoard::get_rank(c.to_their_backrank())) != EMPTY {
+                if (BitBoard::from_square(*sq) & get_rank(c.to_their_backrank())) != EMPTY {
                     continue;
                 }
-                PAWN_ATTACKS[c.to_index()][sq.to_index()] = BitBoard::get_rank(sq.uforward(*c).get_rank()) &
-                                                            BitBoard::get_adjacent_files(sq.get_file());
+                PAWN_ATTACKS[c.to_index()][sq.to_index()] = get_rank(sq.uforward(*c).get_rank()) &
+                                                            get_adjacent_files(sq.get_file());
             }
         }
     }

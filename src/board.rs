@@ -1,4 +1,4 @@
-use bitboard::{BitBoard, EMPTY};
+use bitboard::{BitBoard, EMPTY, get_rank, get_file, get_adjacent_files};
 use piece::{Piece, NUM_PIECES, ALL_PIECES};
 use color::{Color, NUM_COLORS, ALL_COLORS};
 use castle_rights::CastleRights;
@@ -156,7 +156,7 @@ macro_rules! enumerate_moves_one_piece {
                 }
             } else {
                 // Just a normal piece move.
-                let backrank = BitBoard::get_rank($color.to_their_backrank());
+                let backrank = get_rank($color.to_their_backrank());
                 let ksq = ($board.pieces(Piece::King) & $board.color_combined($color)).to_square();
 
                 // if the piece is not pinned:
@@ -246,8 +246,8 @@ macro_rules! enumerate_moves_one_piece {
                 if $piece_type == Piece::Pawn && $board.en_passant.is_some() {
                     let ep_sq = $board.en_passant.unwrap();
                     if !$in_check || ($in_check && (checkers & BitBoard::from_square(ep_sq)) != EMPTY) {
-                        let rank = BitBoard::get_rank(ep_sq.get_rank());
-                        let passed_pawn_pieces = pieces & !pinned & BitBoard::get_adjacent_files(ep_sq.get_file()) & rank;
+                        let rank = get_rank(ep_sq.get_rank());
+                        let passed_pawn_pieces = pieces & !pinned & get_adjacent_files(ep_sq.get_file()) & rank;
                         let dest = ep_sq.uforward($color);
                         for src in passed_pawn_pieces {
                             if $board.legal_ep_move(src, dest) {
@@ -669,7 +669,7 @@ impl Board {
             // depending on the color
             if castle_rights != CastleRights::NoRights {
                 if self.pieces(Piece::King) & self.color_combined(*color) !=
-                    BitBoard::get_file(File::E) & BitBoard::get_rank(color.to_my_backrank()) {
+                    get_file(File::E) & get_rank(color.to_my_backrank()) {
                     return false;
                 }
             }
@@ -770,8 +770,8 @@ impl Board {
     /// None
     fn set_ep(&mut self, sq: Square) {
         // Only set self.en_passant if the pawn can actually be captured next move.
-        if BitBoard::get_adjacent_files(sq.get_file()) &
-           BitBoard::get_rank(sq.get_rank()) &
+        if get_adjacent_files(sq.get_file()) &
+           get_rank(sq.get_rank()) &
            self.pieces(Piece::Pawn) &
            self.color_combined(!self.side_to_move) != EMPTY {
             self.en_passant = Some(sq);
@@ -874,10 +874,10 @@ impl Board {
                 // make sure the passed pawn is the checker
                 if (self.checkers & BitBoard::from_square(ep_sq)) != EMPTY {
                     // grab the rank for the passed pawn (to see if we can capture it)
-                    let rank = BitBoard::get_rank(ep_sq.get_rank());
+                    let rank = get_rank(ep_sq.get_rank());
 
                     // get all the squares where a pawn could be to capture this passed pawn
-                    let passed_pawn_pieces = BitBoard::get_adjacent_files(ep_sq.get_file()) & rank;
+                    let passed_pawn_pieces = get_adjacent_files(ep_sq.get_file()) & rank;
 
                     // if we are on one of those squares...
                     if passed_pawn_pieces & BitBoard::from_square(m.get_source()) != EMPTY {
@@ -914,10 +914,10 @@ impl Board {
                 let ep_sq = self.en_passant.unwrap();
 
                 // grab the rank for the passed pawn (to see if we can capture it)
-                let rank = BitBoard::get_rank(ep_sq.get_rank());
+                let rank = get_rank(ep_sq.get_rank());
 
                 // get all the squares where a pawn could be to capture this passed pawn
-                let passed_pawn_pieces = BitBoard::get_adjacent_files(ep_sq.get_file()) & rank;
+                let passed_pawn_pieces = get_adjacent_files(ep_sq.get_file()) & rank;
 
                 // if we are on one of those squares...
                 if passed_pawn_pieces & BitBoard::from_square(m.get_source()) != EMPTY {
