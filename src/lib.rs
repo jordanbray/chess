@@ -1,6 +1,8 @@
 #![doc(html_root_url = "https://jordanbray.github.io/chess/")]
 //! This is a rust chess move generator
 
+/// Manage an entire chess board
+pub mod board;
 /// Manage side-to-move information.
 pub mod color;
 /// Enumerate the piece types (colorless)
@@ -13,8 +15,6 @@ pub mod chess_move;
 pub mod bitboard;
 /// Keep track of castle rights information, and generate some information related to castling
 pub mod castle_rights;
-/// Manage an entire chess board
-pub mod board;
 /// Magic bitboards are the heart of any good chess algorithm.  This module manages lookup tables
 /// for move generation.
 pub mod magic;
