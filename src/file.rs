@@ -18,46 +18,24 @@ pub const NUM_FILES: usize = 8;
 pub const ALL_FILES: [File; NUM_FILES] = [File::A, File::B, File::C, File::D, File::E, File::F, File::G, File::H];
 
 impl File {
+    /// Convert a `usize` into a `File` (the inverse of to_index).  If i > 7, wrap around.
     pub fn from_index(i: usize) -> File {
-        match i & 7 {
-            0 => File::A,
-            1 => File::B,
-            2 => File::C,
-            3 => File::D,
-            4 => File::E,
-            5 => File::F,
-            6 => File::G,
-            7 => File::H,
-            _ => unreachable!()
+        unsafe {
+            *ALL_FILES.get_unchecked(i & 7)
         }
     }
 
+    /// Go one file to the left.  If impossible, wrap around.
     pub fn left(&self) -> File {
-        match *self {
-            File::A => File::H,
-            File::B => File::A,
-            File::C => File::B,
-            File::D => File::C,
-            File::E => File::D,
-            File::F => File::E,
-            File::G => File::F,
-            File::H => File::G
-        }
+        File::from_index(self.to_index().wrapping_sub(1))
     }
 
+    /// Go one file to the right.  If impossible, wrap around.
     pub fn right(&self) -> File {
-        match *self {
-            File::A => File::B,
-            File::B => File::C,
-            File::C => File::D,
-            File::D => File::E,
-            File::E => File::F,
-            File::F => File::G,
-            File::G => File::H,
-            File::H => File::A
-        }
+        File::from_index(self.to_index() + 1)
     }
 
+    /// Convert this `File` into a `usize` from 0 to 7 inclusive.
     pub fn to_index(&self) -> usize {
         *self as usize
     }

@@ -18,46 +18,25 @@ pub const NUM_RANKS: usize = 8;
 pub const ALL_RANKS: [Rank; NUM_RANKS] = [Rank::First, Rank::Second, Rank::Third, Rank::Fourth, Rank::Fifth, Rank::Sixth, Rank::Seventh, Rank::Eighth];
 
 impl Rank {
+    /// Convert a `usize` into a `Rank` (the inverse of to_index).  If the number is > 7, wrap
+    /// around.
     pub fn from_index(i: usize) -> Rank {
-        match i & 7 {
-            0 => Rank::First,
-            1 => Rank::Second,
-            2 => Rank::Third,
-            3 => Rank::Fourth,
-            4 => Rank::Fifth,
-            5 => Rank::Sixth,
-            6 => Rank::Seventh,
-            7 => Rank::Eighth,
-            _ => unreachable!()
+        unsafe {
+            *ALL_RANKS.get_unchecked(i & 7)
         }
     }
 
+    /// Go one rank down.  If impossible, wrap around.
     pub fn down(&self) -> Rank {
-        match *self {
-            Rank::First => Rank::Eighth,
-            Rank::Second => Rank::First,
-            Rank::Third => Rank::Second,
-            Rank::Fourth => Rank::Third,
-            Rank::Fifth => Rank::Fourth,
-            Rank::Sixth => Rank::Fifth,
-            Rank::Seventh => Rank::Sixth,
-            Rank::Eighth => Rank::Seventh
-        }
+        Rank::from_index(self.to_index().wrapping_sub(1))
     }
 
+    /// Go one file up.  If impossible, wrap around.
     pub fn up(&self) -> Rank {
-        match *self {
-            Rank::First => Rank::Second,
-            Rank::Second => Rank::Third,
-            Rank::Third => Rank::Fourth,
-            Rank::Fourth => Rank::Fifth,
-            Rank::Fifth => Rank::Sixth,
-            Rank::Sixth => Rank::Seventh,
-            Rank::Seventh => Rank::Eighth,
-            Rank::Eighth => Rank::First
-        }
+        Rank::from_index(self.to_index() + 1)
     }
 
+    /// Convert this `Rank` into a `usize` between 0 and 7 (inclusive).
     pub fn to_index(&self) -> usize {
         *self as usize
     }
