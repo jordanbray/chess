@@ -684,10 +684,12 @@ impl Board {
         return true;
     }
 
+    /// Get a hash of the board
     pub fn get_hash(&self) -> u64 {
         self.hash
     }
 
+    /// Get a pawn hash of the board (a hash that only changes on color change and pawn moves)
     pub fn get_pawn_hash(&self) -> u64 {
         self.pawn_hash
     }
