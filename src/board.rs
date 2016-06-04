@@ -493,7 +493,7 @@ impl Board {
     }
 
     /// Remove some of my opponents `CastleRights`.
-    fn remove_their_castle_rights(&mut self, remove: CastleRights) {
+    pub fn remove_their_castle_rights(&mut self, remove: CastleRights) {
         let color = !self.side_to_move();
         self.remove_castle_rights(color, remove);
     }
