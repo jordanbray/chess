@@ -172,6 +172,9 @@ fn genmagic(questions: &Vec<BitBoard>, answers: &Vec<BitBoard>, result_index: us
     while max_guess > 0 {
         // make a guess
         let guess = random_bitboard(&mut rng);
+        if (mask * guess).popcnt() < 6 {
+            continue;
+        }
 
         // magic is *NOT* safe, kids
         unsafe {
