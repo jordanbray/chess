@@ -25,4 +25,5 @@ opt-level = 3
 [dependencies]
 rand = "0.3"
 lazy_static = "0.2"
+bitflags = "0.7.0"
 

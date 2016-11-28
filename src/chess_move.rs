@@ -1,8 +1,10 @@
 use piece::Piece;
 use square::Square;
+use std::fmt;
+use std::cmp::Ordering;
 
 /// Represent a ChessMove in memory
-#[derive(Clone, Copy, PartialOrd, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialOrd, PartialEq)]
 pub struct ChessMove {
     source: Square,
     dest: Square,
@@ -31,3 +33,35 @@ impl ChessMove {
         self.promotion
     }
 }
+
+impl fmt::Display for ChessMove {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.promotion {
+            None => write!(f, "{}-{}", self.source, self.dest),
+            Some(x) => write!(f, "{}-{}=?", self.source, self.dest)
+        }
+    }
+}
+
+impl Ord for ChessMove {
+    fn cmp(&self, other: &ChessMove) -> Ordering {
+        if self.source != other.source {
+            self.source.cmp(&other.source)
+        } else if self.dest != other.dest {
+            self.dest.cmp(&other.dest)
+        } else if self.promotion != other.promotion {
+            match self.promotion {
+                None => Ordering::Less,
+                Some(x) => {
+                    match other.promotion {
+                        None => Ordering::Greater,
+                        Some(y) => x.cmp(&y)
+                    }
+                }
+            }
+        } else {
+            Ordering::Equal
+        }
+    }
+}
+ 

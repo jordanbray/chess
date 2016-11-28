@@ -766,6 +766,10 @@ impl Board {
         }
     }
 
+    pub fn en_passant(self) -> Option<Square> {
+        self.en_passant
+    }
+
     /// Set the en_passant square.  Note: This must only be called when self.en_passant is already
     /// None
     fn set_ep(&mut self, sq: Square) {
@@ -1225,8 +1229,16 @@ impl Board {
         self.internal_perft_cache(depth, &mut move_list, &mut caches)
     }
 
+    pub fn pinned(&self) -> BitBoard {
+        self.pinned
+    }
+
+    pub fn checkers(&self) -> BitBoard {
+        self.checkers
+    }
+
     /// Is a particular king move legal?
-    fn legal_king_move(&self, dest: Square) -> bool {
+    pub fn legal_king_move(&self, dest: Square) -> bool {
         let combined = self.combined() ^
                (self.pieces(Piece::King) & self.color_combined(self.side_to_move)) |
                BitBoard::from_square(dest);
@@ -1263,7 +1275,7 @@ impl Board {
     }
 
     /// Is a particular en-passant capture legal?
-    fn legal_ep_move(&self, source: Square, dest: Square) -> bool {
+    pub fn legal_ep_move(&self, source: Square, dest: Square) -> bool {
         let combined = self.combined() ^
                        BitBoard::from_square(self.en_passant.unwrap()) ^
                        BitBoard::from_square(source) ^
@@ -1440,7 +1452,7 @@ impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s: String = "".to_owned();
         for rank in (0..8).rev() {
-            s.push_str(&rank.to_string());
+            s.push_str(&(rank + 1).to_string());
             s.push_str(" ");
             for file in 0..8 {
                 let sq = Square::make_square(Rank::from_index(rank), File::from_index(file));

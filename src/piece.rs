@@ -1,5 +1,5 @@
 /// Represent a chess piece as a very simple enum
-#[derive(PartialEq, PartialOrd, Copy, Clone)]
+#[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone)]
 pub enum Piece {
     Pawn,
     Knight,

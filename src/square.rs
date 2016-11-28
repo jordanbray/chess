@@ -1,9 +1,10 @@
 use color::Color;
 use rank::Rank;
 use file::File;
+use std::fmt;
 
 /// Represent a square on the chess board
-#[derive(PartialEq, PartialOrd, Copy, Clone)]
+#[derive(PartialEq, Ord, Eq, PartialOrd, Copy, Clone)]
 pub struct Square(u8);
 
 /// How many squares are there?
@@ -152,7 +153,13 @@ impl Square {
                                  File::from_index((ch[0] as usize) - ('a' as usize))))
     }
 }
-
+impl fmt::Display for Square {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}", (('a' as u8) + ((self.0 & 7) as u8)) as char,
+                          (('1' as u8) + ((self.0 >> 3) as u8)) as char)
+    }
+}
+ 
 /// A list of every square on the chessboard.
 pub const ALL_SQUARES: [Square; 64] = [
      Square(0),  Square(1),  Square(2),  Square(3),  Square(4),  Square(5),  Square(6), Square(7),

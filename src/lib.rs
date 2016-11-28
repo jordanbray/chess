@@ -39,6 +39,9 @@ pub use rank::*;
 mod square;
 pub use square::*;
 
+mod movegen;
+pub use movegen::*;
+
 mod zobrist;
 
 extern crate rand;
