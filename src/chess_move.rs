@@ -38,7 +38,7 @@ impl fmt::Display for ChessMove {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.promotion {
             None => write!(f, "{}-{}", self.source, self.dest),
-            Some(x) => write!(f, "{}-{}=?", self.source, self.dest)
+            Some(x) => write!(f, "{}-{}={}", self.source, self.dest, x)
         }
     }
 }
