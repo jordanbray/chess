@@ -44,6 +44,14 @@ impl Color {
             Color::Black => Rank::Seventh
         }
     }
+
+    /// Convert a `Color` to my seventh rank, which represents the rank before pawn promotion.
+    pub fn to_seventh_rank(&self) -> Rank {
+        match *self {
+            Color::White => Rank::Seventh,
+            Color::Black => Rank::Second
+        }
+    }
 }
 
 impl Not for Color {

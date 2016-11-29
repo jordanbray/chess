@@ -5,6 +5,7 @@ use chess_move::ChessMove;
 use rank::Rank;
 use board::Board;
 use file::File;
+use std::mem;
 
 /// Never Call Directly!
 ///
@@ -14,15 +15,15 @@ use file::File;
 /// You must pass in the piece type, the source square, the color of the piece to move, and the
 /// combined `BitBoard` which represents blocking pieces.
 macro_rules! pseudo_legal_moves {
-    ($piece_type:expr, $src:expr, $color:expr, $combined:expr) => {
+    ($piece_type:expr, $src:expr, $color:expr, $combined:expr, $mask:expr) => {
         match $piece_type {
-            Piece::Pawn => SquareAndBitBoard { square: $src, bitboard: get_pawn_moves($src, $color, $combined) },
-            Piece::Knight => SquareAndBitBoard { square: $src, bitboard: get_knight_moves($src) },
-            Piece::Bishop => SquareAndBitBoard { square: $src, bitboard: get_bishop_moves($src, $combined) },
-            Piece::Rook => SquareAndBitBoard { square: $src, bitboard: get_rook_moves($src, $combined) },
+            Piece::Pawn => SquareAndBitBoard { square: $src, bitboard: get_pawn_moves($src, $color, $combined) & $mask },
+            Piece::Knight => SquareAndBitBoard { square: $src, bitboard: get_knight_moves($src) & $mask },
+            Piece::Bishop => SquareAndBitBoard { square: $src, bitboard: get_bishop_moves($src, $combined) & $mask },
+            Piece::Rook => SquareAndBitBoard { square: $src, bitboard: get_rook_moves($src, $combined) & $mask },
             Piece::Queen => SquareAndBitBoard { square: $src,
-                                                bitboard: get_bishop_moves($src, $combined) ^ get_rook_moves($src, $combined) },
-            Piece::King => SquareAndBitBoard { square: $src, bitboard: get_king_moves($src) }
+                                                bitboard: (get_bishop_moves($src, $combined) ^ get_rook_moves($src, $combined)) & $mask },
+            Piece::King => SquareAndBitBoard { square: $src, bitboard: get_king_moves($src) & $mask }
         } 
     };
 }
@@ -37,25 +38,26 @@ macro_rules! pseudo_legal_moves {
 ///  Note: The pawn moves *must* be generated first due to assumptions made by the `MoveGen`
 ///        struct.
 macro_rules! enumerate_moves {
-    ($movegen:expr, $skip_legal_check:expr) => { {
+    ($movegen:expr, $mask: expr, $skip_legal_check:expr) => { {
+        let color = $movegen.board.side_to_move();
         if $movegen.board.checkers() == EMPTY {
-            enumerate_moves_one_piece!($movegen, Piece::Pawn, false, $movegen.board.side_to_move(), $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Pawn, false, color, $mask, $skip_legal_check);
             $movegen.last_pawn = $movegen.pieces;
-            enumerate_moves_one_piece!($movegen, Piece::Knight, false, $movegen.board.side_to_move(), $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Bishop, false, $movegen.board.side_to_move(), $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Rook, false, $movegen.board.side_to_move(), $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Queen, false, $movegen.board.side_to_move(), $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::King, false, $movegen.board.side_to_move(), $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Knight, false, color, $mask, $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Bishop, false, color, $mask, $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Rook, false, color, $mask, $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Queen, false, color, $mask, $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::King, false, color, $mask, $skip_legal_check);
         } else if $movegen.board.checkers().popcnt() == 1 {
-            enumerate_moves_one_piece!($movegen, Piece::Pawn, true, $movegen.board.side_to_move(), $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Pawn, true, color, $mask, $skip_legal_check);
             $movegen.last_pawn = $movegen.pieces;
-            enumerate_moves_one_piece!($movegen, Piece::Knight, true, $movegen.board.side_to_move(), $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Bishop, true, $movegen.board.side_to_move(), $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Rook, true, $movegen.board.side_to_move(), $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Queen, true, $movegen.board.side_to_move(), $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::King, true, $movegen.board.side_to_move(), $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Knight, true, color, $mask, $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Bishop, true, color, $mask, $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Rook, true, color, $mask, $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::Queen, true, color, $mask, $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::King, true, color, $mask, $skip_legal_check);
         } else {
-            enumerate_moves_one_piece!($movegen, Piece::King, true, $movegen.board.side_to_move(), $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::King, true, color, $mask, $skip_legal_check);
             $movegen.last_pawn = 0;
         }
     } };
@@ -76,7 +78,7 @@ macro_rules! enumerate_moves {
 ///  * a boolean to determine if any `legal_*` functions should be called to determine if a move is
 ///    legal
 macro_rules! enumerate_moves_one_piece {
-    ($movegen:expr, $piece_type:expr, $in_check:expr, $color:expr, $skip_legal_check:expr) => { {
+    ($movegen:expr, $piece_type:expr, $in_check:expr, $color:expr, $mask:expr, $skip_legal_check:expr) => { {
         let combined = $movegen.board.combined();
         let my_pieces = $movegen.board.color_combined($color);
         let pieces = $movegen.board.pieces($piece_type) & my_pieces;
@@ -87,7 +89,7 @@ macro_rules! enumerate_moves_one_piece {
         // leaves you in check with `legal_king_move`.
         if $piece_type == Piece::King {
             let ksq = ($movegen.board.pieces(Piece::King) & $movegen.board.color_combined($color)).to_square();
-            $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, ksq, $color, combined);
+            $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, ksq, $color, combined, $mask);
             
             // maybe check the legality of these moves
             if !$skip_legal_check {
@@ -141,7 +143,7 @@ macro_rules! enumerate_moves_one_piece {
             //  * And I'm currently NOT in check:
             //  ** I can move anywhere!
             for src in pieces & !pinned { 
-                $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, src, $color, combined);
+                $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, src, $color, combined, $mask);
                 $movegen.moves[$movegen.pieces].bitboard &= if $in_check {
                                                                 between(checkers.to_square(), ksq) ^ checkers
                                                             } else {
@@ -175,7 +177,7 @@ macro_rules! enumerate_moves_one_piece {
                     // * Note: Due to how lines work, the line between my pinner and my king is
                     //         the same as the line between ME and my king.  So lets use the
                     //         second definition because it's easier to code.
-                    $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, src, $color, combined);
+                    $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, src, $color, combined, $mask);
                     $movegen.moves[$movegen.pieces].bitboard &= line(src, ksq);
                      if $piece_type == Piece::Pawn && $movegen.board.en_passant().is_some() { // passed pawn rule
                         let ep_sq = $movegen.board.en_passant().unwrap();
@@ -222,14 +224,19 @@ impl<'a> MoveGen<'a> {
     pub fn new(board: &'a Board, legal: bool) -> MoveGen<'a> {
          let mut result = MoveGen {
             board: board,
-            moves: [SquareAndBitBoard { square: Square::make_square(Rank::First, File::A), bitboard: EMPTY }; 16],
+            moves: unsafe { mem::uninitialized() },
             pieces: 0,
             promotion_index: 0,
             last_pawn: 0,
-            iterator_mask: !board.color_combined(board.side_to_move()),
+            iterator_mask: !EMPTY,
             index: 0
          };
-         enumerate_moves!(result, !legal);
+         let mask = !result.board.color_combined(result.board.side_to_move());
+         if legal {
+             enumerate_moves!(result, mask, false);
+         } else {
+             enumerate_moves!(result, mask, true);
+         }
          result
     }
 
@@ -250,7 +257,7 @@ impl<'a> MoveGen<'a> {
     }
 
     pub fn set_iterator_mask(&mut self, mask: BitBoard) {
-        self.iterator_mask = mask & self.board.color_combined(self.board.side_to_move());
+        self.iterator_mask = mask;
     }
 }
 
@@ -259,33 +266,43 @@ impl<'a> Iterator for MoveGen<'a> {
 
     fn next(&mut self) -> Option<ChessMove> {
         // find the next non-empty bitboard
-        while self.index < self.pieces && (self.moves[self.index].bitboard & self.iterator_mask) == EMPTY {
+        while self.index < self.pieces && self.moves[self.index].bitboard & self.iterator_mask == EMPTY {
             self.index += 1;
         }
-        if self.index >= self.pieces { // terminating condition
-            return None;
-        } else if self.index < self.last_pawn { // deal with potential promotions for this pawn
+
+        // we have a non-empty set of moves.  Find the next move
+        if self.index < self.last_pawn &&
+           self.moves[self.index].bitboard & get_rank(self.board.side_to_move().to_their_backrank()) != EMPTY {
+            // deal with potential promotions for this pawn
             let promotions = self.moves[self.index].bitboard &
                              (get_rank(Rank::Eighth) | get_rank(Rank::First)) &
                              self.iterator_mask;
-            if promotions != EMPTY {
-                let dest = promotions.to_square();
-                let result = ChessMove::new(self.moves[self.index].square, dest, Some(PROMOTION_PIECES[self.promotion_index]));
-                self.promotion_index += 1;
-                if self.promotion_index >= NUM_PROMOTION_PIECES {
-                    self.moves[self.index].bitboard ^= BitBoard::from_square(dest);
-                    self.promotion_index = 0;
+            let dest = promotions.to_square();
+            let result = ChessMove::new(self.moves[self.index].square, dest, Some(PROMOTION_PIECES[self.promotion_index]));
+            self.promotion_index += 1;
+            if self.promotion_index >= NUM_PROMOTION_PIECES {
+                self.moves[self.index].bitboard ^= BitBoard::from_square(dest);
+                if self.moves[self.index].bitboard == EMPTY {
+                    self.index += 1;
                 }
-                return Some(result);
+                self.promotion_index = 0;
+
             }
+            Some(result)
         }
+        else if self.index < self.pieces {
+            // not a promotion move, so its a 'normal' move as far as this function is concerned
+            let sq = (self.moves[self.index].bitboard & self.iterator_mask).to_square();
+            self.moves[self.index].bitboard ^= BitBoard::from_square(sq);
+            let result = ChessMove::new(self.moves[self.index].square, sq, None);
+            if self.moves[self.index].bitboard == EMPTY {
+                self.index += 1;
+            }
 
-        // not a promotion move, so its a 'normal' move as far as this function is concerned
-        let sq = (self.moves[self.index].bitboard & self.iterator_mask).to_square();
-        self.moves[self.index].bitboard ^= BitBoard::from_square(sq);
-        let result = ChessMove::new(self.moves[self.index].square, sq, None);
-
-        Some(result)
+            Some(result)
+        } else {
+            None
+        }
     }
 }
 
@@ -300,9 +317,7 @@ fn internal_movegen_perft_test(board: Board, depth: usize) -> usize {
 
     let mut result: usize = 0;
     if depth == 1 {
-        let mut v: Vec<ChessMove> = iterable.collect();
-        let count = v.len();
-        count
+        iterable.count()
     } else {
         for m in iterable {
             let cur = internal_movegen_perft_test(board.make_move(m), depth - 1);
@@ -370,4 +385,90 @@ fn movegen_perft_8() {
 fn movegen_perft_9() {
     movegen_perft_test("r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1".to_owned(), 4, 1274206);
 }
+
+#[test]
+fn movegen_perft_10() {
+    Board::perft_test("r3k2r/7b/8/8/8/8/1B4BQ/R3K2R b KQkq - 0 1".to_owned(), 4, 1274206);
+}
+
+#[test]
+fn movegen_perft_11() {
+    Board::perft_test("r3k2r/8/3Q4/8/8/5q2/8/R3K2R b KQkq - 0 1".to_owned(), 4, 1720476);
+}
+
+#[test]
+fn movegen_perft_12() {
+    Board::perft_test("r3k2r/8/5Q2/8/8/3q4/8/R3K2R w KQkq - 0 1".to_owned(), 4, 1720476);
+}
+
+#[test]
+fn movegen_perft_13() {
+    Board::perft_test("2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1".to_owned(), 6, 3821001);
+}
+
+#[test]
+fn movegen_perft_14() {
+    Board::perft_test("3K4/8/8/8/8/8/4p3/2k2R2 b - - 0 1".to_owned(), 6, 3821001);
+}
+
+#[test]
+fn movegen_perft_15() {
+    Board::perft_test("8/8/1P2K3/8/2n5/1q6/8/5k2 b - - 0 1".to_owned(), 5, 1004658);
+}
+
+#[test]
+fn movegen_perft_16() {
+    Board::perft_test("5K2/8/1Q6/2N5/8/1p2k3/8/8 w - - 0 1".to_owned(), 5, 1004658);
+}
+
+#[test]
+fn movegen_perft_17() {
+    Board::perft_test("4k3/1P6/8/8/8/8/K7/8 w - - 0 1".to_owned(), 6, 217342);
+}
+
+#[test]
+fn movegen_perft_18() {
+    Board::perft_test("8/k7/8/8/8/8/1p6/4K3 b - - 0 1".to_owned(), 6, 217342);
+}
+
+#[test]
+fn movegen_perft_19() {
+    Board::perft_test("8/P1k5/K7/8/8/8/8/8 w - - 0 1".to_owned(), 6, 92683);
+}
+
+#[test]
+fn movegen_perft_20() {
+    Board::perft_test("8/8/8/8/8/k7/p1K5/8 b - - 0 1".to_owned(), 6, 92683);
+}
+
+#[test]
+fn movegen_perft_21() {
+    Board::perft_test("K1k5/8/P7/8/8/8/8/8 w - - 0 1".to_owned(), 6, 2217);
+}
+
+#[test]
+fn movegen_perft_22() {
+    Board::perft_test("8/8/8/8/8/p7/8/k1K5 b - - 0 1".to_owned(), 6, 2217);
+}
+
+#[test]
+fn movegen_perft_23() {
+    Board::perft_test("8/k1P5/8/1K6/8/8/8/8 w - - 0 1".to_owned(), 7, 567584);
+}
+
+#[test]
+fn movegen_perft_24() {
+    Board::perft_test("8/8/8/8/1k6/8/K1p5/8 b - - 0 1".to_owned(), 7, 567584);
+}
+
+#[test]
+fn movegen_perft_25() {
+    Board::perft_test("8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1".to_owned(), 4, 23527);
+}
+
+#[test]
+fn movegen_perft_26() {
+    Board::perft_test("8/5k2/8/5N2/5Q2/2K5/8/8 w - - 0 1".to_owned(), 4, 23527);
+}
+
 

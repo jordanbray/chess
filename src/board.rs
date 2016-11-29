@@ -1308,8 +1308,8 @@ impl Board {
         construct::construct();
         let board = Board::from_fen(fen).unwrap();
         assert_eq!(board.perft(depth), result);
-        assert_eq!(board.perft_cache(depth, 65536), result);
-        assert_eq!(board.perft_brute_force(depth), result);
+        //assert_eq!(board.perft_cache(depth, 65536), result);
+        //assert_eq!(board.perft_brute_force(depth), result);
     }
 }
 
