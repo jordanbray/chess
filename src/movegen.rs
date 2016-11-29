@@ -257,6 +257,29 @@ impl MoveGen {
 
     pub fn set_iterator_mask(&mut self, mask: BitBoard) {
         self.iterator_mask = mask;
+
+        // the iterator portion of this struct relies on the invariant that
+        // the bitboards at the beginning of the moves[] array are the only
+        // ones used.  As a result, we must partition the list such that the
+        // assumption is true. 
+
+        // first, find the first non-used moves index, and store that in i
+        let mut i = 0;
+        while i < self.pieces && self.moves[i].bitboard & self.iterator_mask != EMPTY {
+            i += 1;
+        }
+
+        // next, find each element past i where the moves are used, and store
+        // that in i.  Then, increment i to point to a new unused slot.
+        for j in i..self.pieces {
+            if self.moves[j].bitboard & self.iterator_mask == EMPTY {
+                continue;
+            }
+            let backup = self.moves[i];
+            self.moves[i] = self.moves[j];
+            self.moves[j] = backup;
+            i += 1;
+        }
     }
 }
 
@@ -264,34 +287,34 @@ impl Iterator for MoveGen {
     type Item = ChessMove;
 
     fn next(&mut self) -> Option<ChessMove> {
-        // find the next non-empty bitboard
-        while self.moves[self.index].bitboard & self.iterator_mask == EMPTY {
-            self.index += 1;
-            if self.index >= self.pieces {
-                return None;
-            }
-        }
+        if self.index >= self.pieces || self.moves[self.index].bitboard & self.iterator_mask == EMPTY { // are we done?
+            None
+        } else if self.moves[self.index].promotion {
+            let bb = &mut self.moves[self.index].bitboard;
+            let src = self.moves[self.index].square;
+            let dest = (*bb & self.iterator_mask).to_square();
 
-        let bb: &mut BitBoard = &mut self.moves[self.index].bitboard;
-        let src = self.moves[self.index].square;
-
-        // we have a non-empty set of moves.  Find the next move
-        if self.moves[self.index].promotion {
             // deal with potential promotions for this pawn
-            let promotions = *bb & self.iterator_mask;
-            let dest = promotions.to_square();
             let result = ChessMove::new(src, dest, Some(PROMOTION_PIECES[self.promotion_index]));
             self.promotion_index += 1;
             if self.promotion_index >= NUM_PROMOTION_PIECES {
                 *bb ^= BitBoard::from_square(dest);
                 self.promotion_index = 0;
+                if *bb == EMPTY {
+                    self.index += 1;
+                }
             }
-
             Some(result)
         } else {
             // not a promotion move, so its a 'normal' move as far as this function is concerned
+            let bb = &mut self.moves[self.index].bitboard;
+            let src = self.moves[self.index].square;
             let dest = (*bb & self.iterator_mask).to_square();
+
             *bb ^= BitBoard::from_square(dest);
+            if *bb == EMPTY {
+                self.index += 1;
+            }
             Some(ChessMove::new(src, dest, None))
         }
     }
