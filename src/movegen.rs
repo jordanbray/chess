@@ -2,10 +2,9 @@ use bitboard::{BitBoard, EMPTY, get_rank, get_adjacent_files};
 use piece::{Piece, NUM_PROMOTION_PIECES, PROMOTION_PIECES};
 use magic::{get_rook_moves, get_bishop_moves, get_king_moves, get_knight_moves, get_pawn_moves, between, line};
 use chess_move::ChessMove;
-use rank::Rank;
 use board::Board;
-use file::File;
 use std::mem;
+use square::Square;
 
 /// Never Call Directly!
 ///
@@ -211,6 +210,17 @@ struct SquareAndBitBoard {
 }
 
 /// The move generation iterator
+/// This structure enumerates moves slightly slower than board.enumerate_moves(...),
+/// but has some extra features, such as:
+/// * Being an iterator
+/// * Not requiring you to create a buffer
+/// * Only iterating moves that match a certain pattern
+/// * Being iterable multiple times (such as, iterating once for all captures, then iterating again
+///   for all quiets)
+/// * Doing as little work early on as possible, so that if you are not going to look at every move, the
+///   struture moves faster
+/// * Being able to iterate pseudo legal moves, while keeping the (nearly) free legality checks in
+///   place
 pub struct MoveGen {
     board: Board,
     moves: [SquareAndBitBoard; 16],
@@ -221,6 +231,8 @@ pub struct MoveGen {
 }
 
 impl MoveGen {
+    /// Create a new `MoveGen` structure, specifying whether or not you want legal or pseudo_legal
+    /// moves
     pub fn new(board: Board, legal: bool) -> MoveGen {
          let mut result = MoveGen {
             board: board,
@@ -239,12 +251,14 @@ impl MoveGen {
          result
     }
 
+    /// Never, ever, iterate any moves that land on the following squares
     pub fn remove_mask(&mut self, mask: BitBoard) {
         for x in 0..self.pieces {
             self.moves[x].bitboard &= !mask;
         }
     }
 
+    /// Never, ever, iterate this move
     pub fn remove_move(&mut self, chess_move: ChessMove) -> bool {
         for x in 0..self.pieces {
             if self.moves[x].square == chess_move.get_source() {
@@ -255,6 +269,9 @@ impl MoveGen {
         false
     }
 
+    /// For now, Only iterate moves that land on the following squares
+    /// Note: Once iteration is completed, you can pass in a mask of ! `EMPTY`
+    ///       to get the remaining moves, or another mask
     pub fn set_iterator_mask(&mut self, mask: BitBoard) {
         self.iterator_mask = mask;
 
@@ -286,6 +303,7 @@ impl MoveGen {
 impl Iterator for MoveGen {
     type Item = ChessMove;
 
+    /// Find the next chess move.
     fn next(&mut self) -> Option<ChessMove> {
         if self.index >= self.pieces || self.moves[self.index].bitboard & self.iterator_mask == EMPTY { // are we done?
             None
@@ -320,6 +338,7 @@ impl Iterator for MoveGen {
     }
 }
 
+#[cfg(test)]
 fn internal_movegen_perft_test(board: Board, depth: usize) -> usize {
     let iterable = MoveGen::new(board, true);
 
@@ -335,9 +354,10 @@ fn internal_movegen_perft_test(board: Board, depth: usize) -> usize {
     }
 }
 
+#[cfg(test)]
 use construct;
-use square::Square;
 
+#[cfg(test)]
 fn movegen_perft_test(board: String, depth: usize, result: usize) {
      construct::construct();
 
