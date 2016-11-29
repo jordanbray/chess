@@ -422,6 +422,7 @@ impl Board {
         }
     }
 
+    /// Give me the `Square` the `color` king is on.
     pub fn king_square(&self, color: Color) -> Square {
         (self.pieces(Piece::King) & self.color_combined(color)).to_square()
     }
@@ -748,6 +749,9 @@ impl Board {
     }
 
     /// Give me all the legal moves for this board.
+    ///
+    /// Note: You may want to build a `MoveGen` structure to iterate over
+    ///       the moves instead.
     pub fn enumerate_moves(&self, moves: &mut [ChessMove; 256]) -> usize {
         let mut index = 0usize;
         let not_my_pieces = !self.color_combined(self.side_to_move);
@@ -766,6 +770,7 @@ impl Board {
         }
     }
 
+    /// Give me the en_passant square, if it exists
     pub fn en_passant(self) -> Option<Square> {
         self.en_passant
     }
