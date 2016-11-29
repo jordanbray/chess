@@ -266,13 +266,24 @@ impl<'a> Iterator for MoveGen<'a> {
 
     fn next(&mut self) -> Option<ChessMove> {
         // find the next non-empty bitboard
-        while self.index < self.pieces && self.moves[self.index].bitboard & self.iterator_mask == EMPTY {
+        while self.moves[self.index].bitboard & self.iterator_mask == EMPTY {
             self.index += 1;
+            if self.index >= self.pieces {
+                return None;
+            }
         }
 
         // we have a non-empty set of moves.  Find the next move
-        if self.index < self.last_pawn &&
-           self.moves[self.index].bitboard & get_rank(self.board.side_to_move().to_their_backrank()) != EMPTY {
+        if self.index >= self.last_pawn || 
+            self.moves[self.index].bitboard & get_rank(self.board.side_to_move().to_their_backrank()) == EMPTY {
+
+            // not a promotion move, so its a 'normal' move as far as this function is concerned
+            let sq = (self.moves[self.index].bitboard & self.iterator_mask).to_square();
+            self.moves[self.index].bitboard ^= BitBoard::from_square(sq);
+            let result = ChessMove::new(self.moves[self.index].square, sq, None);
+
+           Some(result)
+        } else {
             // deal with potential promotions for this pawn
             let promotions = self.moves[self.index].bitboard &
                              (get_rank(Rank::Eighth) | get_rank(Rank::First)) &
@@ -282,37 +293,15 @@ impl<'a> Iterator for MoveGen<'a> {
             self.promotion_index += 1;
             if self.promotion_index >= NUM_PROMOTION_PIECES {
                 self.moves[self.index].bitboard ^= BitBoard::from_square(dest);
-                if self.moves[self.index].bitboard == EMPTY {
-                    self.index += 1;
-                }
                 self.promotion_index = 0;
 
             }
             Some(result)
         }
-        else if self.index < self.pieces {
-            // not a promotion move, so its a 'normal' move as far as this function is concerned
-            let sq = (self.moves[self.index].bitboard & self.iterator_mask).to_square();
-            self.moves[self.index].bitboard ^= BitBoard::from_square(sq);
-            let result = ChessMove::new(self.moves[self.index].square, sq, None);
-            if self.moves[self.index].bitboard == EMPTY {
-                self.index += 1;
-            }
-
-            Some(result)
-        } else {
-            None
-        }
     }
 }
 
 fn internal_movegen_perft_test(board: Board, depth: usize) -> usize {
-    if !board.is_sane() {
-        println!("Insane Board!");
-        println!("{}", board);
-        return 0;
-    }
-
     let iterable = MoveGen::new(&board, true);
 
     let mut result: usize = 0;
