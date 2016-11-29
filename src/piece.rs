@@ -1,3 +1,5 @@
+use std::fmt;
+
 /// Represent a chess piece as a very simple enum
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone)]
 pub enum Piece {
@@ -28,3 +30,15 @@ impl Piece {
     }
 }
 
+impl fmt::Display for Piece {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match *self {
+            Piece::Pawn => "P",
+            Piece::Knight => "N",
+            Piece::Bishop => "B",
+            Piece::Rook => "R",
+            Piece::Queen => "Q",
+            Piece::King => "K"
+        })
+    }
+}
