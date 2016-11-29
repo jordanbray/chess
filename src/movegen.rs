@@ -17,14 +17,17 @@ use std::mem;
 macro_rules! pseudo_legal_moves {
     ($piece_type:expr, $src:expr, $color:expr, $combined:expr, $mask:expr) => {
         match $piece_type {
-            Piece::Pawn => SquareAndBitBoard { square: $src, bitboard: get_pawn_moves($src, $color, $combined) & $mask },
-            Piece::Knight => SquareAndBitBoard { square: $src, bitboard: get_knight_moves($src) & $mask },
-            Piece::Bishop => SquareAndBitBoard { square: $src, bitboard: get_bishop_moves($src, $combined) & $mask },
-            Piece::Rook => SquareAndBitBoard { square: $src, bitboard: get_rook_moves($src, $combined) & $mask },
+            Piece::Pawn => SquareAndBitBoard { square: $src,
+                                               bitboard: get_pawn_moves($src, $color, $combined) & $mask,
+                                               promotion: BitBoard::from_square($src) & get_rank($color.to_seventh_rank()) != EMPTY },
+            Piece::Knight => SquareAndBitBoard { square: $src, bitboard: get_knight_moves($src) & $mask, promotion: false },
+            Piece::Bishop => SquareAndBitBoard { square: $src, bitboard: get_bishop_moves($src, $combined) & $mask, promotion: false },
+            Piece::Rook => SquareAndBitBoard { square: $src, bitboard: get_rook_moves($src, $combined) & $mask, promotion: false },
             Piece::Queen => SquareAndBitBoard { square: $src,
-                                                bitboard: (get_bishop_moves($src, $combined) ^ get_rook_moves($src, $combined)) & $mask },
-            Piece::King => SquareAndBitBoard { square: $src, bitboard: get_king_moves($src) & $mask }
-        } 
+                                                bitboard: (get_bishop_moves($src, $combined) ^ get_rook_moves($src, $combined)) & $mask,
+                                                promotion: false },
+            Piece::King => SquareAndBitBoard { square: $src, bitboard: get_king_moves($src) & $mask, promotion: false }
+        }
     };
 }
 
@@ -42,7 +45,6 @@ macro_rules! enumerate_moves {
         let color = $movegen.board.side_to_move();
         if $movegen.board.checkers() == EMPTY {
             enumerate_moves_one_piece!($movegen, Piece::Pawn, false, color, $mask, $skip_legal_check);
-            $movegen.last_pawn = $movegen.pieces;
             enumerate_moves_one_piece!($movegen, Piece::Knight, false, color, $mask, $skip_legal_check);
             enumerate_moves_one_piece!($movegen, Piece::Bishop, false, color, $mask, $skip_legal_check);
             enumerate_moves_one_piece!($movegen, Piece::Rook, false, color, $mask, $skip_legal_check);
@@ -50,7 +52,6 @@ macro_rules! enumerate_moves {
             enumerate_moves_one_piece!($movegen, Piece::King, false, color, $mask, $skip_legal_check);
         } else if $movegen.board.checkers().popcnt() == 1 {
             enumerate_moves_one_piece!($movegen, Piece::Pawn, true, color, $mask, $skip_legal_check);
-            $movegen.last_pawn = $movegen.pieces;
             enumerate_moves_one_piece!($movegen, Piece::Knight, true, color, $mask, $skip_legal_check);
             enumerate_moves_one_piece!($movegen, Piece::Bishop, true, color, $mask, $skip_legal_check);
             enumerate_moves_one_piece!($movegen, Piece::Rook, true, color, $mask, $skip_legal_check);
@@ -58,7 +59,6 @@ macro_rules! enumerate_moves {
             enumerate_moves_one_piece!($movegen, Piece::King, true, color, $mask, $skip_legal_check);
         } else {
             enumerate_moves_one_piece!($movegen, Piece::King, true, color, $mask, $skip_legal_check);
-            $movegen.last_pawn = 0;
         }
     } };
 }
@@ -206,28 +206,27 @@ macro_rules! enumerate_moves_one_piece {
 #[derive(Copy, Clone)]
 struct SquareAndBitBoard {
     square: Square,
-    bitboard: BitBoard
+    bitboard: BitBoard,
+    promotion: bool
 }
 
 /// The move generation iterator
-pub struct MoveGen<'a> {
-    board: &'a Board,
+pub struct MoveGen {
+    board: Board,
     moves: [SquareAndBitBoard; 16],
     pieces: usize,
     promotion_index: usize,
-    last_pawn: usize,
     iterator_mask: BitBoard,
     index: usize,
 }
 
-impl<'a> MoveGen<'a> {
-    pub fn new(board: &'a Board, legal: bool) -> MoveGen<'a> {
+impl MoveGen {
+    pub fn new(board: Board, legal: bool) -> MoveGen {
          let mut result = MoveGen {
             board: board,
             moves: unsafe { mem::uninitialized() },
             pieces: 0,
             promotion_index: 0,
-            last_pawn: 0,
             iterator_mask: !EMPTY,
             index: 0
          };
@@ -261,7 +260,7 @@ impl<'a> MoveGen<'a> {
     }
 }
 
-impl<'a> Iterator for MoveGen<'a> {
+impl Iterator for MoveGen {
     type Item = ChessMove;
 
     fn next(&mut self) -> Option<ChessMove> {
@@ -273,36 +272,33 @@ impl<'a> Iterator for MoveGen<'a> {
             }
         }
 
+        let bb: &mut BitBoard = &mut self.moves[self.index].bitboard;
+        let src = self.moves[self.index].square;
+
         // we have a non-empty set of moves.  Find the next move
-        if self.index >= self.last_pawn || 
-            self.moves[self.index].bitboard & get_rank(self.board.side_to_move().to_their_backrank()) == EMPTY {
-
-            // not a promotion move, so its a 'normal' move as far as this function is concerned
-            let sq = (self.moves[self.index].bitboard & self.iterator_mask).to_square();
-            self.moves[self.index].bitboard ^= BitBoard::from_square(sq);
-            let result = ChessMove::new(self.moves[self.index].square, sq, None);
-
-           Some(result)
-        } else {
+        if self.moves[self.index].promotion {
             // deal with potential promotions for this pawn
-            let promotions = self.moves[self.index].bitboard &
-                             (get_rank(Rank::Eighth) | get_rank(Rank::First)) &
-                             self.iterator_mask;
+            let promotions = *bb & self.iterator_mask;
             let dest = promotions.to_square();
-            let result = ChessMove::new(self.moves[self.index].square, dest, Some(PROMOTION_PIECES[self.promotion_index]));
+            let result = ChessMove::new(src, dest, Some(PROMOTION_PIECES[self.promotion_index]));
             self.promotion_index += 1;
             if self.promotion_index >= NUM_PROMOTION_PIECES {
-                self.moves[self.index].bitboard ^= BitBoard::from_square(dest);
+                *bb ^= BitBoard::from_square(dest);
                 self.promotion_index = 0;
-
             }
+
             Some(result)
+        } else {
+            // not a promotion move, so its a 'normal' move as far as this function is concerned
+            let dest = (*bb & self.iterator_mask).to_square();
+            *bb ^= BitBoard::from_square(dest);
+            Some(ChessMove::new(src, dest, None))
         }
     }
 }
 
 fn internal_movegen_perft_test(board: Board, depth: usize) -> usize {
-    let iterable = MoveGen::new(&board, true);
+    let iterable = MoveGen::new(board, true);
 
     let mut result: usize = 0;
     if depth == 1 {
