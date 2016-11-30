@@ -8,7 +8,7 @@ homepage = "https://github.com/jordanbray/chess"
 repository = "https://github.com/jordanbray/chess"
 readme = "README.md"
 keywords = ["chess", "move", "generator"]
-license = "LGPL-3.0+"
+license = "MIT"
 documentation = "https://jordanbray.github.io/chess/chess/index.html"
 
 [profile.release]
