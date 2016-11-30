@@ -229,18 +229,39 @@ struct SquareAndBitBoard {
 /// use chess::EMPTY;
 /// use chess::construct;
 ///
+/// // always remember to call construct!
 /// construct();
-/// let board = Board.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-/// let iterable = MoveGen::new(board, true);
+///
+/// // create a board with the initial position
+/// let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned()).unwrap();
+///
+/// // create an iterable
+/// let mut iterable = MoveGen::new(board, true);
+///
+/// // make sure .len() works.
+/// assert_eq!(iterable.len(), 20); // the .len() function does *not* consume the iterator
+///
+/// // lets iterate over targets.
 /// let targets = board.color_combined(!board.side_to_move());
 /// iterable.set_iterator_mask(targets);
+///
+/// // count the number of targets
+/// let mut count = 0;
 /// for x in &mut iterable {
+///     count += 1;
 ///     // This move captures one of my opponents pieces (with the exception of en passant)
 /// }
+///
+/// // now, iterate over the rest of the moves
 /// iterable.set_iterator_mask(!EMPTY);
 /// for x in &mut iterable {
+///     count += 1;
 ///     // This move does not capture anything
 /// }
+///
+/// // make sure it works
+/// assert_eq!(count, 20);
+///
 /// ```
 pub struct MoveGen {
     board: Board,
