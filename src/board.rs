@@ -409,7 +409,7 @@ impl Board {
         }
     }
 
-    /// Grab the "combined" `BitBoard`.  This is a `BitBoard` with every piece
+    /// Grab the "combined" `BitBoard`.  This is a `BitBoard` with every piece.
     pub fn combined(&self) -> BitBoard {
         self.combined
     }
@@ -487,7 +487,7 @@ impl Board {
         self.castle_rights(!self.side_to_move())
     }
 
-    /// Add to my opponents `CastleRights`
+    /// Add to my opponents `CastleRights`.
     pub fn add_their_castle_rights(&mut self, add: CastleRights) {
         let color = !self.side_to_move();
         self.add_castle_rights(color, add)
@@ -516,7 +516,7 @@ impl Board {
         }
     }
 
-    /// For a chess UI: set a piece on a particular square
+    /// For a chess UI: set a piece on a particular square.
     pub fn set_piece(&self, piece: Piece, color: Color, square: Square) -> Option<Board> {
         let mut result = *self;
         let square_bb = BitBoard::from_square(square);
@@ -549,7 +549,7 @@ impl Board {
         Some(result)
     }
 
-    /// For a chess UI: clear a particular square
+    /// For a chess UI: clear a particular square.
     pub fn clear_square(&self, square: Square) -> Option<Board> {
         let mut result = *self;
         let square_bb = BitBoard::from_square(square);
@@ -581,7 +581,7 @@ impl Board {
  
     }
 
-    /// Switch the color of the player without actually making a move
+    /// Switch the color of the player without actually making a move.
     pub fn null_move(&self) -> Option<Board> {
         if self.checkers != EMPTY {
             None
@@ -685,12 +685,12 @@ impl Board {
         return true;
     }
 
-    /// Get a hash of the board
+    /// Get a hash of the board.
     pub fn get_hash(&self) -> u64 {
         self.hash
     }
 
-    /// Get a pawn hash of the board (a hash that only changes on color change and pawn moves)
+    /// Get a pawn hash of the board (a hash that only changes on color change and pawn moves).
     pub fn get_pawn_hash(&self) -> u64 {
         self.pawn_hash
     }
@@ -728,7 +728,7 @@ impl Board {
         }
     }
 
-    /// Test the legal move generation by brute-forcing all legal moves
+    /// Test the legal move generation by brute-forcing all legal moves.
     fn enumerate_moves_brute_force(&self, moves: &mut [ChessMove; 256]) -> usize {
         let mut index = 0;
         for source in ALL_SQUARES.iter() {
@@ -759,6 +759,7 @@ impl Board {
         index
     }
 
+    /// Unset the en_passant square.
     fn remove_ep(&mut self) {
         match self.en_passant {
             None => {},
@@ -770,13 +771,13 @@ impl Board {
         }
     }
 
-    /// Give me the en_passant square, if it exists
+    /// Give me the en_passant square, if it exists.
     pub fn en_passant(self) -> Option<Square> {
         self.en_passant
     }
 
     /// Set the en_passant square.  Note: This must only be called when self.en_passant is already
-    /// None
+    /// None.
     fn set_ep(&mut self, sq: Square) {
         // Only set self.en_passant if the pawn can actually be captured next move.
         if get_adjacent_files(sq.get_file()) &
@@ -964,7 +965,7 @@ impl Board {
     /// incorrect results, and making that move on the `Board` will result in undefined behavior.
     /// This function may panic! if these rules are not followed.
     ///
-    /// If you are validating a move from a user, you should call the .legal() function
+    /// If you are validating a move from a user, you should call the .legal() function.
     pub fn legal_quick(&self, chess_move: ChessMove) -> bool {
         let piece = self.piece_on(chess_move.get_source()).unwrap();
         match piece {
@@ -995,9 +996,9 @@ impl Board {
         }
     }
 
-    /// Make a chess move
+    /// Make a chess move.
     ///
-    /// panic!() if king is captured
+    /// panic!() if king is captured.
     pub fn make_move(&self, m: ChessMove) -> Board {
         let mut result = *self;
         let source = BitBoard::from_square(m.get_source());
@@ -1163,7 +1164,7 @@ impl Board {
     }
 
     /// Run a perft-test with a cache and the chess moves and cache tables already allocated for
-    /// each depth
+    /// each depth.
     fn internal_perft_cache(&self, depth: u64, move_list: &mut Vec<[ChessMove; 256]>, caches: &mut Vec<CacheTable<u64>>) -> u64 {
         let cur = unsafe { caches.get_unchecked(depth as usize) }.get(self.hash);
         match cur {
@@ -1211,7 +1212,7 @@ impl Board {
     }
 
     /// Run a perft-test with the [ChessMove; 256] already allocated for each depth... BUT: brute
-    /// force the move list
+    /// force the move list.
     fn internal_perft_brute_force(&self, depth: u64, move_list: &mut Vec<[ChessMove; 256]>) -> u64 {
         let mut result = 0;
         let actual = if depth == 0 {
@@ -1254,7 +1255,7 @@ impl Board {
         self.internal_perft(depth, &mut move_list)
     }
 
-    /// Run a perft-test using brute force move generation
+    /// Run a perft-test using brute force move generation.
     pub fn perft_brute_force(&self, depth: u64) -> u64 {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
         for _ in 0..(depth+1) {
@@ -1263,7 +1264,7 @@ impl Board {
         self.internal_perft_brute_force(depth, &mut move_list)
     }
 
-    /// Run a perft test with a cache table
+    /// Run a perft test with a cache table.
     pub fn perft_cache(&self, depth: u64, cache_size_per_depth: usize) -> u64 {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
         let mut caches: Vec<CacheTable<u64>> = Vec::new();
@@ -1274,10 +1275,12 @@ impl Board {
         self.internal_perft_cache(depth, &mut move_list, &mut caches)
     }
 
+    /// Give me the `BitBoard` of my pinned pieces.
     pub fn pinned(&self) -> BitBoard {
         self.pinned
     }
 
+    /// Give me the `Bitboard` of the pieces putting me in check.
     pub fn checkers(&self) -> BitBoard {
         self.checkers
     }
