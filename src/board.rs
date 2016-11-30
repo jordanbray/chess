@@ -487,7 +487,7 @@ impl Board {
         self.castle_rights(!self.side_to_move())
     }
 
-    /// Ad to my opponents `CastleRights`
+    /// Add to my opponents `CastleRights`
     pub fn add_their_castle_rights(&mut self, add: CastleRights) {
         let color = !self.side_to_move();
         self.add_castle_rights(color, add)
