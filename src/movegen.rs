@@ -279,6 +279,12 @@ pub struct MoveGen {
 impl MoveGen {
     /// Create a new `MoveGen` structure, specifying whether or not you want legal or pseudo_legal
     /// moves
+    ///
+    /// Note the board.legal_quick() function, which checks the legality of pseudo_legal
+    /// moves generated specifically by this structure.  That way, if you call
+    /// `MoveGen::new(board, false)`, but you want to check legality later,
+    /// you can call `board.legal_quick(...)` on that chess move, without the full
+    /// expense of the `board.legal(...)` function.
     pub fn new(board: Board, legal: bool) -> MoveGen {
          let mut result = MoveGen {
             board: board,
