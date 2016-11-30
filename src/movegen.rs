@@ -210,8 +210,6 @@ struct SquareAndBitBoard {
     promotion: bool
 }
 
-/// # MoveGen
-///
 /// The move generation iterator
 ///
 /// This structure enumerates moves slightly slower than board.enumerate_moves(...),
