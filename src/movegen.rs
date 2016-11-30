@@ -274,6 +274,7 @@ impl MoveGen {
     ///       to get the remaining moves, or another mask
     pub fn set_iterator_mask(&mut self, mask: BitBoard) {
         self.iterator_mask = mask;
+        self.index = 0;
 
         // the iterator portion of this struct relies on the invariant that
         // the bitboards at the beginning of the moves[] array are the only
@@ -288,14 +289,66 @@ impl MoveGen {
 
         // next, find each element past i where the moves are used, and store
         // that in i.  Then, increment i to point to a new unused slot.
-        for j in i..self.pieces {
-            if self.moves[j].bitboard & self.iterator_mask == EMPTY {
-                continue;
+        for j in (i + 1)..self.pieces {
+            if self.moves[j].bitboard & self.iterator_mask != EMPTY {
+                let backup = self.moves[i];
+                self.moves[i] = self.moves[j];
+                self.moves[j] = backup;
+                i += 1;
             }
-            let backup = self.moves[i];
-            self.moves[i] = self.moves[j];
-            self.moves[j] = backup;
-            i += 1;
+        }
+    }
+
+    /// Count function which does not own the iterator, but does consume it.
+    pub fn count_moves(&mut self) -> usize {
+        let mut res: usize = 0;
+        while self.next().is_some() {
+            res += 1;
+        }
+        res
+    }
+
+    /// Fastest perft test with this structure
+    pub fn movegen_perft_test(board: Board, depth: usize) -> usize {
+        let mut iterable = MoveGen::new(board, true);
+
+        let mut result: usize = 0;
+        if depth == 1 {
+            iterable.count()
+        } else {
+            for m in iterable {
+                let cur = MoveGen::movegen_perft_test(board.make_move(m), depth - 1);
+                result += cur;
+            }
+            result
+        }
+    }
+
+    pub fn movegen_perft_test_piecewise(board: Board, depth: usize) -> usize {
+        let mut iterable = MoveGen::new(board, true);
+
+        let targets = board.color_combined(!board.side_to_move());
+        let mut result: usize = 0;
+
+        if depth == 1 {
+            result += iterable.count_moves();
+            result
+        } else {
+            iterable.set_iterator_mask(targets);
+            loop {
+                match iterable.next() {
+                    Some(x) => result += MoveGen::movegen_perft_test_piecewise(board.make_move(x), depth - 1),
+                    None => break
+                }
+            }
+            iterable.set_iterator_mask(!EMPTY);
+            loop {
+                match iterable.next() {
+                    Some(x) => result += MoveGen::movegen_perft_test_piecewise(board.make_move(x), depth - 1),
+                    None => break
+                }
+            }
+            result
         }
     }
 }
@@ -339,29 +392,16 @@ impl Iterator for MoveGen {
 }
 
 #[cfg(test)]
-fn internal_movegen_perft_test(board: Board, depth: usize) -> usize {
-    let iterable = MoveGen::new(board, true);
-
-    let mut result: usize = 0;
-    if depth == 1 {
-        iterable.count()
-    } else {
-        for m in iterable {
-            let cur = internal_movegen_perft_test(board.make_move(m), depth - 1);
-            result += cur;
-        }
-        result
-    }
-}
-
-#[cfg(test)]
 use construct;
 
 #[cfg(test)]
 fn movegen_perft_test(board: String, depth: usize, result: usize) {
      construct::construct();
 
-     assert_eq!(internal_movegen_perft_test(Board::from_fen(board).unwrap(), depth), result);
+     let board = Board::from_fen(board).unwrap();
+
+     assert_eq!(MoveGen::movegen_perft_test(board, depth), result);
+     assert_eq!(MoveGen::movegen_perft_test_piecewise(board, depth), result);
 }
 
 #[test]
