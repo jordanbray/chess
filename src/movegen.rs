@@ -226,7 +226,9 @@ struct SquareAndBitBoard {
 ///   struture moves faster
 /// * Being able to iterate pseudo legal moves, while keeping the (nearly) free legality checks in
 ///   place
+///
 /// # Examples
+///
 /// ```
 /// use chess::MoveGen;
 /// use chess::Board;
