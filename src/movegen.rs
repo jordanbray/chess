@@ -403,7 +403,7 @@ impl MoveGen {
             iterable.filter(|x| board.legal(*x)).count()
         } else {
             for m in iterable {
-                if unsafe { board.legal_quick(m) } {
+                if board.legal_quick(m) {
                     let cur = MoveGen::movegen_perft_test_legality(board.make_move(m), depth - 1);
                     result += cur;
                 }
