@@ -5,6 +5,7 @@ use chess_move::ChessMove;
 use board::Board;
 use std::mem;
 use square::Square;
+use std::iter::ExactSizeIterator;
 
 /// Never Call Directly!
 ///
@@ -221,6 +222,19 @@ struct SquareAndBitBoard {
 ///   struture moves faster
 /// * Being able to iterate pseudo legal moves, while keeping the (nearly) free legality checks in
 ///   place
+/// # Examples
+/// ```
+/// let iterable = MoveGen::new(board, true);
+/// let targets = board.color_combined(!board.side_to_move());
+/// iterable.set_iterator_mask(targets);
+/// for x in &mut iterable {
+///     // This move captures one of my opponents pieces (with the exception of en passant)
+/// }
+/// iterable.set_iterator_mask(!EMPTY);
+/// for x in &mut iterable {
+///     // This move does not capture anything
+/// }
+/// ```
 pub struct MoveGen {
     board: Board,
     moves: [SquareAndBitBoard; 16],
@@ -314,7 +328,7 @@ impl MoveGen {
 
         let mut result: usize = 0;
         if depth == 1 {
-            iterable.count()
+            iterable.len()
         } else {
             for m in iterable {
                 let cur = MoveGen::movegen_perft_test(board.make_move(m), depth - 1);
@@ -324,6 +338,8 @@ impl MoveGen {
         }
     }
 
+    #[cfg(test)]
+    /// Do a perft test after splitting the moves up into two groups
     pub fn movegen_perft_test_piecewise(board: Board, depth: usize) -> usize {
         let mut iterable = MoveGen::new(board, true);
 
@@ -331,30 +347,51 @@ impl MoveGen {
         let mut result: usize = 0;
 
         if depth == 1 {
-            result += iterable.count_moves();
+            iterable.set_iterator_mask(targets);
+            result += iterable.len();
+            iterable.set_iterator_mask(!targets);
+            result += iterable.len();
             result
         } else {
             iterable.set_iterator_mask(targets);
-            loop {
-                match iterable.next() {
-                    Some(x) => result += MoveGen::movegen_perft_test_piecewise(board.make_move(x), depth - 1),
-                    None => break
-                }
+            for x in &mut iterable {
+                result += MoveGen::movegen_perft_test_piecewise(board.make_move(x), depth - 1);
             }
             iterable.set_iterator_mask(!EMPTY);
-            loop {
-                match iterable.next() {
-                    Some(x) => result += MoveGen::movegen_perft_test_piecewise(board.make_move(x), depth - 1),
-                    None => break
-                }
+            for x in &mut iterable {
+                result += MoveGen::movegen_perft_test_piecewise(board.make_move(x), depth - 1);
             }
             result
         }
     }
 }
 
+impl ExactSizeIterator for MoveGen {
+    /// Give the exact length of this iterator
+    fn len(&self) -> usize {
+        let mut result = 0;
+        for i in 0..self.pieces {
+            if self.moves[i].bitboard & self.iterator_mask == EMPTY {
+                break;
+            }
+            if self.moves[i].promotion {
+                result += ((self.moves[i].bitboard & self.iterator_mask).popcnt() as usize) * NUM_PROMOTION_PIECES;
+            } else {
+                result += (self.moves[i].bitboard & self.iterator_mask).popcnt() as usize;
+            }
+        }
+        result
+    }
+}
+
 impl Iterator for MoveGen {
     type Item = ChessMove;
+
+    /// Give a size_hint to some functions that need it
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.len();
+        (len, Some(len))
+    }
 
     /// Find the next chess move.
     fn next(&mut self) -> Option<ChessMove> {
