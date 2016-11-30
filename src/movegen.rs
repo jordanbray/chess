@@ -347,15 +347,6 @@ impl MoveGen {
         }
     }
 
-    /// Count function which does not own the iterator, but does consume it.
-    pub fn count_moves(&mut self) -> usize {
-        let mut res: usize = 0;
-        while self.next().is_some() {
-            res += 1;
-        }
-        res
-    }
-
     /// Fastest perft test with this structure
     pub fn movegen_perft_test(board: Board, depth: usize) -> usize {
         let iterable = MoveGen::new(board, true);
