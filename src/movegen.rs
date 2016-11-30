@@ -324,7 +324,7 @@ impl MoveGen {
 
     /// Fastest perft test with this structure
     pub fn movegen_perft_test(board: Board, depth: usize) -> usize {
-        let mut iterable = MoveGen::new(board, true);
+        let iterable = MoveGen::new(board, true);
 
         let mut result: usize = 0;
         if depth == 1 {
