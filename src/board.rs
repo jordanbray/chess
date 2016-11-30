@@ -965,7 +965,7 @@ impl Board {
     /// This function may panic! if these rules are not followed.
     ///
     /// If you are validating a move from a user, you should call the .legal() function
-    pub unsafe fn legal_quick(&self, chess_move: ChessMove) -> bool {
+    pub fn legal_quick(&self, chess_move: ChessMove) -> bool {
         let piece = self.piece_on(chess_move.get_source()).unwrap();
         match piece {
             Piece::Rook => true,
@@ -996,6 +996,8 @@ impl Board {
     }
 
     /// Make a chess move
+    ///
+    /// panic!() if king is captured
     pub fn make_move(&self, m: ChessMove) -> Board {
         let mut result = *self;
         let source = BitBoard::from_square(m.get_source());
