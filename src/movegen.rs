@@ -387,6 +387,25 @@ impl MoveGen {
             result
         }
     }
+
+    #[cfg(test)]
+    pub fn movegen_perft_test_legality(board: Board, depth: usize) -> usize {
+        let iterable = MoveGen::new(board, false);
+
+        let mut result: usize = 0;
+        if depth == 1 {
+            iterable.filter(|x| board.legal(*x)).count()
+        } else {
+            for m in iterable {
+                if unsafe { board.legal_quick(m) } {
+                    let cur = MoveGen::movegen_perft_test_legality(board.make_move(m), depth - 1);
+                    result += cur;
+                }
+            }
+            result
+        }
+
+    }
 }
 
 impl ExactSizeIterator for MoveGen {
@@ -462,6 +481,7 @@ fn movegen_perft_test(board: String, depth: usize, result: usize) {
 
      assert_eq!(MoveGen::movegen_perft_test(board, depth), result);
      assert_eq!(MoveGen::movegen_perft_test_piecewise(board, depth), result);
+     assert_eq!(MoveGen::movegen_perft_test_legality(board, depth), result);
 }
 
 #[test]
