@@ -224,6 +224,13 @@ struct SquareAndBitBoard {
 ///   place
 /// # Examples
 /// ```
+/// use chess::MoveGen;
+/// use chess::Board;
+/// use chess::EMPTY;
+/// use chess::construct;
+///
+/// construct();
+/// let board = Board.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 /// let iterable = MoveGen::new(board, true);
 /// let targets = board.color_combined(!board.side_to_move());
 /// iterable.set_iterator_mask(targets);
