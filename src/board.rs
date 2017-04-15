@@ -1315,6 +1315,9 @@ impl Board {
                      self.pieces(Piece::King) &
                      self.color_combined(!self.side_to_move);
 
+        if attackers != EMPTY {
+            return false;
+        }
         attackers |= get_pawn_attacks(dest,
                                              self.side_to_move,
                                              self.pieces(Piece::Pawn) & self.color_combined(!self.side_to_move));

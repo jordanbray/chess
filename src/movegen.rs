@@ -43,22 +43,26 @@ macro_rules! pseudo_legal_moves {
 macro_rules! enumerate_moves {
     ($movegen:expr, $mask: expr, $skip_legal_check:expr) => { {
         let color = $movegen.board.side_to_move();
-        if $movegen.board.checkers() == EMPTY {
-            enumerate_moves_one_piece!($movegen, Piece::Pawn, false, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Knight, false, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Bishop, false, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Rook, false, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Queen, false, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::King, false, color, $mask, $skip_legal_check);
-        } else if $movegen.board.checkers().popcnt() == 1 {
-            enumerate_moves_one_piece!($movegen, Piece::Pawn, true, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Knight, true, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Bishop, true, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Rook, true, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::Queen, true, color, $mask, $skip_legal_check);
-            enumerate_moves_one_piece!($movegen, Piece::King, true, color, $mask, $skip_legal_check);
+        let combined = $movegen.board.combined();
+        let my_pieces = $movegen.board.color_combined(color);
+        let pinned = $movegen.board.pinned();
+        let checkers = $movegen.board.checkers();
+        if checkers == EMPTY {
+            enumerate_moves_one_piece!($movegen, Piece::Pawn, false, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::Knight, false, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::Bishop, false, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::Rook, false, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::Queen, false, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::King, false, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+        } else if checkers.popcnt() == 1 {
+            enumerate_moves_one_piece!($movegen, Piece::Pawn, true, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::Knight, true, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::Bishop, true, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::Rook, true, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::Queen, true, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
+            enumerate_moves_one_piece!($movegen, Piece::King, true, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
         } else {
-            enumerate_moves_one_piece!($movegen, Piece::King, true, color, $mask, $skip_legal_check);
+            enumerate_moves_one_piece!($movegen, Piece::King, true, color, $mask, $skip_legal_check, combined, my_pieces, pinned, checkers);
         }
     } };
 }
@@ -78,18 +82,14 @@ macro_rules! enumerate_moves {
 ///  * a boolean to determine if any `legal_*` functions should be called to determine if a move is
 ///    legal
 macro_rules! enumerate_moves_one_piece {
-    ($movegen:expr, $piece_type:expr, $in_check:expr, $color:expr, $mask:expr, $skip_legal_check:expr) => { {
-        let combined = $movegen.board.combined();
-        let my_pieces = $movegen.board.color_combined($color);
-        let pieces = $movegen.board.pieces($piece_type) & my_pieces;
-        let pinned = $movegen.board.pinned();
-        let checkers = $movegen.board.checkers();
+    ($movegen:expr, $piece_type:expr, $in_check:expr, $color:expr, $mask:expr, $skip_legal_check:expr, $combined:expr, $my_pieces:expr, $pinned:expr, $checkers:expr) => { {
+        let pieces = $movegen.board.pieces($piece_type) & $my_pieces;
 
         // if the piece is a king, iterate over all pseudo-legal moves, and check to see if it
         // leaves you in check with `legal_king_move`.
         if $piece_type == Piece::King {
-            let ksq = ($movegen.board.pieces(Piece::King) & $movegen.board.color_combined($color)).to_square();
-            $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, ksq, $color, combined, $mask);
+            let ksq = pieces.to_square();
+            $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, ksq, $color, $combined, $mask);
             
             // maybe check the legality of these moves
             if !$skip_legal_check {
@@ -111,7 +111,7 @@ macro_rules! enumerate_moves_one_piece {
             //     'legal_king_move' for that square.
             if !$in_check {
                 if $movegen.board.my_castle_rights().has_kingside() && 
-                    ($movegen.board.combined() & $movegen.board.my_castle_rights().kingside_squares($color)) == EMPTY {
+                    ($combined & $movegen.board.my_castle_rights().kingside_squares($color)) == EMPTY {
                     if $skip_legal_check ||
                         ($movegen.board.legal_king_move(ksq.uright()) && $movegen.board.legal_king_move(ksq.uright().uright())) {
                         $movegen.moves[$movegen.pieces].bitboard ^= BitBoard::from_square(ksq.uright().uright());
@@ -119,7 +119,7 @@ macro_rules! enumerate_moves_one_piece {
                 }
 
                 if $movegen.board.my_castle_rights().has_queenside() &&
-                    ($movegen.board.combined() & $movegen.board.my_castle_rights().queenside_squares($color)) == EMPTY {
+                    ($combined & $movegen.board.my_castle_rights().queenside_squares($color)) == EMPTY {
                     if $skip_legal_check ||
                         ($movegen.board.legal_king_move(ksq.uleft()) && $movegen.board.legal_king_move(ksq.uleft().uleft())) {
                         $movegen.moves[$movegen.pieces].bitboard ^= BitBoard::from_square(ksq.uleft().uleft());
@@ -133,7 +133,7 @@ macro_rules! enumerate_moves_one_piece {
             }
         } else {
             // Just a normal piece move.
-            let ksq = ($movegen.board.pieces(Piece::King) & my_pieces).to_square();
+            let ksq = ($movegen.board.pieces(Piece::King) & $my_pieces).to_square();
 
             // if the piece is not pinned:
             //  * And I'm currently in check:
@@ -142,14 +142,15 @@ macro_rules! enumerate_moves_one_piece {
             //  ** I will not be at this section of code if I'm in double-check
             //  * And I'm currently NOT in check:
             //  ** I can move anywhere!
-            for src in pieces & !pinned { 
-                $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, src, $color, combined, $mask);
-                $movegen.moves[$movegen.pieces].bitboard &= if $in_check {
-                                                                between(checkers.to_square(), ksq) ^ checkers
-                                                            } else {
-                                                                !EMPTY
-                                                            };
-                if $piece_type == Piece::Pawn && $movegen.board.en_passant().is_some() { // passed pawn rule
+            let check_mask = if $in_check {
+                    between($checkers.to_square(), ksq) ^ $checkers
+                } else {
+                    !EMPTY
+                };
+            for src in pieces & !$pinned { 
+                $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, src, $color, $combined, $mask);
+                $movegen.moves[$movegen.pieces].bitboard &= check_mask;
+                /* if $piece_type == Piece::Pawn && $movegen.board.en_passant().is_some() { // passed pawn rule
                     let ep_sq = $movegen.board.en_passant().unwrap();
                     let rank = get_rank(ep_sq.get_rank());
                     let files = get_adjacent_files(ep_sq.get_file());
@@ -159,7 +160,7 @@ macro_rules! enumerate_moves_one_piece {
                             $movegen.moves[$movegen.pieces].bitboard ^= BitBoard::from_square(dest);
                         }
                     }
-                }
+                } */
                 if $movegen.moves[$movegen.pieces].bitboard != EMPTY {
                     $movegen.pieces += 1;
                 }
@@ -171,15 +172,15 @@ macro_rules! enumerate_moves_one_piece {
             //  * If I'm a knight, I cannot move at all due to the way knights move.
             if !$in_check && $piece_type != Piece::Knight {
                 // for each pinned piece of this type
-                for src in pieces & pinned {
+                for src in pieces & $pinned {
                     // grab all the moves that put me between my pinner and my king, and
                     // possibly capture my attacker
                     // * Note: Due to how lines work, the line between my pinner and my king is
                     //         the same as the line between ME and my king.  So lets use the
                     //         second definition because it's easier to code.
-                    $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, src, $color, combined, $mask);
+                    $movegen.moves[$movegen.pieces] = pseudo_legal_moves!($piece_type, src, $color, $combined, $mask);
                     $movegen.moves[$movegen.pieces].bitboard &= line(src, ksq);
-                     if $piece_type == Piece::Pawn && $movegen.board.en_passant().is_some() { // passed pawn rule
+                    /* if $piece_type == Piece::Pawn && $movegen.board.en_passant().is_some() { // passed pawn rule
                         let ep_sq = $movegen.board.en_passant().unwrap();
                         let rank = get_rank(ep_sq.get_rank());
                         let files = get_adjacent_files(ep_sq.get_file());
@@ -189,8 +190,21 @@ macro_rules! enumerate_moves_one_piece {
                                 $movegen.moves[$movegen.pieces].bitboard ^= BitBoard::from_square(dest);
                             }
                         }
-                    }
+                    } */
                     if $movegen.moves[$movegen.pieces].bitboard != EMPTY {
+                        $movegen.pieces += 1;
+                    }
+                }
+            }
+
+            if $piece_type == Piece::Pawn && $movegen.board.en_passant().is_some() {
+                let ep_sq = $movegen.board.en_passant().unwrap();
+                let rank = get_rank(ep_sq.get_rank());
+                let files = get_adjacent_files(ep_sq.get_file());
+                for src in rank & files & pieces {
+                    let dest = ep_sq.uforward($color);
+                    if $skip_legal_check || $movegen.board.legal_ep_move(src, dest) {
+                        $movegen.moves[$movegen.pieces] = SquareAndBitBoard { square: src, bitboard: BitBoard::from_square(dest), promotion: false };
                         $movegen.pieces += 1;
                     }
                 }
@@ -269,7 +283,7 @@ struct SquareAndBitBoard {
 /// ```
 pub struct MoveGen {
     board: Board,
-    moves: [SquareAndBitBoard; 16],
+    moves: [SquareAndBitBoard; 18],
     pieces: usize,
     promotion_index: usize,
     iterator_mask: BitBoard,
