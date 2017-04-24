@@ -7,8 +7,8 @@ use file::File;
 
 /// A good old-fashioned bitboard
 /// You do *not* have access to the actual value.  You *do* have access to operators
-#[derive(PartialEq, PartialOrd, Clone, Copy)]
-pub struct BitBoard(u64);
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+pub struct BitBoard(pub u64);
 
 static SETUP: Once = ONCE_INIT;
 

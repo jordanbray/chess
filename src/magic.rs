@@ -26,8 +26,8 @@ const NUM_MOVES: usize = 64 * (1<<ROOK_BITS) /* Rook Moves */ +
 
 static mut MOVES: [BitBoard; NUM_MOVES] = [EMPTY; NUM_MOVES];
 
-static mut KING_MOVES: [BitBoard; 64] = [EMPTY; 64];
-static mut KNIGHT_MOVES: [BitBoard; 64] = [EMPTY; 64];
+include!(concat!(env!("OUT_DIR"), "/magic_gen.rs"));
+
 static mut PAWN_MOVES: [[BitBoard; 64]; 2] = [[EMPTY; 64]; 2];
 static mut PAWN_ATTACKS: [[BitBoard; 64]; 2] = [[EMPTY; 64]; 2];
 
@@ -55,11 +55,6 @@ pub fn construct() {
             for sq2 in ALL_SQUARES.iter() {
                 gen_line_and_between(*sq1, *sq2);
             }
-        }
-
-        for sq in ALL_SQUARES.iter() {
-            gen_king_moves(*sq);
-            gen_knight_moves(*sq);
         }
 
         gen_pawn_moves();
@@ -362,20 +357,6 @@ fn bishop_directions() -> Vec<fn(Square) -> Option<Square>> {
     vec![nw, ne, sw, se]
 }
 
-/// Return a list of directions for the knight.
-fn knight_directions() -> Vec<fn(Square) -> Option<Square>> {
-    fn d1(sq: Square) -> Option<Square> { sq.up().map_or(None, |s| s.up()).map_or(None, |s| s.left()) }
-    fn d2(sq: Square) -> Option<Square> { sq.up().map_or(None, |s| s.up()).map_or(None, |s| s.right()) }
-    fn d3(sq: Square) -> Option<Square> { sq.left().map_or(None, |s| s.left()).map_or(None, |s| s.up()) }
-    fn d4(sq: Square) -> Option<Square> { sq.left().map_or(None, |s| s.left()).map_or(None, |s| s.down()) }
-    fn d5(sq: Square) -> Option<Square> { sq.down().map_or(None, |s| s.down()).map_or(None, |s| s.left()) }
-    fn d6(sq: Square) -> Option<Square> { sq.down().map_or(None, |s| s.down()).map_or(None, |s| s.right()) }
-    fn d7(sq: Square) -> Option<Square> { sq.right().map_or(None, |s| s.right()).map_or(None, |s| s.down()) }
-    fn d8(sq: Square) -> Option<Square> { sq.right().map_or(None, |s| s.right()).map_or(None, |s| s.up()) }
-
-    vec![d1, d2, d3, d4, d5, d6, d7, d8]
-}
-
 /// Return all rook and bishop directions.
 fn all_directions() -> Vec<fn(Square) -> Option<Square>> {
     let mut v = Vec::new();
@@ -394,30 +375,6 @@ fn gen_rooks(sq: Square, result_index: usize) -> usize {
 fn gen_bishops(sq: Square, result_index: usize) -> usize {
     let directions: Vec<fn(Square) -> Option<Square>> = bishop_directions();
     save_magic(BISHOP, sq, &directions, result_index)
-}
-
-/// Generate all king moves for a particular square.
-fn gen_king_moves(sq: Square) {
-    unsafe {
-        KING_MOVES[sq.to_index()] = all_directions().iter()
-                                                           .map(|d| d(sq))
-                                                           .fold(EMPTY, |cur, os| match os {
-                                                                None => cur, 
-                                                                Some(sq) => cur | BitBoard::from_square(sq)
-                                                            });
-    }
-}
-
-/// Generate all knight moves for a particular square.
-fn gen_knight_moves(sq: Square) {
-    unsafe {
-        KNIGHT_MOVES[sq.to_index()] = knight_directions().iter()
-                                                                .map(|d| d(sq))
-                                                                .fold(EMPTY, |cur, os| match os {
-                                                                    None => cur,
-                                                                    Some(sq) => cur | BitBoard::from_square(sq)
-                                                                });
-    }
 }
 
 /// generate a line from sq1 to sq2 which spans the entire chess board
