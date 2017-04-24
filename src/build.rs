@@ -37,14 +37,80 @@ static mut LINE: [[BitBoard; 64]; 64] = [[EMPTY; 64]; 64]; // DONE
 static mut BETWEEN: [[BitBoard; 64]; 64] = [[EMPTY; 64]; 64]; // DONE
 static mut RAYS: [[BitBoard; 64]; 2] = [[EMPTY; 64]; 2]; // DONE
 
+fn write_pawn_moves(f: &mut File) {
+    write!(f, "const PAWN_MOVES: [[BitBoard; 64]; 2] = [[\n").unwrap();
+    for i in 0..2 {
+        for j in 0..64 {
+            unsafe { write!(f, "    BitBoard({}),\n", PAWN_MOVES[i][j].to_size(0)).unwrap() };
+        }
+        if i != 1 {
+            write!(f, "  ], [\n").unwrap();
+        }
+    }
+    write!(f, "]];\n").unwrap();
+
+}
+
+
+fn write_pawn_attacks(f: &mut File) {
+    write!(f, "const PAWN_ATTACKS: [[BitBoard; 64]; 2] = [[\n").unwrap();
+    for i in 0..2 {
+        for j in 0..64 {
+            unsafe { write!(f, "    BitBoard({}),\n", PAWN_ATTACKS[i][j].to_size(0)).unwrap() };
+        }
+        if i != 1 {
+            write!(f, "  ], [\n").unwrap();
+        }
+    }
+    write!(f, "]];\n").unwrap();
+
+}
+
+fn write_line(f: &mut File) {
+    write!(f, "const LINE: [[BitBoard; 64]; 64] = [[\n").unwrap();
+    for i in 0..64 {
+        for j in 0..64 {
+            unsafe { write!(f, "    BitBoard({}),\n", LINE[i][j].to_size(0)).unwrap() };
+        }
+        if i != 63 {
+            write!(f, "  ], [\n").unwrap();
+        }
+    }
+    write!(f, "]];\n").unwrap();
+
+}
+
+fn write_between(f: &mut File) {
+    write!(f, "const BETWEEN: [[BitBoard; 64]; 64] = [[\n").unwrap();
+    for i in 0..64 {
+        for j in 0..64 {
+            unsafe { write!(f, "    BitBoard({}),\n", BETWEEN[i][j].to_size(0)).unwrap() };
+        }
+        if i != 63 {
+            write!(f, "  ], [\n").unwrap();
+        }
+    }
+    write!(f, "]];\n").unwrap();
+}
+
+fn write_rays(f: &mut File) {
+    write!(f, "const ROOK: usize = {};\nconst BISHOP: usize = {};\n", ROOK, BISHOP).unwrap();
+    write!(f, "const RAYS: [[BitBoard; 64]; 2] = [[\n").unwrap();
+    for i in 0..2 {
+        for j in 0..64 {
+            unsafe { write!(f, "    BitBoard({}),\n", RAYS[i][j].to_size(0)).unwrap() };
+        }
+        if i != 1 {
+            write!(f, "  ], [\n").unwrap();
+        }
+    }
+    write!(f, "]];\n").unwrap();
+}
+
 fn write_king_moves(f: &mut File) {
     write!(f, "const KING_MOVES: [BitBoard; 64] = [\n").unwrap();
     for i in 0..64 {
-        unsafe { write!(f, "    BitBoard({})", KING_MOVES[i].to_size(0)).unwrap() };
-        if i != 63 {
-            write!(f, ",").unwrap();
-        }
-        write!(f, "\n").unwrap();
+        unsafe { write!(f, "    BitBoard({}),\n", KING_MOVES[i].to_size(0)).unwrap() };
     }
     write!(f, "];\n").unwrap();
 }
@@ -52,11 +118,7 @@ fn write_king_moves(f: &mut File) {
 fn write_knight_moves(f: &mut File) {
     write!(f, "const KNIGHT_MOVES: [BitBoard; 64] = [\n").unwrap();
     for i in 0..64 {
-        unsafe { write!(f, "    BitBoard({})", KNIGHT_MOVES[i].to_size(0)).unwrap() };
-        if i != 63 {
-            write!(f, ",").unwrap();
-        }
-        write!(f, "\n").unwrap();
+        unsafe { write!(f, "    BitBoard({}),\n", KNIGHT_MOVES[i].to_size(0)).unwrap() };
     }
     write!(f, "];\n").unwrap();
 }
@@ -379,6 +441,41 @@ const NUM_MOVES: usize = 64 * (1<<ROOK_BITS) /* Rook Moves */ +
 
 static mut MOVES: [BitBoard; NUM_MOVES] = [EMPTY; NUM_MOVES];
 
+fn write_magic(f: &mut File) {
+    write!(f, "#[derive(Copy, Clone)]\n").unwrap();
+    write!(f, "struct Magic {{\n").unwrap();
+    write!(f, "    magic_number: BitBoard,\n").unwrap();
+    write!(f, "    mask: BitBoard,\n").unwrap();
+    write!(f, "    offset: u32,\n").unwrap();
+    write!(f, "    rightshift: u8\n").unwrap();
+    write!(f, "}}\n\n").unwrap();
+
+    write!(f, "const MAGIC_NUMBERS: [[Magic; 64]; 2] = [[\n").unwrap();
+    for i in 0..2 {
+        for j in 0 ..64 {
+            unsafe {
+                write!(f, "    Magic {{ magic_number: BitBoard({}), mask: BitBoard({}), offset: {}, rightshift: {} }},\n",
+                    MAGIC_NUMBERS[i][j].magic_number.to_size(0),
+                    MAGIC_NUMBERS[i][j].mask.to_size(0),
+                    MAGIC_NUMBERS[i][j].offset,
+                    MAGIC_NUMBERS[i][j].rightshift).unwrap();
+            }
+        }
+        if i != 1 {
+            write!(f, "], [\n").unwrap();
+        }
+    }
+    write!(f, "]];\n").unwrap();
+ 
+    write!(f, "const MOVES: [BitBoard; {}] = [\n", NUM_MOVES).unwrap();
+    for i in 0..NUM_MOVES {
+        unsafe {
+            write!(f, "    BitBoard({}),\n", MOVES[i].to_size(0)).unwrap();
+        }
+    }
+    write!(f, "];\n").unwrap();
+}
+
 /// generate a random bitboard with few bits
 fn random_bitboard<R: Rng>(rng: &mut R) -> BitBoard {
     BitBoard::new(rng.gen::<u64>() & rng.gen::<u64>() & rng.gen::<u64>())
@@ -467,5 +564,11 @@ fn main() {
 
     write_king_moves(&mut f);
     write_knight_moves(&mut f);
+    write_rays(&mut f);
+    write_between(&mut f);
+    write_line(&mut f);
+    write_pawn_attacks(&mut f);
+    write_pawn_moves(&mut f);
+    write_magic(&mut f);
 }
 
