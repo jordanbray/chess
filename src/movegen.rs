@@ -1,6 +1,6 @@
-use bitboard::{BitBoard, EMPTY, get_rank, get_adjacent_files};
+use bitboard::{BitBoard, EMPTY};
 use piece::{Piece, NUM_PROMOTION_PIECES, PROMOTION_PIECES};
-use magic::{get_rook_moves, get_bishop_moves, get_king_moves, get_knight_moves, get_pawn_moves, between, line};
+use magic::{get_rook_moves, get_bishop_moves, get_king_moves, get_knight_moves, get_pawn_moves, between, line, get_rank, get_adjacent_files};
 use chess_move::ChessMove;
 use board::Board;
 use std::mem;

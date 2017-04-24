@@ -143,66 +143,6 @@ impl BitBoard {
     }
 }
 
-/// Get a `BitBoard` that represents all the squares on a particular rank.
-#[allow(dead_code)]
-pub fn get_rank(rank: Rank) -> BitBoard {
-    unsafe {
-        *RANKS.get_unchecked(rank.to_index())
-    }
-}
-
-/// Get a `BitBoard` that represents all the squares on a particular file.
-#[allow(dead_code)]
-pub fn get_file(file: File) -> BitBoard {
-    unsafe {
-        *FILES.get_unchecked(file.to_index())
-    }
-}
-
-/// Get a `BitBoard` that represents the squares on the 1 or 2 files next to this file.
-#[allow(dead_code)]
-pub fn get_adjacent_files(file: File) -> BitBoard {
-    unsafe {
-        *ADJACENT_FILES.get_unchecked(file.to_index())
-    }
-}
-
-/// Perform initialization.  Must be called before some functions can be used.
-#[allow(dead_code)]
-pub fn construct() {
-    SETUP.call_once(|| {
-        unsafe {
-            EDGES = ALL_SQUARES.iter()
-                               .filter(|x| x.get_rank() == Rank::First ||
-                                           x.get_rank() == Rank::Eighth ||
-                                           x.get_file() == File::A ||
-                                           x.get_file() == File::H)
-                               .fold(EMPTY, |v, s| v | BitBoard::from_square(*s)); 
-            for i in 0..8 {
-                RANKS[i] = ALL_SQUARES.iter()
-                                      .filter(|x| x.get_rank().to_index() == i)
-                                      .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-                FILES[i] = ALL_SQUARES.iter()
-                                      .filter(|x| x.get_file().to_index() == i)
-                                      .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-                ADJACENT_FILES[i] = ALL_SQUARES.iter()
-                                               .filter(|y| ((y.get_file().to_index() as i8) == (i as i8) - 1) ||
-                                                           ((y.get_file().to_index() as i8) == (i as i8) + 1))
-                                               .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
-            }
-        }
-    });
-}
-
-#[allow(dead_code)]
-static mut EDGES: BitBoard = EMPTY;
-#[allow(dead_code)]
-static mut RANKS: [BitBoard; 8] = [EMPTY; 8];
-#[allow(dead_code)]
-static mut FILES: [BitBoard; 8] = [EMPTY; 8];
-#[allow(dead_code)]
-static mut ADJACENT_FILES: [BitBoard; 8] = [EMPTY; 8];
-
 /// For the `BitBoard`, iterate over every `Square` set.
 impl Iterator for BitBoard {
     type Item = Square;

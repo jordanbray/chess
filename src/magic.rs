@@ -1,7 +1,10 @@
 use bitboard::{BitBoard, EMPTY};
 use square::Square;
 use color::Color;
+use rank::Rank;
+use file::File;
 
+// Include the generated lookup tables
 include!(concat!(env!("OUT_DIR"), "/magic_gen.rs"));
 
 /// Get the rays for a bishop on a particular square.
@@ -88,3 +91,25 @@ pub fn between(sq1: Square, sq2: Square) -> BitBoard {
         *BETWEEN.get_unchecked(sq1.to_index()).get_unchecked(sq2.to_index())
     }
 }
+
+/// Get a `BitBoard` that represents all the squares on a particular rank.
+pub fn get_rank(rank: Rank) -> BitBoard {
+    unsafe {
+        *RANKS.get_unchecked(rank.to_index())
+    }
+}
+
+/// Get a `BitBoard` that represents all the squares on a particular file.
+pub fn get_file(file: File) -> BitBoard {
+    unsafe {
+        *FILES.get_unchecked(file.to_index())
+    }
+}
+
+/// Get a `BitBoard` that represents the squares on the 1 or 2 files next to this file.
+pub fn get_adjacent_files(file: File) -> BitBoard {
+    unsafe {
+        *ADJACENT_FILES.get_unchecked(file.to_index())
+    }
+}
+
