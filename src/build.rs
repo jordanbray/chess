@@ -634,6 +634,7 @@ fn write_magic(f: &mut File) {
 // Write the EDGES variable to a file.
 fn write_edges(f: &mut File) {
     unsafe {
+        write!(f, "/// What are all the edge squares on the `BitBoard`?\n").unwrap();
         write!(f, "pub const EDGES: BitBoard = BitBoard({});\n", EDGES.to_size(0)).unwrap();
     }
 }
