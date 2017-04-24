@@ -8,32 +8,38 @@ use std::fmt;
 pub struct Square(u8);
 
 /// How many squares are there?
+#[allow(dead_code)]
 pub const NUM_SQUARES: usize = 64;
 
 impl Square {
     /// Create a new square, given an index.
     /// Note: It is invalid, but allowed, to pass in a number >= 64.  Doing so will crash stuff.
+    #[allow(dead_code)]
     pub unsafe fn new(sq: u8) -> Square {
         Square(sq)
     }
 
     /// Make a square given a rank and a file
+    #[allow(dead_code)]
     pub fn make_square(rank: Rank, file: File) -> Square {
         Square((rank.to_index() as u8)<<3 | (file.to_index() as u8))
     }
 
 
     /// Return the rank given this square.
+    #[allow(dead_code)]
     pub fn get_rank(&self) -> Rank {
         Rank::from_index((self.0 >> 3) as usize)
     }
 
     /// Return the file given this square.
+    #[allow(dead_code)]
     pub fn get_file(&self) -> File {
         File::from_index((self.0 & 7) as usize)
     }
 
     /// If there is a square above me, return that.  Otherwise, None.
+    #[allow(dead_code)]
     pub fn up(&self) -> Option<Square> {
         if self.get_rank() == Rank::Eighth {
             None
@@ -43,6 +49,7 @@ impl Square {
     }
 
     /// If there is a square below me, return that.  Otherwise, None.
+    #[allow(dead_code)]
     pub fn down(&self) -> Option<Square> {
         if self.get_rank() == Rank::First {
             None
@@ -52,6 +59,7 @@ impl Square {
     }
 
     /// If there is a square to the left of me, return that.  Otherwise, None.
+    #[allow(dead_code)]
     pub fn left(&self) -> Option<Square> {
         if self.get_file() == File::A {
             None
@@ -61,6 +69,7 @@ impl Square {
     }
 
     /// If there is a square to the right of me, return that.  Otherwise, None.
+    #[allow(dead_code)]
     pub fn right(&self) -> Option<Square> {
         if self.get_file() == File::H {
             None
@@ -70,6 +79,7 @@ impl Square {
     }
 
     /// If there is a square "forward", given my `Color`, go in that direction.  Otherwise, None.
+    #[allow(dead_code)]
     pub fn forward(&self, color: Color) -> Option<Square> {
         match color {
             Color::White => self.up(),
@@ -78,6 +88,7 @@ impl Square {
     }
 
     /// If there is a square "backward" given my `Color`, go in that direction.  Otherwise, None.
+    #[allow(dead_code)]
     pub fn backward(&self, color: Color) -> Option<Square> {
         match color {
             Color::White => self.down(),
@@ -87,28 +98,33 @@ impl Square {
 
 
     /// If there is a square above me, return that.  If not, wrap around to the other side.
+    #[allow(dead_code)]
     pub fn uup(&self) -> Square {
         Square::make_square(self.get_rank().up(), self.get_file())
     }
 
     /// If there is a square below me, return that.  If not, wrap around to the other side.
+    #[allow(dead_code)]
     pub fn udown(&self) -> Square {
         Square::make_square(self.get_rank().down(), self.get_file())
     }
 
     /// If there is a square to the left of me, return that. If not, wrap around to the other side.
+    #[allow(dead_code)]
     pub fn uleft(&self) -> Square {
         Square::make_square(self.get_rank(), self.get_file().left())
     }
 
     /// If there is a square to the right of me, return that.  If not, wrap around to the other
     /// side.
+    #[allow(dead_code)]
     pub fn uright(&self) -> Square {
         Square::make_square(self.get_rank(), self.get_file().right())
     }
 
     /// If there is a square "forward", given my color, return that.  If not, wrap around to the
     /// other side.
+    #[allow(dead_code)]
     pub fn uforward(&self, color: Color) -> Square {
         match color {
             Color::White => self.uup(),
@@ -118,6 +134,7 @@ impl Square {
 
     /// If there is a square "backward", given my color, return that.  If not, wrap around to the
     /// other side.
+    #[allow(dead_code)]
     pub fn ubackward(&self, color: Color) -> Square {
         match color {
             Color::White => self.udown(),
@@ -126,16 +143,19 @@ impl Square {
     }
 
     /// Convert this square to an integer.
+    #[allow(dead_code)]
     pub fn to_int(&self) -> u8 {
         self.0
     }
 
     /// Convert this `Square` to a `usize` for table lookup purposes
+    #[allow(dead_code)]
     pub fn to_index(&self) -> usize {
         self.0 as usize
     }
 
     /// Convert a UCI `String` to a square.  If invalid, return `None`
+    #[allow(dead_code)]
     pub fn from_string(s: String) -> Option<Square> {
         if s.len() != 2 {
             return None;
@@ -154,6 +174,7 @@ impl Square {
     }
 }
 impl fmt::Display for Square {
+    #[allow(dead_code)]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", (('a' as u8) + ((self.0 & 7) as u8)) as char,
                           (('1' as u8) + ((self.0 >> 3) as u8)) as char)
@@ -161,6 +182,7 @@ impl fmt::Display for Square {
 }
  
 /// A list of every square on the chessboard.
+#[allow(dead_code)]
 pub const ALL_SQUARES: [Square; 64] = [
      Square(0),  Square(1),  Square(2),  Square(3),  Square(4),  Square(5),  Square(6), Square(7),
      Square(8),  Square(9), Square(10), Square(11), Square(12), Square(13), Square(14), Square(15),

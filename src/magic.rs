@@ -1,19 +1,8 @@
-use bitboard::{BitBoard, EMPTY, get_rank, get_adjacent_files};
-use square::{Square, NUM_SQUARES, ALL_SQUARES};
-use color::{Color, ALL_COLORS};
-use rand::{Rng, thread_rng};
-use std::sync::{Once, ONCE_INIT};
+use bitboard::{BitBoard, EMPTY};
+use square::Square;
+use color::Color;
 
 include!(concat!(env!("OUT_DIR"), "/magic_gen.rs"));
-
-static SETUP: Once = ONCE_INIT;
-
-/// Initialize all the magic numbers and lookup tables.
-/// Note: You want to call construct::construct() instead.  It's easier, and you must call
-/// BitBoard::construct() before calling this, so just rely on the other one.
-pub fn construct() {
-
-}
 
 /// Get the rays for a bishop on a particular square.
 pub fn get_bishop_rays(sq: Square) -> BitBoard {

@@ -18,9 +18,6 @@ use rank::Rank;
 mod file;
 use file::File as ChessFile;
 
-mod piece;
-use piece::Piece;
-
 mod color;
 pub use color::{Color, ALL_COLORS};
 
@@ -169,15 +166,6 @@ fn gen_edges() -> BitBoard {
                             
 }
 
-fn gen_corners() -> BitBoard {
-    ALL_SQUARES.iter()
-               .filter(|sq| (sq.get_rank() == Rank::First ||
-                             sq.get_rank() == Rank::Eighth) &&
-                            (sq.get_file() == ChessFile::A ||
-                             sq.get_file() == ChessFile::H))
-               .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
-}
-
 fn gen_lines() {
     for src in ALL_SQUARES.iter() {
         for dest in ALL_SQUARES.iter() {
@@ -193,16 +181,16 @@ fn gen_lines() {
                                     let test_file = test.get_file().to_index() as i8;
 
                                     // test diagonals first
-                                    if ((src_rank - dest_rank).abs() ==
+                                    if (src_rank - dest_rank).abs() ==
                                         (src_file - dest_file).abs() &&
-                                        *src != *dest) {
+                                        *src != *dest {
                                         (src_rank - test_rank).abs() ==
                                             (src_file - test_file).abs() &&
                                         (dest_rank - test_rank).abs() ==
                                             (dest_file - test_file).abs()
                                     // next, test rank/file lines
-                                    } else if ((src_rank == dest_rank || src_file == dest_file) &&
-                                               *src != *dest) {
+                                    } else if (src_rank == dest_rank || src_file == dest_file) &&
+                                               *src != *dest {
                                         (src_rank == test_rank && dest_rank == test_rank) ||
                                         (src_file == test_file && dest_file == test_file)
                                     // if src and dest don't line up, there is no line.  Return
@@ -258,7 +246,7 @@ fn gen_pawn_attacks() {
 }
 
 fn between(a: i8, t: i8, b: i8) -> bool {
-    if (a < b) {
+    if a < b {
         a < t && t < b
     } else {
         b < t && t < a
@@ -280,16 +268,16 @@ fn gen_between() {
                                     let test_file = test.get_file().to_index() as i8;
 
                                     // test diagonals first, as above
-                                    if ((src_rank - dest_rank).abs() ==
+                                    if (src_rank - dest_rank).abs() ==
                                         (src_file - dest_file).abs() &&
-                                        *src != *dest) {
+                                        *src != *dest {
                                         (src_rank - test_rank).abs() ==
                                             (src_file - test_file).abs() &&
                                         (dest_rank - test_rank).abs() ==
                                             (dest_file - test_file).abs() &&
                                         between(src_rank, test_rank, dest_rank)
-                                    } else if ((src_rank == dest_rank || src_file == dest_file) &&
-                                               *src != *dest) {
+                                    } else if (src_rank == dest_rank || src_file == dest_file) &&
+                                               *src != *dest {
                                         (src_rank == test_rank && dest_rank == test_rank && between(src_file, test_file, dest_file)) ||
                                         (src_file == test_file && dest_file == test_file && between(src_rank, test_rank, dest_rank))
                                     } else {
