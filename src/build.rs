@@ -54,6 +54,7 @@ const BISHOP_BITS: usize = 9;
 // How many different sets of moves for both rooks and bishops are there?
 const NUM_MOVES: usize = 64 * (1<<ROOK_BITS) /* Rook Moves */ +
                          64 * (1<<BISHOP_BITS) /* Bishop Moves */;
+static mut GENERATED_NUM_MOVES: usize = 0;
 
 // This is the valid move lookup table.  This will be generated here, then put into
 // the magic_gen.rs as a const array.
@@ -461,6 +462,7 @@ fn generate_magic(sq: Square, bishop_or_rook: usize, cur_offset: usize) -> usize
             let j = (new_magic.magic_number * questions[i]).to_size(new_magic.rightshift);
             MOVES[(new_magic.offset as usize) + j] = answers[i];
         }
+        GENERATED_NUM_MOVES = (new_magic.offset as usize) + questions.len();
         (new_magic.offset as usize) + questions.len()
     }
 }
@@ -622,9 +624,9 @@ fn write_magic(f: &mut File) {
     }
     write!(f, "]];\n").unwrap();
  
-    write!(f, "const MOVES: [BitBoard; {}] = [\n", NUM_MOVES).unwrap();
-    for i in 0..NUM_MOVES {
-        unsafe {
+    unsafe {
+    write!(f, "const MOVES: [BitBoard; {}] = [\n", GENERATED_NUM_MOVES).unwrap(); 
+        for i in 0..GENERATED_NUM_MOVES {
             write!(f, "    BitBoard({}),\n", MOVES[i].to_size(0)).unwrap();
         }
     }
