@@ -265,14 +265,14 @@ struct SquareAndBitBoard {
 ///
 /// // count the number of targets
 /// let mut count = 0;
-/// for x in &mut iterable {
+/// for _ in &mut iterable {
 ///     count += 1;
 ///     // This move captures one of my opponents pieces (with the exception of en passant)
 /// }
 ///
 /// // now, iterate over the rest of the moves
 /// iterable.set_iterator_mask(!EMPTY);
-/// for x in &mut iterable {
+/// for _ in &mut iterable {
 ///     count += 1;
 ///     // This move does not capture anything
 /// }
