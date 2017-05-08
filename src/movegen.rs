@@ -247,9 +247,6 @@ struct SquareAndBitBoard {
 /// use chess::EMPTY;
 /// use chess::construct;
 ///
-/// // always remember to call construct!
-/// construct();
-///
 /// // create a board with the initial position
 /// let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned()).unwrap();
 ///
