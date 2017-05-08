@@ -60,6 +60,10 @@ static mut GENERATED_NUM_MOVES: usize = 0;
 // the magic_gen.rs as a const array.
 static mut MOVES: [BitBoard; NUM_MOVES] = [EMPTY; NUM_MOVES];
 
+// When a MOVES bitboard is updated, update this with the rays that the MOVES bitboard
+// may have set.  This helps with compressing the MOVES array.
+static mut MOVE_RAYS: [BitBoard; NUM_MOVES] = [EMPTY; NUM_MOVES];
+
 // An index for if we are looking at a rook or bishop.
 const ROOK: usize = 0;
 const BISHOP: usize = 1;
@@ -426,8 +430,25 @@ fn generate_magic(sq: Square, bishop_or_rook: usize, cur_offset: usize) -> usize
 
     assert_eq!(questions.iter().fold(EMPTY, |b, n| b | *n), mask);
     assert_eq!(answers.iter().fold(EMPTY, |b, n| b | *n), unsafe { RAYS[bishop_or_rook][sq.to_index()] });
+    let mut new_offset = cur_offset;
 
-    let mut new_magic = Magic { magic_number: EMPTY, mask: mask, offset: cur_offset as u32, rightshift: (questions.len().leading_zeros() + 1) as u8 };
+    for i in 0..cur_offset {
+        let mut found = true;
+        for j in 0..answers.len() {
+            unsafe {
+                if MOVE_RAYS[i + j] & RAYS[bishop_or_rook][sq.to_index()] != EMPTY {
+                    found = false;
+                    break;
+                }
+            }
+        }
+        if found {
+            new_offset = i;
+            break;
+        }
+    }
+
+    let mut new_magic = Magic { magic_number: EMPTY, mask: mask, offset: new_offset as u32, rightshift: (questions.len().leading_zeros() + 1) as u8 };
     
     let mut done = false;
     let mut rng = thread_rng();
@@ -460,10 +481,16 @@ fn generate_magic(sq: Square, bishop_or_rook: usize, cur_offset: usize) -> usize
 
         for i in 0..questions.len() {
             let j = (new_magic.magic_number * questions[i]).to_size(new_magic.rightshift);
-            MOVES[(new_magic.offset as usize) + j] = answers[i];
+            MOVES[(new_magic.offset as usize) + j] |= answers[i];
+            MOVE_RAYS[(new_magic.offset as usize) + j] |= RAYS[bishop_or_rook][sq.to_index()]
         }
-        GENERATED_NUM_MOVES = (new_magic.offset as usize) + questions.len();
-        (new_magic.offset as usize) + questions.len()
+        if new_offset + questions.len() < cur_offset {
+            new_offset = cur_offset;
+        } else {
+            new_offset += questions.len();
+        }
+        GENERATED_NUM_MOVES = new_offset;
+        new_offset
     }
 }
 

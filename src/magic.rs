@@ -25,7 +25,7 @@ pub fn get_rook_rays(sq: Square) -> BitBoard {
 pub fn get_rook_moves(sq: Square, blockers: BitBoard) -> BitBoard {
     unsafe {
         let magic: Magic = *MAGIC_NUMBERS.get_unchecked(ROOK).get_unchecked(sq.to_int() as usize);
-        *MOVES.get_unchecked((magic.offset as usize) + (magic.magic_number * (blockers & magic.mask)).to_size(magic.rightshift))
+        *MOVES.get_unchecked((magic.offset as usize) + (magic.magic_number * (blockers & magic.mask)).to_size(magic.rightshift)) & get_rook_rays(sq)
     }
 }
 
@@ -33,7 +33,7 @@ pub fn get_rook_moves(sq: Square, blockers: BitBoard) -> BitBoard {
 pub fn get_bishop_moves(sq: Square, blockers: BitBoard) -> BitBoard {
     unsafe {
         let magic: Magic = *MAGIC_NUMBERS.get_unchecked(BISHOP).get_unchecked(sq.to_int() as usize);
-        *MOVES.get_unchecked((magic.offset as usize) + (magic.magic_number * (blockers & magic.mask)).to_size(magic.rightshift))
+        *MOVES.get_unchecked((magic.offset as usize) + (magic.magic_number * (blockers & magic.mask)).to_size(magic.rightshift)) & get_bishop_rays(sq)
     }
 }
 
