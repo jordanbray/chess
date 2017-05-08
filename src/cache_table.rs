@@ -1,5 +1,5 @@
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
-struct CacheTableEntry<T: Copy + Clone + PartialEq + PartialOrd > {
+struct CacheTableEntry<T: Copy + Clone + PartialEq + PartialOrd> {
     hash: u64,
     entry: T
 }
