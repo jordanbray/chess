@@ -26,3 +26,9 @@ opt-level = 3
 [build-dependencies]
 rand = "0.3"
 
+[[bench]]
+name = "benches"
+harness = false
+
+[dev-dependencies]
+bencher = "0.1"
