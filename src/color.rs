@@ -2,7 +2,7 @@ use std::ops::Not;
 use rank::Rank;
 
 /// Represent a color.
-#[derive(PartialOrd, PartialEq, Copy, Clone)]
+#[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]
 pub enum Color {
     White,
     Black
