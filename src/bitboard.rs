@@ -1,7 +1,6 @@
 use square::*;
 use std::ops::{BitAnd, BitOr, BitXor, BitAndAssign, BitOrAssign, BitXorAssign, Mul, Not};
 use std::fmt;
-use std::sync::{Once, ONCE_INIT};
 use rank::Rank;
 use file::File;
 
@@ -10,9 +9,6 @@ use file::File;
 /// using the implemented operators to work with this object.
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub struct BitBoard(pub u64);
-
-#[allow(dead_code)]
-static SETUP: Once = ONCE_INIT;
 
 /// An empty bitboard
 pub const EMPTY: BitBoard = BitBoard(0);
@@ -94,31 +90,26 @@ impl fmt::Display for BitBoard {
 
 impl BitBoard {
     /// Construct a new bitboard from a u64
-    #[allow(dead_code)]
     pub fn new(b: u64) -> BitBoard {
         BitBoard(b)
     }
 
     /// Construct a new `BitBoard` with a particular `Square` set
-    #[allow(dead_code)]
     pub fn set(rank: Rank, file: File) -> BitBoard {
         BitBoard::from_square(Square::make_square(rank, file))
     }
 
     /// Construct a new `BitBoard` with a particular `Square` set
-    #[allow(dead_code)]
     pub fn from_square(sq: Square) -> BitBoard {
         BitBoard(1u64 << sq.to_int())
     }
 
     /// Convert an `Option<Square>` to an `Option<BitBoard>`
-    #[allow(dead_code)]
     pub fn from_maybe_square(sq: Option<Square>) -> Option<BitBoard> {
         sq.map(|s| BitBoard::from_square(s))
     }
 
     /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`
-    #[allow(dead_code)]
     pub fn to_square(&self) -> Square {
         unsafe {
             Square::new(self.0.trailing_zeros() as u8)
@@ -126,19 +117,16 @@ impl BitBoard {
     }
 
     /// Count the number of `Squares` set in this `BitBoard`
-    #[allow(dead_code)]
     pub fn popcnt(&self) -> u32 {
         self.0.count_ones()
     }
 
     /// Reverse this `BitBoard`.  Look at it from the opponents perspective.
-    #[allow(dead_code)]
     pub fn reverse_colors(&self) -> BitBoard {
         BitBoard(self.0.swap_bytes())
     }
 
     /// Convert this `BitBoard` to a `usize` (for table lookups)
-    #[allow(dead_code)]
     pub fn to_size(&self, rightshift: u8) -> usize {
         (self.0 >> rightshift) as usize
     }
@@ -148,7 +136,6 @@ impl BitBoard {
 impl Iterator for BitBoard {
     type Item = Square;
 
-    #[allow(dead_code)]
     fn next(&mut self) -> Option<Square> {
         if self.0 == 0 {
             None
