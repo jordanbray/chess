@@ -2,7 +2,11 @@
 
 This library handles the process of move generation within a chess engine or chess UI.
 
-This library is still a work in progress, but, it does work well.  Expect API changes.  I'm hoping to get this into a stable state for release relatively soon.
+This library is follows semver for version numbering in the format MAJOR.MINOR.PATCH.  That means:
+
+* Any change to the API that breaks existing code will involve a MAJOR version number change.
+* Any added functionality or features that do not break existing applications will involve a MINOR version number change.
+* Any bug fixes or performance improvements that do not affect users will involve a PATCH version change.
 
 ## What It Does
 
@@ -15,6 +19,7 @@ This library has very fast move generation (the primary purposes of its existanc
 ## What It Does Not Do
 
 This is not a chess engine, just the move generator.  This is not a chess UI, just the move generator.  This is not a chess PGN parser, database, UCI communicator, XBOARD/WinBoard protocol, website or grandmaster.  Just a humble move generator.
+
 
 ## API Documentation
 
