@@ -6,7 +6,7 @@ struct CacheTableEntry<T: Copy + Clone + PartialEq + PartialOrd> {
 
 /// Store a cache of entries, each with an associated hash.
 pub struct CacheTable<T: Copy + Clone + PartialEq + PartialOrd> {
-    table: Vec<CacheTableEntry<T>>,
+    table: Box<[CacheTableEntry<T>]>,
     mask: usize
 }
 
@@ -19,12 +19,11 @@ impl <T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
         if size.count_ones() != 1 {
             panic!("You cannot create a CacheTable with a non-binary number.");
         }
-        let mut res = CacheTable::<T> { table: Vec::with_capacity(size),
-                                        mask: size - 1 };
-        for _ in 0..size {
-            res.table.push(CacheTableEntry { hash: 0, entry: default });
+        let values = vec![CacheTableEntry { hash: 0, entry: default }; size];
+        CacheTable {
+            table: values.into_boxed_slice(),
+            mask: size - 1
         }
-        res
     }
 
     /// Get a particular entry with the hash specified
