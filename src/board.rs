@@ -51,7 +51,7 @@ macro_rules! pseudo_legal_moves {
             Piece::Rook => get_rook_moves($src, $combined),
             Piece::Queen => get_bishop_moves($src, $combined) ^ get_rook_moves($src, $combined),
             Piece::King => get_king_moves($src)
-        } 
+        }
     };
 }
 
@@ -136,7 +136,7 @@ macro_rules! enumerate_moves_one_piece {
                 if !$in_check {
                     let ksq = ($board.pieces(Piece::King) & $board.color_combined($color)).to_square();
 
-                    if $board.my_castle_rights().has_kingside() && 
+                    if $board.my_castle_rights().has_kingside() &&
                         ($board.combined() & $board.my_castle_rights().kingside_squares($color)) == EMPTY {
                         if $board.legal_king_move(ksq.uright()) &&
                            $board.legal_king_move(ksq.uright().uright()) {
@@ -145,7 +145,7 @@ macro_rules! enumerate_moves_one_piece {
                         }
                     }
 
-                    if $board.my_castle_rights().has_queenside() && 
+                    if $board.my_castle_rights().has_queenside() &&
                         ($board.combined() & $board.my_castle_rights().queenside_squares($color)) == EMPTY {
                         if $board.legal_king_move(ksq.uleft()) &&
                            $board.legal_king_move(ksq.uleft().uleft()) {
@@ -166,7 +166,7 @@ macro_rules! enumerate_moves_one_piece {
                 //  ** I will not be at this section of code if I'm in double-check
                 //  * And I'm currently NOT in check:
                 //  ** I can move anywhere!
-                for src in pieces & !pinned { 
+                for src in pieces & !pinned {
                     let moves = pseudo_legal_moves!($piece_type, src, $color, combined) &
                                 $dest_mask &
                                 (if $in_check { between(checkers.to_square(), ksq) ^ checkers } else { !EMPTY });
@@ -303,7 +303,7 @@ impl Board {
                     cur_file = File::A;
                 }, '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {
                     cur_file = File::from_index(cur_file.to_index() + (x as usize) - ('0' as usize));
-                }, 'r' => { 
+                }, 'r' => {
                     board.xor(Piece::Rook, BitBoard::set(cur_rank, cur_file), Color::Black);
                     cur_file = cur_file.right();
                 }, 'R' => {
@@ -578,7 +578,7 @@ impl Board {
         result.update_pin_info();
 
         Some(result)
- 
+
     }
 
     /// Switch the color of the player without actually making a move.
@@ -590,10 +590,11 @@ impl Board {
             result.side_to_move = !result.side_to_move;
             result.hash ^= Zobrist::color();
             result.pawn_hash ^= Zobrist::color();
+            result.update_pin_info();
             Some(result)
         }
     }
-    
+
 
     /// Does this board "make sense"?
     /// Do all the pieces make sense, do the bitboards combine correctly, etc?
@@ -830,10 +831,10 @@ impl Board {
                 // If we can castle kingside, and we're trying to castle kingside
                 if self.my_castle_rights().has_kingside() &&
                     m.get_dest() == ksq.uright().uright() {
-                    
+
                     // make sure the squares that need to be empty are empty
                     if (self.combined() & self.my_castle_rights().kingside_squares(self.side_to_move)) == EMPTY {
-                        
+
                         // is the castle legal?
                         if self.legal_king_move(ksq.uright()) &&
                            self.legal_king_move(ksq.uright().uright()) {
@@ -1169,7 +1170,7 @@ impl Board {
         let cur = unsafe { caches.get_unchecked(depth as usize) }.get(self.hash);
         match cur {
             Some(x) => x,
-            None => { 
+            None => {
                 let mut result = 0;
                 if depth == 0 {
                     result = 1;
