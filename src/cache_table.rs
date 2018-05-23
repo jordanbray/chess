@@ -38,7 +38,7 @@ impl <T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
 
     /// Add (or overwrite) an entry with the associated hash
     pub fn add(&mut self, hash: u64, entry: T) {
-        let mut e = unsafe { self.table.get_unchecked_mut((hash as usize) & self.mask) };
+        let e = unsafe { self.table.get_unchecked_mut((hash as usize) & self.mask) };
         *e = CacheTableEntry { hash: hash, entry: entry };
     }
 }
