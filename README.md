@@ -8,6 +8,11 @@ This library is follows semver for version numbering in the format MAJOR.MINOR.P
 * Any added functionality or features that do not break existing applications will involve a MINOR version number change.
 * Any bug fixes or performance improvements that do not affect users will involve a PATCH version change.
 
+# Shakmaty
+
+Another rust chess library is in the 'shakmaty' crate.  This is a great library, with many more features than this one.  It supports various chess variants, as well as the UCI protocol.  However, those features come at a cost, and this library performs consistently faster in all test cases I can throw at it.  To compare the two, I have added 'shakmaty' support to the 'chess_perft' application, and moved a bunch of benchmarks to that crate.  You can view the results at
+https://github.com/jordanbray/chess_perft.
+
 ## What It Does
 
 This library allows you to create a chess board from a FEN-formatted string, list all legal moves for the chess board and make moves.
