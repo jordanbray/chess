@@ -1,6 +1,7 @@
 # A Fast Chess Library In Rust
 
 [![Build Status](https://travis-ci.org/jordanbray/chess.svg?branch=master)](https://travis-ci.org/jordanbray/chess)
+[![crates.io](https://img.shields.io/crates/v/chess.svg)](https://crates.io/crates/chess)
 
 This library handles the process of move generation within a chess engine or chess UI.
 
