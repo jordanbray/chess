@@ -1,5 +1,7 @@
 # A Fast Chess Library In Rust
 
+[![Build Status](https://travis-ci.org/jordanbray/chess.svg?branch=master)](https://travis-ci.org/jordanbray/chess)
+
 This library handles the process of move generation within a chess engine or chess UI.
 
 This library is follows semver for version numbering in the format MAJOR.MINOR.PATCH.  That means:
