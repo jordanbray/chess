@@ -224,7 +224,7 @@ struct SquareAndBitBoard {
     promotion: bool
 }
 
-/// The move generation iterator
+/// An incremental move generator
 ///
 /// This structure enumerates moves slightly slower than board.enumerate_moves(...),
 /// but has some extra features, such as:
@@ -248,7 +248,7 @@ struct SquareAndBitBoard {
 /// use chess::construct;
 ///
 /// // create a board with the initial position
-/// let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned()).unwrap();
+/// let board = Board::default();
 ///
 /// // create an iterable
 /// let mut iterable = MoveGen::new(board, true);

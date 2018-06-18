@@ -13,7 +13,7 @@ use cache_table::CacheTable;
 use construct;
 
 /// A representation of a chess board.  That's why you're here, right?
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Board {
     pieces: [BitBoard; NUM_PIECES],
     color_combined: [BitBoard; NUM_COLORS],
@@ -28,7 +28,7 @@ pub struct Board {
 }
 
 /// What is the status of this game?
-#[derive(Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum BoardStatus {
     Ongoing,
     Stalemate,
@@ -316,10 +316,16 @@ macro_rules! enumerate_moves_one_piece {
     } };
 }
 
+impl Default for Board {
+    fn default() -> Board {
+        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned()).expect("Valid FEN")
+    }
+}
+
 impl Board {
     /// Construct a new `Board` that is completely empty.
     /// Note: This does NOT give you the initial position.  Just a blank slate.
-    pub fn new() -> Board {
+    fn new() -> Board {
         Board {
             pieces: [EMPTY; NUM_PIECES],
             color_combined: [EMPTY; NUM_COLORS],
@@ -335,6 +341,13 @@ impl Board {
     }
 
     /// Construct a board from a FEN string.
+    ///
+    /// ```
+    /// use chess::Board;
+    ///
+    /// let init_position = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned()).expect("Valid FEN");
+    /// assert_eq!(init_position, Board::default());
+    /// ```
     pub fn from_fen(fen: String) -> Option<Board> {
         let mut cur_rank = Rank::Eighth;
         let mut cur_file = File::A;
@@ -447,6 +460,44 @@ impl Board {
     }
 
     /// Is this game Ongoing, is it Stalemate, or is it Checkmate?
+    ///
+    /// ```
+    /// use chess::{Board, BoardStatus, Square, Rank, File, ChessMove};
+    ///
+    /// let mut board = Board::default();
+    ///
+    /// assert_eq!(board.status(), BoardStatus::Ongoing);
+    ///
+    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Second, File::E),
+    ///                                        Square::make_square(Rank::Fourth, File::E),
+    ///                                        None));
+    ///
+    /// assert_eq!(board.status(), BoardStatus::Ongoing);
+    ///
+    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Seventh, File::F),
+    ///                                        Square::make_square(Rank::Sixth, File::F),
+    ///                                        None));
+    /// 
+    /// assert_eq!(board.status(), BoardStatus::Ongoing);
+    ///
+    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Second, File::D),
+    ///                                        Square::make_square(Rank::Fourth, File::D),
+    ///                                        None));
+    ///
+    /// assert_eq!(board.status(), BoardStatus::Ongoing);
+    ///
+    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Seventh, File::G),
+    ///                                        Square::make_square(Rank::Fifth, File::G),
+    ///                                        None));
+    ///
+    /// assert_eq!(board.status(), BoardStatus::Ongoing);
+    ///
+    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::First, File::D),
+    ///                                        Square::make_square(Rank::Fifth, File::H),
+    ///                                        None));
+    ///
+    /// assert_eq!(board.status(), BoardStatus::Checkmate);
+    /// ```
     pub fn status(&self) -> BoardStatus {
         let moves = self.enumerate_moves(&mut [ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
         match moves {
@@ -464,24 +515,75 @@ impl Board {
     }
 
     /// Grab the "combined" `BitBoard`.  This is a `BitBoard` with every piece.
+    ///
+    /// ```
+    /// use chess::{Board, BitBoard, Rank, get_rank};
+    ///
+    /// let board = Board::default();
+    ///
+    /// let combined_should_be = get_rank(Rank::First) |
+    ///                          get_rank(Rank::Second) |
+    ///                          get_rank(Rank::Seventh) |
+    ///                          get_rank(Rank::Eighth);
+    ///
+    /// assert_eq!(board.combined(), combined_should_be);
+    /// ```
     pub fn combined(&self) -> BitBoard {
         self.combined
     }
 
     /// Grab the "color combined" `BitBoard`.  This is a `BitBoard` with every piece of a particular
     /// color.
-    pub fn color_combined(&self, color: Color) -> BitBoard {
+    ///
+    /// ```
+    /// use chess::{Board, BitBoard, Rank, get_rank, Color};
+    ///
+    /// let board = Board::default();
+    ///
+    /// let white_pieces = get_rank(Rank::First) |
+    ///                    get_rank(Rank::Second);
+    ///
+    /// let black_pieces = get_rank(Rank::Seventh) |
+    ///                    get_rank(Rank::Eighth);
+    ///
+    /// assert_eq!(board.color_combined(Color::White), white_pieces);
+    /// assert_eq!(board.color_combined(Color::Black), black_pieces);
+    /// ```
+     pub fn color_combined(&self, color: Color) -> BitBoard {
         unsafe {
             *self.color_combined.get_unchecked(color.to_index())
         }
     }
 
     /// Give me the `Square` the `color` king is on.
+    ///
+    /// ```
+    /// use chess::{Board, Square, Color, Rank, File};
+    ///
+    /// let board = Board::default();
+    ///
+    /// assert_eq!(board.king_square(Color::White), Square::make_square(Rank::First, File::E));
+    /// assert_eq!(board.king_square(Color::Black), Square::make_square(Rank::Eighth, File::E));
+    /// ```
     pub fn king_square(&self, color: Color) -> Square {
         (self.pieces(Piece::King) & self.color_combined(color)).to_square()
     }
 
     /// Grab the "pieces" `BitBoard`.  This is a `BitBoard` with every piece of a particular type.
+    ///
+    /// ```
+    /// use chess::{Board, BitBoard, Piece, Square, Rank, File};
+    ///
+    /// // The rooks should be in each corner of the board
+    /// let rooks = BitBoard::from_square(Square::make_square(Rank::First, File::A)) |
+    ///             BitBoard::from_square(Square::make_square(Rank::First, File::H)) |
+    ///             BitBoard::from_square(Square::make_square(Rank::Eighth, File::A)) |
+    ///             BitBoard::from_square(Square::make_square(Rank::Eighth, File::H));
+    ///
+    /// let board = Board::default();
+    ///
+    /// assert_eq!(board.pieces(Piece::Rook), rooks);
+    /// ```
     pub fn pieces(&self, piece: Piece) -> BitBoard {
         unsafe {
             *self.pieces.get_unchecked(piece.to_index())
@@ -489,13 +591,46 @@ impl Board {
     }
 
     /// Grab the `CastleRights` for a particular side.
+    ///
+    /// ```
+    /// use chess::{Board, Square, Rank, File, CastleRights, Color, ChessMove};
+    ///
+    /// let move1 = ChessMove::new(Square::make_square(Rank::Second, File::A),
+    ///                            Square::make_square(Rank::Fourth, File::A),
+    ///                            None);
+    ///
+    /// let move2 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
+    ///                            Square::make_square(Rank::Fifth, File::E),
+    ///                            None);
+    ///
+    /// let move3 = ChessMove::new(Square::make_square(Rank::First, File::A),
+    ///                            Square::make_square(Rank::Second, File::A),
+    ///                            None);
+    ///
+    /// let move4 = ChessMove::new(Square::make_square(Rank::Eighth, File::E),
+    ///                            Square::make_square(Rank::Seventh, File::E),
+    ///                            None);
+    ///
+    /// let mut board = Board::default();
+    ///
+    /// assert_eq!(board.castle_rights(Color::White), CastleRights::Both);
+    /// assert_eq!(board.castle_rights(Color::Black), CastleRights::Both);
+    ///
+    /// board = board.make_move(move1)
+    ///              .make_move(move2)
+    ///              .make_move(move3)
+    ///              .make_move(move4);
+    ///
+    /// assert_eq!(board.castle_rights(Color::White), CastleRights::KingSide);
+    /// assert_eq!(board.castle_rights(Color::Black), CastleRights::NoRights);
+    /// ```
     pub fn castle_rights(&self, color: Color) -> CastleRights {
         unsafe {
             *self.castle_rights.get_unchecked(color.to_index())
         }
     }
 
-    /// Add castle rights for a particular side.
+    /// Add castle rights for a particular side.  Note: this can create an invalid position.
     pub fn add_castle_rights(&mut self, color: Color, add: CastleRights) {
         unsafe {
             self.hash ^= Zobrist::castles(self.castle_rights(color), color);
@@ -504,8 +639,17 @@ impl Board {
         }
     }
 
-
     /// Remove castle rights for a particular side.
+    /// 
+    /// ```
+    /// use chess::{Board, CastleRights, Color};
+    /// 
+    /// let mut board = Board::default();
+    /// assert_eq!(board.castle_rights(Color::White), CastleRights::Both);
+    ///
+    /// board.remove_castle_rights(Color::White, CastleRights::KingSide);
+    /// assert_eq!(board.castle_rights(Color::White), CastleRights::QueenSide);
+    /// ```
     pub fn remove_castle_rights(&mut self, color: Color, remove: CastleRights) {
         unsafe {
             self.hash ^= Zobrist::castles(self.castle_rights(color), color);
@@ -515,40 +659,87 @@ impl Board {
     }
 
     /// Who's turn is it?
+    ///
+    /// ```
+    /// use chess::{Board, Color};
+    ///
+    /// let mut board = Board::default();
+    /// assert_eq!(board.side_to_move(), Color::White);
+    /// ```
     pub fn side_to_move(&self) -> Color {
         self.side_to_move
     }
 
     /// Grab my `CastleRights`.
+    ///
+    /// ```
+    /// use chess::{Board, Color, CastleRights};
+    ///
+    /// let mut board = Board::default();
+    /// board.remove_castle_rights(Color::White, CastleRights::KingSide);
+    /// board.remove_castle_rights(Color::Black, CastleRights::QueenSide);
+    ///
+    /// assert_eq!(board.my_castle_rights(), board.castle_rights(Color::White));
+    /// ```
     pub fn my_castle_rights(&self) -> CastleRights {
         self.castle_rights(self.side_to_move())
     }
 
-    /// Add to my `CastleRights`.
+    /// Add to my `CastleRights`.  Note: This can make the position invalid.
     pub fn add_my_castle_rights(&mut self, add: CastleRights) {
         let color = self.side_to_move();
         self.add_castle_rights(color, add);
     }
 
     /// Remove some of my `CastleRights`.
-    pub fn remove_my_castle_rights(&mut self, remove: CastleRights) {
+    /// 
+    /// ```
+    /// use chess::{Board, CastleRights};
+    /// 
+    /// let mut board = Board::default();
+    /// assert_eq!(board.my_castle_rights(), CastleRights::Both);
+    ///
+    /// board.remove_my_castle_rights(CastleRights::KingSide);
+    /// assert_eq!(board.my_castle_rights(), CastleRights::QueenSide);
+    /// ```
+     pub fn remove_my_castle_rights(&mut self, remove: CastleRights) {
         let color = self.side_to_move();
         self.remove_castle_rights(color, remove);
     }
 
     /// My opponents `CastleRights`.
+    ///
+    /// ```
+    /// use chess::{Board, Color, CastleRights};
+    ///
+    /// let mut board = Board::default();
+    /// board.remove_castle_rights(Color::White, CastleRights::KingSide);
+    /// board.remove_castle_rights(Color::Black, CastleRights::QueenSide);
+    ///
+    /// assert_eq!(board.their_castle_rights(), board.castle_rights(Color::Black));
+    /// ```
     pub fn their_castle_rights(&self) -> CastleRights {
         self.castle_rights(!self.side_to_move())
     }
 
-    /// Add to my opponents `CastleRights`.
+    /// Add to my opponents `CastleRights`. Note: This can make the position invalid.
     pub fn add_their_castle_rights(&mut self, add: CastleRights) {
         let color = !self.side_to_move();
         self.add_castle_rights(color, add)
     }
 
     /// Remove some of my opponents `CastleRights`.
-    pub fn remove_their_castle_rights(&mut self, remove: CastleRights) {
+    /// 
+    /// ```
+    /// use chess::{Board, CastleRights};
+    /// 
+    /// let mut board = Board::default();
+    /// assert_eq!(board.their_castle_rights(), CastleRights::Both);
+    ///
+    /// board.remove_their_castle_rights(CastleRights::KingSide);
+    /// assert_eq!(board.their_castle_rights(), CastleRights::QueenSide);
+    /// ```
+     pub fn remove_their_castle_rights(&mut self, remove: CastleRights) {
         let color = !self.side_to_move();
         self.remove_castle_rights(color, remove);
     }
@@ -571,6 +762,19 @@ impl Board {
     }
 
     /// For a chess UI: set a piece on a particular square.
+    ///
+    /// ```
+    /// use chess::{Board, Piece, Color, Square, Rank, File};
+    ///
+    /// let board = Board::default();
+    ///
+    /// let new_board = board.set_piece(Piece::Queen,
+    ///                                 Color::White,
+    ///                                 Square::make_square(Rank::Fourth, File::E))
+    ///                      .expect("Valid Position");
+    ///
+    /// assert_eq!(new_board.pieces(Piece::Queen).count(), 3);
+    /// ```
     pub fn set_piece(&self, piece: Piece, color: Color, square: Square) -> Option<Board> {
         let mut result = *self;
         let square_bb = BitBoard::from_square(square);
@@ -604,6 +808,17 @@ impl Board {
     }
 
     /// For a chess UI: clear a particular square.
+    ///
+    /// ```
+    /// use chess::{Board, Square, Rank, File, Piece};
+    ///
+    /// let board = Board::default();
+    ///
+    /// let new_board = board.clear_square(Square::make_square(Rank::First, File::A))
+    ///                      .expect("Valid Position");
+    ///
+    /// assert_eq!(new_board.pieces(Piece::Rook).count(), 3);
+    /// ```
     pub fn clear_square(&self, square: Square) -> Option<Board> {
         let mut result = *self;
         let square_bb = BitBoard::from_square(square);
@@ -635,7 +850,20 @@ impl Board {
 
     }
 
-    /// Switch the color of the player without actually making a move.
+    /// Switch the color of the player without actually making a move.  Returns None if the current
+    /// player is in check.
+    ///
+    /// ```
+    /// use chess::{Board, Color};
+    ///
+    /// let board = Board::default();
+    /// 
+    /// assert_eq!(board.side_to_move(), Color::White);
+    ///
+    /// let new_board = board.null_move().expect("Valid Position");
+    /// 
+    /// assert_eq!(new_board.side_to_move(), Color::Black);
+    /// ```
     pub fn null_move(&self) -> Option<Board> {
         if self.checkers != EMPTY {
             None
@@ -653,6 +881,18 @@ impl Board {
     /// Does this board "make sense"?
     /// Do all the pieces make sense, do the bitboards combine correctly, etc?
     /// This is for sanity checking.
+    ///
+    /// ```
+    /// use chess::{Board, Color, Piece, Square, Rank, File};
+    ///
+    /// let board = Board::default();
+    ///
+    /// assert_eq!(board.is_sane(), true);
+    ///
+    /// // Remove the king
+    /// let bad_board = board.clear_square(Square::make_square(Rank::First, File::E)).expect("Valid Position");
+    /// assert_eq!(bad_board.is_sane(), false);
+    /// ```
     pub fn is_sane(&self) -> bool {
         // make sure there is no square with multiple pieces on it
         for x in ALL_PIECES.iter() {
@@ -751,6 +991,18 @@ impl Board {
     }
 
     /// What piece is on a particular `Square`?  Is there even one?
+    ///
+    /// ```
+    /// use chess::{Board, Piece, Square, Rank, File};
+    ///
+    /// let board = Board::default();
+    ///
+    /// let sq1 = Square::make_square(Rank::First, File::A);
+    /// let sq2 = Square::make_square(Rank::Fourth, File::D);
+    ///
+    /// assert_eq!(board.piece_on(sq1), Some(Piece::Rook));
+    /// assert_eq!(board.piece_on(sq2), None);
+    /// ```
     pub fn piece_on(&self, square: Square) -> Option<Piece> {
         let opp = BitBoard::from_square(square);
         if self.combined() & opp == EMPTY {
@@ -807,6 +1059,18 @@ impl Board {
     ///
     /// Note: You may want to build a `MoveGen` structure to iterate over
     ///       the moves instead.
+    ///
+    /// Additionally, you must allocate the move array yourself if you want to call this function.
+    /// it massively helps with performance to reuse that array.
+    ///
+    /// ```
+    /// use chess::{Board, ChessMove};
+    ///
+    /// let board = Board::default();
+    /// let mut moves = [ChessMove::default(); 256];
+    /// let count = board.enumerate_moves(&mut moves);
+    /// assert_eq!(count, 20);
+    /// ```
     pub fn enumerate_moves(&self, moves: &mut [ChessMove; 256]) -> usize {
         let mut index = 0usize;
         let not_my_pieces = !self.color_combined(self.side_to_move);
@@ -827,6 +1091,33 @@ impl Board {
     }
 
     /// Give me the en_passant square, if it exists.
+    ///
+    /// ```
+    /// use chess::{Board, ChessMove, Square, Rank, File};
+    ///
+    /// let move1 = ChessMove::new(Square::make_square(Rank::Second, File::D),
+    ///                            Square::make_square(Rank::Fourth, File::D),
+    ///                            None);
+    ///
+    /// let move2 = ChessMove::new(Square::make_square(Rank::Seventh, File::H),
+    ///                            Square::make_square(Rank::Fifth, File::H),
+    ///                            None);
+    ///
+    /// let move3 = ChessMove::new(Square::make_square(Rank::Fourth, File::D),
+    ///                            Square::make_square(Rank::Fifth, File::D),
+    ///                            None);
+    ///
+    /// let move4 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
+    ///                            Square::make_square(Rank::Fifth, File::E),
+    ///                            None);
+    ///
+    /// let board = Board::default().make_move(move1)
+    ///                             .make_move(move2)
+    ///                             .make_move(move3)
+    ///                             .make_move(move4);
+    ///
+    /// assert_eq!(board.en_passant(), Some(Square::make_square(Rank::Fifth, File::E)));
+    /// ```
     pub fn en_passant(self) -> Option<Square> {
         self.en_passant
     }
@@ -846,6 +1137,22 @@ impl Board {
     }
 
     /// Is a particular move legal?
+    ///
+    /// ```
+    /// use chess::{Board, ChessMove, Square, Rank, File};
+    ///
+    /// let move1 = ChessMove::new(Square::make_square(Rank::Second, File::E),
+    ///                            Square::make_square(Rank::Fourth, File::E),
+    ///                            None);
+    /// 
+    /// let move2 = ChessMove::new(Square::make_square(Rank::Second, File::E),
+    ///                            Square::make_square(Rank::Fifth, File::E),
+    ///                            None);
+    ///
+    /// let board = Board::default();
+    ///
+    /// assert_eq!(board.legal(move1), true);
+    /// assert_eq!(board.legal(move2), false);
     pub fn legal(&self, m: ChessMove) -> bool {
         // Do you have a piece on that source square?
         if self.color_combined(self.side_to_move) & BitBoard::from_square(m.get_source()) == EMPTY {
@@ -1054,7 +1361,18 @@ impl Board {
     /// Make a chess move.
     ///
     /// panic!() if king is captured.
-    pub fn make_move(&self, m: ChessMove) -> Board {
+    ///
+    /// ```
+    /// use chess::{Board, ChessMove, Square, Rank, File, Color};
+    ///
+    /// let m = ChessMove::new(Square::make_square(Rank::Second, File::D),
+    ///                        Square::make_square(Rank::Fourth, File::D),
+    ///                        None);
+    ///
+    /// let board = Board::default();
+    /// assert_eq!(board.make_move(m).side_to_move(), Color::Black);
+    /// ```
+     pub fn make_move(&self, m: ChessMove) -> Board {
         let mut result = *self;
         let source = BitBoard::from_square(m.get_source());
         let dest = BitBoard::from_square(m.get_dest());

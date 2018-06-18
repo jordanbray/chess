@@ -3,7 +3,7 @@ use color::Color;
 use square::Square;
 use file::File;
 /// What castle rights does a particular player have?
-#[derive(Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum CastleRights {
     NoRights,
     KingSide,

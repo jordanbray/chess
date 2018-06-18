@@ -1,5 +1,5 @@
 /// Describe a rank (row) on a chess board
-#[derive(Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum Rank {
     First,
     Second,

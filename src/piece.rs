@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// Represent a chess piece as a very simple enum
-#[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone)]
+#[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug)]
 pub enum Piece {
     Pawn,
     Knight,

@@ -2,6 +2,22 @@
 //! # Rust Chess Library
 //! This is a chess move generation library for rust.  It is designed to be fast, so that it can be
 //! used in a chess engine or UI without performance issues.
+//!
+//! ## Example
+//!
+//! This generates all the moves on the starting chess position, and checks that the number of
+//! moves is correct.
+//!
+//! ```
+//!
+//! use chess::{Board, ChessMove};
+//!
+//! let board = Board::default();
+//! let mut moves = [ChessMove::default(); 256];
+//! let count = board.enumerate_moves(&mut moves);
+//! assert_eq!(count, 20);
+//! ```
+//!
 
 mod board;
 pub use board::*;
@@ -43,3 +59,4 @@ mod movegen;
 pub use movegen::*;
 
 mod zobrist;
+
