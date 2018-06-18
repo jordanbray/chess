@@ -316,6 +316,7 @@ macro_rules! enumerate_moves_one_piece {
     } };
 }
 
+/// Construct the initial position.
 impl Default for Board {
     fn default() -> Board {
         Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned()).expect("Valid FEN")
