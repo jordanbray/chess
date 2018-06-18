@@ -7,10 +7,34 @@ use file::File;
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value, but you are probably better off
 /// using the implemented operators to work with this object.
-#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+///
+/// ```
+/// use chess::{BitBoard, Square};
+///
+/// let bb = BitBoard(7); // lower-left 3 squares
+///
+/// let mut count = 0;
+///
+/// // Iterate over each square in the bitboard
+/// for _ in bb {
+///     count += 1;
+/// }
+///
+/// assert_eq!(count, 3);
+/// ```
+/// 
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug, Default)]
 pub struct BitBoard(pub u64);
 
-/// An empty bitboard
+/// An empty bitboard.  It is sometimes useful to use !EMPTY to get the universe of squares.
+///
+/// ```
+///     use chess::EMPTY;
+///
+///     assert_eq!(EMPTY.count(), 0);
+///
+///     assert_eq!((!EMPTY).count(), 64);
+/// ```
 pub const EMPTY: BitBoard = BitBoard(0);
 
 impl BitAnd for BitBoard {
