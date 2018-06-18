@@ -1,3 +1,5 @@
+use std::mem::transmute;
+
 /// Describe a file (column) on a chess board
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum File {
@@ -21,7 +23,7 @@ impl File {
     /// Convert a `usize` into a `File` (the inverse of to_index).  If i > 7, wrap around.
     pub fn from_index(i: usize) -> File {
         unsafe {
-            *ALL_FILES.get_unchecked(i & 7)
+            transmute((i as u8) & 7)
         }
     }
 

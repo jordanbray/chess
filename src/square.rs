@@ -67,7 +67,7 @@ impl Square {
     /// }
     /// ```
     pub fn make_square(rank: Rank, file: File) -> Square {
-        Square((rank.to_index() as u8)<<3 | (file.to_index() as u8))
+        Square((rank.to_index() as u8)<<3 ^ (file.to_index() as u8))
     }
 
     /// Return the rank given this square.

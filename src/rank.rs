@@ -1,3 +1,5 @@
+use std::mem::transmute;
+
 /// Describe a rank (row) on a chess board
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum Rank {
@@ -22,7 +24,7 @@ impl Rank {
     /// around.
     pub fn from_index(i: usize) -> Rank {
         unsafe {
-            *ALL_RANKS.get_unchecked(i & 7)
+            transmute((i as u8) & 7)
         }
     }
 

@@ -1385,7 +1385,7 @@ impl Board {
 
         match captured {
             None => {},
-            //Some(Piece::King) => panic!(),
+            Some(Piece::King) => panic!(),
             Some(p) => {
                 result.xor(p, dest, !self.side_to_move);
                 if p == Piece::Rook {
@@ -1480,7 +1480,7 @@ impl Board {
         // now, lets see if we're in check or pinned
         let ksq = (result.pieces(Piece::King) & result.color_combined(!result.side_to_move)).to_square();
 
-        let pinners = result.color_combined(result.side_to_move) & (
+        let attackers = result.color_combined(result.side_to_move) & (
                         (get_bishop_rays(ksq) &
                             (result.pieces(Piece::Bishop)|result.pieces(Piece::Queen))
                         )|(get_rook_rays(ksq) &
@@ -1488,7 +1488,7 @@ impl Board {
                         )
                       );
 
-        for sq in pinners {
+        for sq in attackers {
             let between = between(sq, ksq) & result.combined();
             if between == EMPTY {
                 result.checkers ^= BitBoard::from_square(sq);
