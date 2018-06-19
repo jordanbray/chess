@@ -13,24 +13,24 @@ image: "rust:latest"
 
 # Optional: Install a C compiler, cmake and git into the container.
 # You will often need this when you (or any of your dependencies) depends on C code.
-#before_script:
-#- apt-get update -yqq
-#- apt-get install -yqq --no-install-recommends build-essential
+before_script:
+- apt-get update -yqq
+- apt-get install -yqq --no-install-recommends sshpass
 
 # Use cargo to test the project
 test:cargo:
   script:
   - rustc --version && cargo --version      # Print version info for debugging
   - cargo test --all --verbose
-pages:
+
+deploy_production:
   stage: deploy
+  environment: Production
+  only:
+    - master
   script:
   - cargo doc --release
-  - mkdir .public
-  - cp -r target/doc/* .public
-  - mv .public public
-  artifacts:
-    paths:
-    - public
-  only:
-  - master
+  - sshpass -V
+  - export SSHPASS=$USER_PASS
+  - sshpass -e scp -o stricthostkeychecking=no -r target/doc chess_docs@jordanbray.com:/bucket/chess_docs
+
