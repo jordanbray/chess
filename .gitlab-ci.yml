@@ -34,4 +34,6 @@ deploy_production:
   - export SSHPASS=$USER_PASS
   - sshpass -e scp -o stricthostkeychecking=no -r target/doc/* chess_docs@jordanbray.com:/bucket/chess_docs
   - sshpass -e scp -o stricthostkeychecking=no -r docs/* chess_doc@jordanbray.com:/bucket/chess_docs
+  - cargo login $CRATESIO_TOKEN
+  - cargo publish
 
