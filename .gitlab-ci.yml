@@ -32,5 +32,5 @@ deploy_production:
   - cargo doc --release
   - sshpass -V
   - export SSHPASS=$USER_PASS
-  - sshpass -e scp -o stricthostkeychecking=no -r target/doc chess_docs@jordanbray.com:/bucket/chess_docs
+  - sshpass -e scp -o stricthostkeychecking=no -r target/doc/* chess_docs@jordanbray.com:/bucket/chess_docs
 
