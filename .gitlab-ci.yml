@@ -26,10 +26,11 @@ pages:
   stage: deploy
   script:
   - cargo doc --release
-  - mkdir /results/chess_docs/ || true
-  - cp -r target/doc/* /results/chess_docs/
+  - mkdir .public
+  - cp -r target/doc/* .public
+  - mv .public public
   artifacts:
     paths:
-    - /results/chess_docs
+    - public
   only:
   - master
