@@ -24,4 +24,4 @@ debug = true
 opt-level = 3
 
 [build-dependencies]
-rand = "0.3"
+rand = "0.4.2"
