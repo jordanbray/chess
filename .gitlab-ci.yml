@@ -22,3 +22,14 @@ test:cargo:
   script:
   - rustc --version && cargo --version      # Print version info for debugging
   - cargo test --all --verbose
+pages:
+  stage: deploy
+  script:
+  - cargo doc --release
+  - mkdir /results/chess_docs/ || true
+  - cp -r target/doc/* /results/chess_docs/
+  artifacts:
+    paths:
+    - /results/chess_docs
+  only:
+  - master
