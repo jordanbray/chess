@@ -35,7 +35,7 @@ pub fn get_rook_moves(sq: Square, blockers: BitBoard) -> BitBoard {
         let bmi2_magic = *ROOK_BMI_MASK.get_unchecked(sq.to_int() as usize);
         let index = (_pext_u64(blockers.0, bmi2_magic.blockers_mask.0) as usize) +
                     (bmi2_magic.offset as usize);
-        let result = _pdep_u64(*BMI_MOVES.get_unchecked(index as usize) as u64, bmi2_magic.moves_mask.0);
+        let result = _pdep_u64(*BMI_MOVES.get_unchecked(index as usize) as u64, get_rook_rays(sq).0);
         return BitBoard(result);
     }
 }
