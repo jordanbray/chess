@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use rand::{Rng, thread_rng, weak_rng, SeedableRng};
-use std::arch::x86_64::{_pdep_u64, _pext_u64};
+use std::arch::x86_64:: _pext_u64;
 // we use the same types as the rest of the library.
 mod bitboard;
 use bitboard::{BitBoard, EMPTY};
@@ -47,6 +47,7 @@ struct Magic {
 #[derive(Copy, Clone)]
 struct BmiMagic {
     blockers_mask: BitBoard,
+    rays: BitBoard,
     offset: u32,
 }
 
@@ -118,9 +119,11 @@ static mut FILES: [BitBoard; 8] = [EMPTY; 8];
 // This will be generated here, and then put into the magic_gen.rs as a const array.
 static mut ADJACENT_FILES: [BitBoard; 8] = [EMPTY; 8];
 
-//static mut BISHOP_BMI_MASK: [BmiMagic; 64] = [BmiMagic; 64];
+static mut BISHOP_BMI_MASK: [BmiMagic; 64] =
+    [BmiMagic { blockers_mask: EMPTY, rays: EMPTY, offset: 0 }; 64];
+
 static mut ROOK_BMI_MASK: [BmiMagic; 64] = 
-    [BmiMagic { blockers_mask: EMPTY, offset: 0 }; 64];
+    [BmiMagic { blockers_mask: EMPTY, rays: EMPTY, offset: 0 }; 64];
 
 static mut BMI_MOVES: [u16; NUM_MOVES] = [0; NUM_MOVES];
 static mut GENERATED_BMI_MOVES: usize = 0;
@@ -439,11 +442,15 @@ fn generate_bmis(sq: Square, bishop_or_rook: usize, cur_offset: usize) -> usize 
     let mask = magic_mask(sq, bishop_or_rook);
     let rays = unsafe { RAYS[bishop_or_rook][sq.to_index()] };
 
-    let bmi = BmiMagic { blockers_mask: mask, offset: cur_offset as u32 };
+    let bmi = BmiMagic { blockers_mask: mask, rays: rays, offset: cur_offset as u32 };
     let result = cur_offset + questions.len();
 
     unsafe {
-        ROOK_BMI_MASK[sq.to_index()] = bmi;
+        if bishop_or_rook == ROOK {
+            ROOK_BMI_MASK[sq.to_index()] = bmi;
+        } else {
+            BISHOP_BMI_MASK[sq.to_index()] = bmi;
+        }
     }
 
     for i in 0..questions.len() {
@@ -461,7 +468,7 @@ fn gen_all_bmis() {
     let mut cur_offset = 0;
     for s in ALL_SQUARES.iter() {
         cur_offset = generate_bmis(*s, ROOK, cur_offset);
-        //cur_offset = generate_bmis(*s, BISHOP, cur_offset);
+        cur_offset = generate_bmis(*s, BISHOP, cur_offset);
     }
     unsafe { GENERATED_BMI_MOVES = cur_offset; }
 }
@@ -645,7 +652,11 @@ fn write_between(f: &mut File) {
 
 // Write the RAYS array to the specified file.
 fn write_rays(f: &mut File) {
-    write!(f, "const ROOK: usize = {};\nconst BISHOP: usize = {};\n", ROOK, BISHOP).unwrap();
+    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
+    write!(f, "const ROOK: usize = {};\n", ROOK).unwrap();
+    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
+    write!(f, "const BISHOP: usize = {};\n", BISHOP).unwrap();
+    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
     write!(f, "const RAYS: [[BitBoard; 64]; 2] = [[\n").unwrap();
     for i in 0..2 {
         for j in 0..64 {
@@ -678,6 +689,7 @@ fn write_knight_moves(f: &mut File) {
 
 // Write the MAGIC_NUMBERS and MOVES arrays to the specified file.
 fn write_magic(f: &mut File) {
+    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
     write!(f, "#[derive(Copy, Clone)]\n").unwrap();
     write!(f, "struct Magic {{\n").unwrap();
     write!(f, "    magic_number: BitBoard,\n").unwrap();
@@ -686,6 +698,7 @@ fn write_magic(f: &mut File) {
     write!(f, "    rightshift: u8\n").unwrap();
     write!(f, "}}\n\n").unwrap();
 
+    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
     write!(f, "const MAGIC_NUMBERS: [[Magic; 64]; 2] = [[\n").unwrap();
     for i in 0..2 {
         for j in 0 ..64 {
@@ -704,7 +717,8 @@ fn write_magic(f: &mut File) {
     write!(f, "]];\n").unwrap();
  
     unsafe {
-    write!(f, "const MOVES: [BitBoard; {}] = [\n", GENERATED_NUM_MOVES).unwrap(); 
+        write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
+        write!(f, "const MOVES: [BitBoard; {}] = [\n", GENERATED_NUM_MOVES).unwrap(); 
         for i in 0..GENERATED_NUM_MOVES {
             write!(f, "    BitBoard({}),\n", MOVES[i].to_size(0)).unwrap();
         }
@@ -801,27 +815,43 @@ fn write_zobrist(f: &mut File) {
 }
 
 fn write_bmis(f: &mut File) {
+    write!(f, "#[cfg(target_feature=\"bmi2\")]").unwrap();
     write!(f, "#[derive(Copy, Clone)]\n").unwrap();
     write!(f, "struct BmiMagic {{\n").unwrap();
     write!(f, "    blockers_mask: BitBoard,\n").unwrap();
+    write!(f, "    rays: BitBoard,\n").unwrap();
     write!(f, "    offset: u32,\n").unwrap();
     write!(f, "}}\n\n").unwrap();
 
+    write!(f, "#[cfg(target_feature=\"bmi2\")]").unwrap();
     write!(f, "const ROOK_BMI_MASK: [BmiMagic; 64] = [\n").unwrap();
     for i in 0..NUM_SQUARES {
         let bmi = unsafe { ROOK_BMI_MASK[i] };
         write!(f, "    BmiMagic {{ blockers_mask: BitBoard({}),\n", bmi.blockers_mask.0).unwrap();
+        write!(f, "                rays: BitBoard({}),\n", bmi.rays.0).unwrap();
         write!(f, "                offset: {} }},\n", bmi.offset).unwrap();
     }
     write!(f, "];\n").unwrap();
 
+    write!(f, "#[cfg(target_feature=\"bmi2\")]").unwrap();
+    write!(f, "const BISHOP_BMI_MASK: [BmiMagic; 64] = [\n").unwrap();
+    for i in 0..NUM_SQUARES {
+        let bmi = unsafe { BISHOP_BMI_MASK[i] };
+        write!(f, "    BmiMagic {{ blockers_mask: BitBoard({}),\n", bmi.blockers_mask.0).unwrap();
+        write!(f, "                rays: BitBoard({}),\n", bmi.rays.0).unwrap();
+        write!(f, "                offset: {} }},\n", bmi.offset).unwrap();
+    }
+    write!(f, "];\n").unwrap();
+
+
     let moves = unsafe { GENERATED_BMI_MOVES };
+    write!(f, "#[cfg(target_feature=\"bmi2\")]").unwrap();
     write!(f, "const BMI_MOVES: [u16; {}] = [\n", moves).unwrap();
 
     for i in 0..moves {
         write!(f, "    {},\n", unsafe { BMI_MOVES[i] }).unwrap();
     }
-    write!(f, "];\n\n");
+    write!(f, "];\n\n").unwrap();
 }
 
 // Generate everything.
