@@ -12,6 +12,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use rand::{Rng, thread_rng, weak_rng, SeedableRng};
+#[cfg(target_feature="bmi2")]
 use std::arch::x86_64:: _pext_u64;
 // we use the same types as the rest of the library.
 mod bitboard;
@@ -433,6 +434,7 @@ fn questions_and_answers(sq: Square, bishop_or_rook: usize) -> (Vec<BitBoard>, V
     (questions, answers)
 }
 
+#[cfg(target_feature="bmi2")]
 // generate lookup tables for the pdep and pext bmi2 extensions
 fn generate_bmis(sq: Square, bishop_or_rook: usize, cur_offset: usize) -> usize {
     let qa = questions_and_answers(sq, bishop_or_rook);
@@ -464,6 +466,7 @@ fn generate_bmis(sq: Square, bishop_or_rook: usize, cur_offset: usize) -> usize 
     return result;
 }
 
+#[cfg(target_feature="bmi2")]
 fn gen_all_bmis() {
     let mut cur_offset = 0;
     for s in ALL_SQUARES.iter() {
@@ -471,6 +474,10 @@ fn gen_all_bmis() {
         cur_offset = generate_bmis(*s, BISHOP, cur_offset);
     }
     unsafe { GENERATED_BMI_MOVES = cur_offset; }
+}
+#[cfg(not(target_feature="bmi2"))]
+fn gen_all_bmis() {
+    unsafe { GENERATED_BMI_MOVES = 1; }
 }
 
 // Generate a random bitboard with a small number of bits.
