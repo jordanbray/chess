@@ -11,6 +11,76 @@ This library is follows semver for version numbering in the format MAJOR.MINOR.P
 * Any added functionality or features that do not break existing applications will involve a MINOR version number change.
 * Any bug fixes or performance improvements that do not affect users will involve a PATCH version change.
 
+## Examples
+
+### Simple Move Generation
+
+This puts all moves into a static array.  An array is used instead of a Vec to keep the moves on the stack, and to allow reuse of the array (which has a big impact on performance).
+
+```rust
+  use chess::{Board, ChessMove};
+
+  let board = Board::default();
+  let mut moves = [ChessMove::default(); 256];
+  let count = board.enumerate_moves(&mut moves);
+  assert_eq!(count, 20);
+```
+
+### Incremental Move Generation With Capture/Non-Capture Sorting
+
+Here we iterate over all moves with incremental move generation.  The iterator below will generate moves as you are going through the list, which is ideal for situations where not all moves will be looked at (such as in an engine search function).
+
+```rust
+  use chess::MoveGen;
+  use chess::Board;
+  use chess::EMPTY;
+
+  // create a board with the initial position
+  let board = Board::default();
+
+  // create an iterable
+  let mut iterable = MoveGen::new(board, true);
+
+  // make sure .len() works.
+  assert_eq!(iterable.len(), 20); // the .len() function does *not* consume the iterator
+
+  // lets iterate over targets.
+  let targets = board.color_combined(!board.side_to_move());
+  iterable.set_iterator_mask(targets);
+
+  // count the number of targets
+  let mut count = 0;
+  for _ in &mut iterable {
+      count += 1;
+      // This move captures one of my opponents pieces (with the exception of en passant)
+  }
+
+  // now, iterate over the rest of the moves
+  iterable.set_iterator_mask(!EMPTY);
+  for _ in &mut iterable {
+      count += 1;
+      // This move does not capture anything
+  }
+
+  // make sure it works
+  assert_eq!(count, 20);
+```
+
+### Making a Move
+
+Here we make a move on the chess board.  The board is a copy-on-make structure, meaning every time you make a move, you create a new chess board.  The board structure is optimized for size to reduce copy-time.
+
+```rust
+  use chess::{Board, ChessMove, Square, Rank, File, Color};
+
+  let m = ChessMove::new(Square::make_square(Rank::Second, File::D),
+                         Square::make_square(Rank::Fourth, File::D),
+                         None);
+
+  let board = Board::default();
+  assert_eq!(board.make_move(m).side_to_move(), Color::Black);
+```
+
 ## Compile-time Options
 
 When compiling, I definitely recommend using RUSTFLAGS="-C target-cpu=native", specifically to gain access to the popcnt and ctzl instruction available on almost all modern CPUs.  This is used internally to figure out how many pieces are on a bitboard, and what square a piece is on respectively.  Because of the type system used here, these tasks become literally a single instruction.  Additionally, BMI2 is enabled on machines with the instructions by using this flag.
