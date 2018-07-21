@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use rand::{Rng, thread_rng, weak_rng, SeedableRng};
-
+use std::arch::x86_64::{_pdep_u64, _pext_u64};
 // we use the same types as the rest of the library.
 mod bitboard;
 use bitboard::{BitBoard, EMPTY};
@@ -42,6 +42,13 @@ struct Magic {
     mask: BitBoard,
     offset: u32,
     rightshift: u8,
+}
+
+#[derive(Copy, Clone)]
+struct BmiMagic {
+    blockers_mask: BitBoard,
+    moves_mask: BitBoard,
+    offset: u32,
 }
 
 // These numbers allow you to hash a set of blocking pieces, and get an index in the MOVES
@@ -111,6 +118,13 @@ static mut FILES: [BitBoard; 8] = [EMPTY; 8];
 // Given a file, what squares are adjacent to that file?  Useful for detecting passed pawns.
 // This will be generated here, and then put into the magic_gen.rs as a const array.
 static mut ADJACENT_FILES: [BitBoard; 8] = [EMPTY; 8];
+
+//static mut BISHOP_BMI_MASK: [BmiMagic; 64] = [BmiMagic; 64];
+static mut ROOK_BMI_MASK: [BmiMagic; 64] = 
+    [BmiMagic { blockers_mask: EMPTY, moves_mask: EMPTY, offset: 0 }; 64];
+
+static mut BMI_MOVES: [u16; NUM_MOVES] = [0; NUM_MOVES];
+static mut GENERATED_BMI_MOVES: usize = 0;
 
 // For each square, generate the RAYS for the bishop.
 fn gen_bishop_rays() {
@@ -415,6 +429,42 @@ fn questions_and_answers(sq: Square, bishop_or_rook: usize) -> (Vec<BitBoard>, V
     }
 
     (questions, answers)
+}
+
+// generate lookup tables for the pdep and pext bmi2 extensions
+fn generate_bmis(sq: Square, bishop_or_rook: usize, cur_offset: usize) -> usize {
+    let qa = questions_and_answers(sq, bishop_or_rook);
+    let questions = qa.0;
+    let answers = qa.1;
+
+    let mask = magic_mask(sq, bishop_or_rook);
+    let rays = unsafe { RAYS[bishop_or_rook][sq.to_index()] };
+
+    let bmi = BmiMagic { blockers_mask: mask, moves_mask: rays, offset: cur_offset as u32 };
+    let result = cur_offset + questions.len();
+
+    unsafe {
+        ROOK_BMI_MASK[sq.to_index()] = bmi;
+    }
+
+    for i in 0..questions.len() {
+        let question = unsafe { _pext_u64(questions[i].0, mask.0) as usize };
+        let answer = unsafe { _pext_u64(answers[i].0, rays.0) as u16 };
+       unsafe {
+            BMI_MOVES[cur_offset + question] = answer;
+       }
+    }
+
+    return result;
+}
+
+fn gen_all_bmis() {
+    let mut cur_offset = 0;
+    for s in ALL_SQUARES.iter() {
+        cur_offset = generate_bmis(*s, ROOK, cur_offset);
+        //cur_offset = generate_bmis(*s, BISHOP, cur_offset);
+    }
+    unsafe { GENERATED_BMI_MOVES = cur_offset; }
 }
 
 // Generate a random bitboard with a small number of bits.
@@ -751,6 +801,32 @@ fn write_zobrist(f: &mut File) {
     write!(f, "]];\n\n").unwrap();
 }
 
+fn write_bmis(f: &mut File) {
+    write!(f, "#[derive(Copy, Clone)]\n").unwrap();
+    write!(f, "struct BmiMagic {{\n").unwrap();
+    write!(f, "    blockers_mask: BitBoard,\n").unwrap();
+    write!(f, "    moves_mask: BitBoard,\n").unwrap();
+    write!(f, "    offset: u32,\n").unwrap();
+    write!(f, "}}\n\n").unwrap();
+
+    write!(f, "const ROOK_BMI_MASK: [BmiMagic; 64] = [\n").unwrap();
+    for i in 0..NUM_SQUARES {
+        let bmi = unsafe { ROOK_BMI_MASK[i] };
+        write!(f, "    BmiMagic {{ blockers_mask: BitBoard({}),\n", bmi.blockers_mask.0).unwrap();
+        write!(f, "                moves_mask: BitBoard({}),\n", bmi.moves_mask.0).unwrap();
+        write!(f, "                offset: {} }},\n", bmi.offset).unwrap();
+    }
+    write!(f, "];\n").unwrap();
+
+    let moves = unsafe { GENERATED_BMI_MOVES };
+    write!(f, "const BMI_MOVES: [u16; {}] = [\n", moves).unwrap();
+
+    for i in 0..moves {
+        write!(f, "    {},\n", unsafe { BMI_MOVES[i] }).unwrap();
+    }
+    write!(f, "];\n\n");
+}
+
 // Generate everything.
 fn main() {
     gen_lines();
@@ -763,6 +839,7 @@ fn main() {
     gen_pawn_moves();
     gen_all_magic();
     gen_bitboard_data();
+    gen_all_bmis();
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let magic_path = Path::new(&out_dir).join("magic_gen.rs");
@@ -780,6 +857,7 @@ fn main() {
     write_ranks(&mut f);
     write_files(&mut f);
     write_adjacent_files(&mut f);
+    write_bmis(&mut f);
 
     let zobrist_path = Path::new(&out_dir).join("zobrist_gen.rs");
     let mut z = File::create(&zobrist_path).unwrap();

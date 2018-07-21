@@ -3,6 +3,7 @@ use square::Square;
 use color::Color;
 use rank::Rank;
 use file::File;
+use std::arch::x86_64::{_pdep_u64, _pext_u64};
 
 // Include the generated lookup tables
 include!(concat!(env!("OUT_DIR"), "/magic_gen.rs"));
@@ -22,10 +23,20 @@ pub fn get_rook_rays(sq: Square) -> BitBoard {
 }
 
 /// Get the moves for a rook on a particular square, given blockers blocking my movement.
-pub fn get_rook_moves(sq: Square, blockers: BitBoard) -> BitBoard {
+fn get_rook_moves_old(sq: Square, blockers: BitBoard) -> BitBoard {
     unsafe {
         let magic: Magic = *MAGIC_NUMBERS.get_unchecked(ROOK).get_unchecked(sq.to_int() as usize);
         *MOVES.get_unchecked((magic.offset as usize) + (magic.magic_number * (blockers & magic.mask)).to_size(magic.rightshift)) & get_rook_rays(sq)
+    }
+}
+
+pub fn get_rook_moves(sq: Square, blockers: BitBoard) -> BitBoard {
+    unsafe {
+        let bmi2_magic = *ROOK_BMI_MASK.get_unchecked(sq.to_int() as usize);
+        let index = (_pext_u64(blockers.0, bmi2_magic.blockers_mask.0) as usize) +
+                    (bmi2_magic.offset as usize);
+        let result = _pdep_u64(*BMI_MOVES.get_unchecked(index as usize) as u64, bmi2_magic.moves_mask.0);
+        return BitBoard(result);
     }
 }
 
