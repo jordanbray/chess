@@ -1,6 +1,6 @@
 [package]
 name = "chess"
-version = "1.0.2"
+version = "1.0.3"
 authors = ["Jordan Bray <jordanbray@gmail.com>"]
 description = "This is a fast chess move generator.  It has a very good set of documentation, so you should take advantage of that.  It (now) generates all lookup tabels with a build.rs file, which means that very little pseudo-legal move generation requires branching.  There are some convenience functions that are exposed to, for example, find all the squares between two squares.  This uses a copy-on-make style structure, and the Board structure is as slimmed down as possible to reduce the cost of copying the board.  There are places to improve perft-test performance further, but I instead opt to be more feature-complete to make it useful in real applications.  For example, I generate both a hash of the board and a pawn-hash of the board for use in evaluation lookup tables (using Zobrist hashing).  There are two ways to generate moves, one is faster, the other has more features that will be useful if making a chess engine.  See the documentation for more details."
 build = "src/build.rs"

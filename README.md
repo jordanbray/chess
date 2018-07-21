@@ -11,7 +11,19 @@ This library is follows semver for version numbering in the format MAJOR.MINOR.P
 * Any added functionality or features that do not break existing applications will involve a MINOR version number change.
 * Any bug fixes or performance improvements that do not affect users will involve a PATCH version change.
 
-# Shakmaty
+## Compile-time Options
+
+When compiling, I definitely recommend using RUSTFLAGS="-C target-cpu=native", specifically to gain access to the popcnt and ctzl instruction available on almost all modern CPUs.  This is used internally to figure out how many pieces are on a bitboard, and what square a piece is on respectively.  Because of the type system used here, these tasks become literally a single instruction.  Additionally, BMI2 is enabled on machines with the instructions by using this flag.
+
+## BMI2
+
+As of version 1.0.3 of this library, the BMI2 instruction-set is used on machines that support it.  This speeds up the logic in two ways:
+* It uses built-in instructions to do the same logic that magic bitboards do.
+* It reduces cache load by storing moves in a u16 rather than a u64, which can be decompressed to a u64 with a single instruction.
+
+On targets without BMI2, the library falls back on magic bitboards.  This is checked at compile-time.
+
+## Shakmaty
 
 Another rust chess library is in the 'shakmaty' crate.  This is a great library, with many more features than this one.  It supports various chess variants, as well as the UCI protocol.  However, those features come at a cost, and this library performs consistently faster in all test cases I can throw at it.  To compare the two, I have added 'shakmaty' support to the 'chess_perft' application, and moved a bunch of benchmarks to that crate.  You can view the results at
 https://github.com/jordanbray/chess_perft.
@@ -27,10 +39,6 @@ This library has very fast move generation (the primary purposes of its existanc
 ## What It Does Not Do
 
 This is not a chess engine, just the move generator.  This is not a chess UI, just the move generator.  This is not a chess PGN parser, database, UCI communicator, XBOARD/WinBoard protocol, website or grandmaster.  Just a humble move generator.
-
-## Compile-time Options
-
-When compiling, I definitely recommend using RUSTFLAGS="-C target-cpu=native", specifically to gain access to the popcnt and ctzl instruction available on almost all modern CPUs.  This is used internally to figure out how many pieces are on a bitboard, and what square a piece is on respectively.  Because of the type system used here, these tasks become literally a single instruction.
 
 ## API Documentation
 
