@@ -4,7 +4,7 @@ use std::fmt;
 use std::cmp::Ordering;
 
 /// Represent a ChessMove in memory
-#[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default)]
+#[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug)]
 pub struct ChessMove {
     source: Square,
     dest: Square,
@@ -37,8 +37,8 @@ impl ChessMove {
 impl fmt::Display for ChessMove {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.promotion {
-            None => write!(f, "{}-{}", self.source, self.dest),
-            Some(x) => write!(f, "{}-{}={}", self.source, self.dest, x)
+            None => write!(f, "{}{}", self.source, self.dest),
+            Some(x) => write!(f, "{}{}{}", self.source, self.dest, x)
         }
     }
 }

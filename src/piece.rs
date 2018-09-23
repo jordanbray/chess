@@ -33,12 +33,12 @@ impl Piece {
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match *self {
-            Piece::Pawn => "P",
-            Piece::Knight => "N",
-            Piece::Bishop => "B",
-            Piece::Rook => "R",
-            Piece::Queen => "Q",
-            Piece::King => "K"
+            Piece::Pawn => "p",
+            Piece::Knight => "n",
+            Piece::Bishop => "b",
+            Piece::Rook => "r",
+            Piece::Queen => "q",
+            Piece::King => "k"
         })
     }
 }
