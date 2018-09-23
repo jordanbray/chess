@@ -21,7 +21,7 @@ before_script:
 test:cargo:
   script:
   - rustc --version && cargo --version      # Print version info for debugging
-  - cargo test --all --verbose
+  - cargo test --all --verbose --release
 
 deploy_production:
   stage: deploy
