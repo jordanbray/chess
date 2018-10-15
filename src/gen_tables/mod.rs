@@ -6,18 +6,20 @@
 
 // it to be easily followed.
 extern crate rand;
-mod bitboard;
-mod square;
-mod rank;
-mod file;
-mod color;
-mod piece;
-mod castle_rights;
-mod gen_tables;
 
-use gen_tables::generate_all_tables;
-// Generate everything.
-fn main() {
-    generate_all_tables();
-}
+mod rays;
+mod magic_helpers;
+mod ranks_files;
+mod lines;
+mod pawns;
+mod king;
+mod knights;
+mod between;
+mod zobrist;
+#[cfg(not(target_feature="bmi2"))]
+mod magic;
+#[cfg(target_feature="bmi2")]
+mod bmis;
+mod generate_all_tables;
 
+pub use self::generate_all_tables::generate_all_tables;
