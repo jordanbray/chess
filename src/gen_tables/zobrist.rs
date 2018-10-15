@@ -1,12 +1,12 @@
 use std::fs::File;
 use std::io::Write;
 // we use the same types as the rest of the library.
-use rand::{Rng, weak_rng, SeedableRng};
-use color::NUM_COLORS;
-use piece::NUM_PIECES;
-use square::NUM_SQUARES;
 use castle_rights::NUM_CASTLE_RIGHTS;
+use color::NUM_COLORS;
 use file::NUM_FILES;
+use piece::NUM_PIECES;
+use rand::{weak_rng, Rng, SeedableRng};
+use square::NUM_SQUARES;
 
 // write the ZOBRIEST_* arrays to a file.  I don't generate it, because its just
 // a bunch of random u64s
@@ -16,7 +16,10 @@ pub fn write_zobrist(f: &mut File) {
 
     write!(f, "const SIDE_TO_MOVE: u64 = {};\n\n", rng.next_u64()).unwrap();
 
-    write!(f, "const ZOBRIST_PIECES: [[[u64; NUM_SQUARES]; NUM_PIECES]; NUM_COLORS] = [[[\n").unwrap();
+    write!(
+        f,
+        "const ZOBRIST_PIECES: [[[u64; NUM_SQUARES]; NUM_PIECES]; NUM_COLORS] = [[[\n"
+    ).unwrap();
     for i in 0..NUM_COLORS {
         for j in 0..NUM_PIECES {
             for _ in 0..NUM_SQUARES {
@@ -32,7 +35,10 @@ pub fn write_zobrist(f: &mut File) {
     }
     write!(f, "]]];\n\n").unwrap();
 
-    write!(f, "const ZOBRIST_CASTLES: [[u64; NUM_CASTLE_RIGHTS]; NUM_COLORS] = [[\n").unwrap();
+    write!(
+        f,
+        "const ZOBRIST_CASTLES: [[u64; NUM_CASTLE_RIGHTS]; NUM_COLORS] = [[\n"
+    ).unwrap();
     for i in 0..NUM_COLORS {
         for _ in 0..NUM_CASTLE_RIGHTS {
             write!(f, "    {},\n", rng.next_u64()).unwrap();
@@ -54,4 +60,3 @@ pub fn write_zobrist(f: &mut File) {
     }
     write!(f, "]];\n\n").unwrap();
 }
-

@@ -1,12 +1,12 @@
+use rand::thread_rng;
 use std::fs::File;
 use std::io::Write;
-use rand::thread_rng;
 
 use bitboard::{BitBoard, EMPTY};
-use square::{Square, NUM_SQUARES, ALL_SQUARES};
-use piece::Piece;
-use gen_tables::rays::get_rays;
 use gen_tables::magic_helpers::{magic_mask, questions_and_answers, random_bitboard, NUM_MOVES};
+use gen_tables::rays::get_rays;
+use piece::Piece;
+use square::{Square, ALL_SQUARES, NUM_SQUARES};
 
 // This structure is for the "Magic Bitboard" generation
 #[derive(Copy, Clone)]
@@ -20,8 +20,12 @@ struct Magic {
 // These numbers allow you to hash a set of blocking pieces, and get an index in the MOVES
 // array to return the valid moves, given a set of blocking pieces.
 // This will be generated here, but then put into the magic_gen.rs as a const array.
-static mut MAGIC_NUMBERS: [[Magic; NUM_SQUARES]; 2 ] =
-        [[Magic { magic_number: EMPTY, mask: EMPTY, offset: 0, rightshift: 0 }; 64]; 2];
+static mut MAGIC_NUMBERS: [[Magic; NUM_SQUARES]; 2] = [[Magic {
+    magic_number: EMPTY,
+    mask: EMPTY,
+    offset: 0,
+    rightshift: 0,
+}; 64]; 2];
 
 // How many squares can a blocking piece be on for the rook?
 static mut GENERATED_NUM_MOVES: usize = 0;
@@ -34,7 +38,6 @@ static mut MOVES: [BitBoard; NUM_MOVES] = [EMPTY; NUM_MOVES];
 // may have set.  This helps with compressing the MOVES array.
 static mut MOVE_RAYS: [BitBoard; NUM_MOVES] = [EMPTY; NUM_MOVES];
 
-
 // Find a perfect hashing function for the move generation for a particular square and piece type
 // Store the resulting move array in MOVES[cur_offset...], and return the next offset
 // to be used
@@ -45,7 +48,10 @@ fn generate_magic(sq: Square, piece: Piece, cur_offset: usize) -> usize {
     let mask = magic_mask(sq, piece);
 
     assert_eq!(questions.iter().fold(EMPTY, |b, n| b | *n), mask);
-    assert_eq!(answers.iter().fold(EMPTY, |b, n| b | *n), get_rays(sq, piece));
+    assert_eq!(
+        answers.iter().fold(EMPTY, |b, n| b | *n),
+        get_rays(sq, piece)
+    );
     let mut new_offset = cur_offset;
 
     for i in 0..cur_offset {
@@ -64,8 +70,13 @@ fn generate_magic(sq: Square, piece: Piece, cur_offset: usize) -> usize {
         }
     }
 
-    let mut new_magic = Magic { magic_number: EMPTY, mask: mask, offset: new_offset as u32, rightshift: (questions.len().leading_zeros() + 1) as u8 };
-    
+    let mut new_magic = Magic {
+        magic_number: EMPTY,
+        mask: mask,
+        offset: new_offset as u32,
+        rightshift: (questions.len().leading_zeros() + 1) as u8,
+    };
+
     let mut done = false;
     let mut rng = thread_rng();
 
@@ -120,7 +131,6 @@ pub fn gen_all_magic() {
     }
 }
 
-
 // Write the MAGIC_NUMBERS and MOVES arrays to the specified file.
 pub fn write_magic(f: &mut File) {
     write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
@@ -135,7 +145,7 @@ pub fn write_magic(f: &mut File) {
     write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
     write!(f, "const MAGIC_NUMBERS: [[Magic; 64]; 2] = [[\n").unwrap();
     for i in 0..2 {
-        for j in 0 ..64 {
+        for j in 0..64 {
             unsafe {
                 write!(f, "    Magic {{ magic_number: BitBoard({}), mask: BitBoard({}), offset: {}, rightshift: {} }},\n",
                     MAGIC_NUMBERS[i][j].magic_number.to_size(0),
@@ -149,14 +159,13 @@ pub fn write_magic(f: &mut File) {
         }
     }
     write!(f, "]];\n").unwrap();
- 
+
     unsafe {
         write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
-        write!(f, "const MOVES: [BitBoard; {}] = [\n", GENERATED_NUM_MOVES).unwrap(); 
+        write!(f, "const MOVES: [BitBoard; {}] = [\n", GENERATED_NUM_MOVES).unwrap();
         for i in 0..GENERATED_NUM_MOVES {
             write!(f, "    BitBoard({}),\n", MOVES[i].to_size(0)).unwrap();
         }
     }
     write!(f, "];\n").unwrap();
 }
-

@@ -11,23 +11,22 @@ static mut KING_MOVES: [BitBoard; 64] = [EMPTY; 64];
 pub fn gen_king_moves() {
     for src in ALL_SQUARES.iter() {
         unsafe {
-            KING_MOVES[src.to_index()] = 
-                ALL_SQUARES.iter()
-                           .filter(|dest| {
-                                let src_rank = src.get_rank().to_index() as i8;
-                                let src_file = src.get_file().to_index() as i8;
-                                let dest_rank = dest.get_rank().to_index() as i8;
-                                let dest_file = dest.get_file().to_index() as i8;
+            KING_MOVES[src.to_index()] = ALL_SQUARES
+                .iter()
+                .filter(|dest| {
+                    let src_rank = src.get_rank().to_index() as i8;
+                    let src_file = src.get_file().to_index() as i8;
+                    let dest_rank = dest.get_rank().to_index() as i8;
+                    let dest_file = dest.get_file().to_index() as i8;
 
-                                ((src_rank - dest_rank).abs() == 1 || (src_rank - dest_rank).abs() == 0) &&
-                                ((src_file - dest_file).abs() == 1 || (src_file - dest_file).abs() == 0) &&
-                                *src != **dest
-                           })
-                           .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                    ((src_rank - dest_rank).abs() == 1 || (src_rank - dest_rank).abs() == 0)
+                        && ((src_file - dest_file).abs() == 1 || (src_file - dest_file).abs() == 0)
+                        && *src != **dest
+                })
+                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
 }
-
 
 // Write the KING_MOVES array to the specified file.
 pub fn write_king_moves(f: &mut File) {
@@ -37,5 +36,3 @@ pub fn write_king_moves(f: &mut File) {
     }
     write!(f, "];\n").unwrap();
 }
-
-

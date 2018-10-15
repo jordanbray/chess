@@ -1,8 +1,8 @@
-use square::*;
-use std::ops::{BitAnd, BitOr, BitXor, BitAndAssign, BitOrAssign, BitXorAssign, Mul, Not};
-use std::fmt;
-use rank::Rank;
 use file::File;
+use rank::Rank;
+use square::*;
+use std::fmt;
+use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, Not};
 
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value, but you are probably better off
@@ -22,7 +22,7 @@ use file::File;
 ///
 /// assert_eq!(count, 3);
 /// ```
-/// 
+///
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug, Default)]
 pub struct BitBoard(pub u64);
 
@@ -135,9 +135,7 @@ impl BitBoard {
 
     /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`
     pub fn to_square(&self) -> Square {
-        unsafe {
-            Square::new(self.0.trailing_zeros() as u8)
-        }
+        unsafe { Square::new(self.0.trailing_zeros() as u8) }
     }
 
     /// Count the number of `Squares` set in this `BitBoard`
@@ -170,4 +168,3 @@ impl Iterator for BitBoard {
         }
     }
 }
-

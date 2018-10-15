@@ -1,6 +1,6 @@
-use square::{Square, ALL_SQUARES};
 use bitboard::{BitBoard, EMPTY};
 use piece::Piece;
+use square::{Square, ALL_SQUARES};
 use std::fs::File;
 use std::io::Write;
 
@@ -11,38 +11,38 @@ static mut RAYS: [[BitBoard; 64]; 2] = [[EMPTY; 64]; 2];
 
 // For each square, generate the RAYS for the bishop.
 pub fn gen_bishop_rays() {
-   for src in ALL_SQUARES.iter() {
+    for src in ALL_SQUARES.iter() {
         unsafe {
-            RAYS[1][src.to_index()] =
-                ALL_SQUARES.iter()
-                           .filter(|dest| {
-                                let src_rank = src.get_rank().to_index() as i8;
-                                let src_file = src.get_file().to_index() as i8;
-                                let dest_rank = dest.get_rank().to_index() as i8;
-                                let dest_file = dest.get_file().to_index() as i8;
+            RAYS[1][src.to_index()] = ALL_SQUARES
+                .iter()
+                .filter(|dest| {
+                    let src_rank = src.get_rank().to_index() as i8;
+                    let src_file = src.get_file().to_index() as i8;
+                    let dest_rank = dest.get_rank().to_index() as i8;
+                    let dest_file = dest.get_file().to_index() as i8;
 
-                                (src_rank - dest_rank).abs() == (src_file - dest_file).abs() &&
-                                    *src != **dest})
-                           .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                    (src_rank - dest_rank).abs() == (src_file - dest_file).abs() && *src != **dest
+                })
+                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
 }
 
 // For each square, generate the RAYS for the rook.
 pub fn gen_rook_rays() {
-   for src in ALL_SQUARES.iter() {
+    for src in ALL_SQUARES.iter() {
         unsafe {
-            RAYS[0][src.to_index()] =
-                ALL_SQUARES.iter()
-                           .filter(|dest| {
-                                let src_rank = src.get_rank().to_index();
-                                let src_file = src.get_file().to_index();
-                                let dest_rank = dest.get_rank().to_index();
-                                let dest_file = dest.get_file().to_index();
+            RAYS[0][src.to_index()] = ALL_SQUARES
+                .iter()
+                .filter(|dest| {
+                    let src_rank = src.get_rank().to_index();
+                    let src_file = src.get_file().to_index();
+                    let dest_rank = dest.get_rank().to_index();
+                    let dest_file = dest.get_file().to_index();
 
-                                (src_rank == dest_rank || src_file == dest_file) &&
-                                    *src != **dest})
-                           .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                    (src_rank == dest_rank || src_file == dest_file) && *src != **dest
+                })
+                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
 }
@@ -50,7 +50,6 @@ pub fn gen_rook_rays() {
 pub fn get_rays(sq: Square, piece: Piece) -> BitBoard {
     unsafe { RAYS[if piece == Piece::Rook { 0 } else { 1 }][sq.to_index()] }
 }
-
 
 // Write the RAYS array to the specified file.
 pub fn write_rays(f: &mut File) {
@@ -70,4 +69,3 @@ pub fn write_rays(f: &mut File) {
     }
     write!(f, "]];\n").unwrap();
 }
-

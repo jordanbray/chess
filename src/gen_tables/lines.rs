@@ -13,41 +13,38 @@ pub fn gen_lines() {
     for src in ALL_SQUARES.iter() {
         for dest in ALL_SQUARES.iter() {
             unsafe {
-                LINE[src.to_index()][dest.to_index()] =
-                    ALL_SQUARES.iter()
-                               .filter(|test| {
-                                    let src_rank = src.get_rank().to_index() as i8;
-                                    let src_file = src.get_file().to_index() as i8;
-                                    let dest_rank = dest.get_rank().to_index() as i8;
-                                    let dest_file = dest.get_file().to_index() as i8;
-                                    let test_rank = test.get_rank().to_index() as i8;
-                                    let test_file = test.get_file().to_index() as i8;
+                LINE[src.to_index()][dest.to_index()] = ALL_SQUARES
+                    .iter()
+                    .filter(|test| {
+                        let src_rank = src.get_rank().to_index() as i8;
+                        let src_file = src.get_file().to_index() as i8;
+                        let dest_rank = dest.get_rank().to_index() as i8;
+                        let dest_file = dest.get_file().to_index() as i8;
+                        let test_rank = test.get_rank().to_index() as i8;
+                        let test_file = test.get_file().to_index() as i8;
 
-                                    // test diagonals first
-                                    if (src_rank - dest_rank).abs() ==
-                                        (src_file - dest_file).abs() &&
-                                        *src != *dest {
-                                        (src_rank - test_rank).abs() ==
-                                            (src_file - test_file).abs() &&
-                                        (dest_rank - test_rank).abs() ==
-                                            (dest_file - test_file).abs()
-                                    // next, test rank/file lines
-                                    } else if (src_rank == dest_rank || src_file == dest_file) &&
-                                               *src != *dest {
-                                        (src_rank == test_rank && dest_rank == test_rank) ||
-                                        (src_file == test_file && dest_file == test_file)
-                                    // if src and dest don't line up, there is no line.  Return
-                                    // EMPTY
-                                    } else {
-                                        false
-                                    }
-                               })
-                               .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                        // test diagonals first
+                        if (src_rank - dest_rank).abs() == (src_file - dest_file).abs()
+                            && *src != *dest
+                        {
+                            (src_rank - test_rank).abs() == (src_file - test_file).abs()
+                                && (dest_rank - test_rank).abs() == (dest_file - test_file).abs()
+                        // next, test rank/file lines
+                        } else if (src_rank == dest_rank || src_file == dest_file) && *src != *dest
+                        {
+                            (src_rank == test_rank && dest_rank == test_rank)
+                                || (src_file == test_file && dest_file == test_file)
+                        // if src and dest don't line up, there is no line.  Return
+                        // EMPTY
+                        } else {
+                            false
+                        }
+                    })
+                    .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
             }
         }
     }
 }
-
 
 // Write the LINE array to the specified file.
 pub fn write_lines(f: &mut File) {
@@ -61,7 +58,4 @@ pub fn write_lines(f: &mut File) {
         }
     }
     write!(f, "]];\n").unwrap();
-
 }
-
-

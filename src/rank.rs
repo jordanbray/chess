@@ -17,15 +17,22 @@ pub enum Rank {
 pub const NUM_RANKS: usize = 8;
 
 /// Enumerate all ranks
-pub const ALL_RANKS: [Rank; NUM_RANKS] = [Rank::First, Rank::Second, Rank::Third, Rank::Fourth, Rank::Fifth, Rank::Sixth, Rank::Seventh, Rank::Eighth];
+pub const ALL_RANKS: [Rank; NUM_RANKS] = [
+    Rank::First,
+    Rank::Second,
+    Rank::Third,
+    Rank::Fourth,
+    Rank::Fifth,
+    Rank::Sixth,
+    Rank::Seventh,
+    Rank::Eighth,
+];
 
 impl Rank {
     /// Convert a `usize` into a `Rank` (the inverse of to_index).  If the number is > 7, wrap
     /// around.
     pub fn from_index(i: usize) -> Rank {
-        unsafe {
-            transmute((i as u8) & 7)
-        }
+        unsafe { transmute((i as u8) & 7) }
     }
 
     /// Go one rank down.  If impossible, wrap around.

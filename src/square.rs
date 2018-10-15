@@ -1,6 +1,6 @@
 use color::Color;
-use rank::Rank;
 use file::File;
+use rank::Rank;
 use std::fmt;
 
 /// Represent a square on the chess board
@@ -22,9 +22,7 @@ impl Default for Square {
     /// assert_eq!(explicit_sq, implicit_sq);
     /// ```
     fn default() -> Square {
-        unsafe {
-            Square::new(0)
-        }
+        unsafe { Square::new(0) }
     }
 }
 
@@ -67,7 +65,7 @@ impl Square {
     /// }
     /// ```
     pub fn make_square(rank: Rank, file: File) -> Square {
-        Square((rank.to_index() as u8)<<3 ^ (file.to_index() as u8))
+        Square((rank.to_index() as u8) << 3 ^ (file.to_index() as u8))
     }
 
     /// Return the rank given this square.
@@ -116,7 +114,7 @@ impl Square {
     }
 
     /// If there is a square below me, return that.  Otherwise, None.
-    /// 
+    ///
     /// ```
     /// use chess::{Square, Rank, File};
     ///
@@ -135,7 +133,7 @@ impl Square {
     }
 
     /// If there is a square to the left of me, return that.  Otherwise, None.
-    /// 
+    ///
     /// ```
     /// use chess::{Square, Rank, File};
     ///
@@ -164,11 +162,14 @@ impl Square {
     ///
     /// assert_eq!(sq.right().expect("Valid Square").right(), None);
     /// ```
-     pub fn right(&self) -> Option<Square> {
+    pub fn right(&self) -> Option<Square> {
         if self.get_file() == File::H {
             None
         } else {
-            Some(Square::make_square(self.get_rank(), self.get_file().right()))
+            Some(Square::make_square(
+                self.get_rank(),
+                self.get_file().right(),
+            ))
         }
     }
 
@@ -190,7 +191,7 @@ impl Square {
     pub fn forward(&self, color: Color) -> Option<Square> {
         match color {
             Color::White => self.up(),
-            Color::Black => self.down()
+            Color::Black => self.down(),
         }
     }
 
@@ -212,10 +213,9 @@ impl Square {
     pub fn backward(&self, color: Color) -> Option<Square> {
         match color {
             Color::White => self.down(),
-            Color::Black => self.up()
+            Color::Black => self.up(),
         }
     }
-
 
     /// If there is a square above me, return that.  If not, wrap around to the other side.
     ///
@@ -243,7 +243,7 @@ impl Square {
     ///
     /// assert_eq!(sq.udown().udown(), Square::make_square(Rank::Eighth, File::D));
     /// ```
-     pub fn udown(&self) -> Square {
+    pub fn udown(&self) -> Square {
         Square::make_square(self.get_rank().down(), self.get_file())
     }
 
@@ -258,7 +258,7 @@ impl Square {
     ///
     /// assert_eq!(sq.uleft().uleft(), Square::make_square(Rank::Seventh, File::H));
     /// ```
-     pub fn uleft(&self) -> Square {
+    pub fn uleft(&self) -> Square {
         Square::make_square(self.get_rank(), self.get_file().left())
     }
 
@@ -274,7 +274,7 @@ impl Square {
     ///
     /// assert_eq!(sq.uright().uright(), Square::make_square(Rank::Seventh, File::A));
     /// ```
-     pub fn uright(&self) -> Square {
+    pub fn uright(&self) -> Square {
         Square::make_square(self.get_rank(), self.get_file().right())
     }
 
@@ -294,10 +294,10 @@ impl Square {
     /// assert_eq!(sq.uforward(Color::Black), Square::make_square(Rank::First, File::D));
     /// assert_eq!(sq.uforward(Color::Black).uforward(Color::Black), Square::make_square(Rank::Eighth, File::D));
     /// ```
-     pub fn uforward(&self, color: Color) -> Square {
+    pub fn uforward(&self, color: Color) -> Square {
         match color {
             Color::White => self.uup(),
-            Color::Black => self.udown()
+            Color::Black => self.udown(),
         }
     }
 
@@ -320,7 +320,7 @@ impl Square {
     pub fn ubackward(&self, color: Color) -> Square {
         match color {
             Color::White => self.udown(),
-            Color::Black => self.uup()
+            Color::Black => self.uup(),
         }
     }
 
@@ -367,24 +367,34 @@ impl Square {
         }
         let ch: Vec<char> = s.chars().collect();
         match ch[0] {
-            'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' => {},
-            _ => { return None; }
+            'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' => {}
+            _ => {
+                return None;
+            }
         }
         match ch[1] {
-            '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {},
-            _ => { return None; }
+            '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {}
+            _ => {
+                return None;
+            }
         }
-        Some(Square::make_square(Rank::from_index((ch[1] as usize) - ('1' as usize)),
-                                 File::from_index((ch[0] as usize) - ('a' as usize))))
+        Some(Square::make_square(
+            Rank::from_index((ch[1] as usize) - ('1' as usize)),
+            File::from_index((ch[0] as usize) - ('a' as usize)),
+        ))
     }
 }
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", (('a' as u8) + ((self.0 & 7) as u8)) as char,
-                          (('1' as u8) + ((self.0 >> 3) as u8)) as char)
+        write!(
+            f,
+            "{}{}",
+            (('a' as u8) + ((self.0 & 7) as u8)) as char,
+            (('1' as u8) + ((self.0 >> 3) as u8)) as char
+        )
     }
 }
- 
+
 /// A list of every square on the chessboard.
 ///
 /// ```
@@ -401,12 +411,68 @@ impl fmt::Display for Square {
 /// assert_eq!(new_universe, universe);
 /// ```
 pub const ALL_SQUARES: [Square; 64] = [
-     Square(0),  Square(1),  Square(2),  Square(3),  Square(4),  Square(5),  Square(6), Square(7),
-     Square(8),  Square(9), Square(10), Square(11), Square(12), Square(13), Square(14), Square(15),
-    Square(16), Square(17), Square(18), Square(19), Square(20), Square(21), Square(22), Square(23),
-    Square(24), Square(25), Square(26), Square(27), Square(28), Square(29), Square(30), Square(31),
-    Square(32), Square(33), Square(34), Square(35), Square(36), Square(37), Square(38), Square(39),
-    Square(40), Square(41), Square(42), Square(43), Square(44), Square(45), Square(46), Square(47),
-    Square(48), Square(49), Square(50), Square(51), Square(52), Square(53), Square(54), Square(55),
-    Square(56), Square(57), Square(58), Square(59), Square(60), Square(61), Square(62), Square(63) ];
-
+    Square(0),
+    Square(1),
+    Square(2),
+    Square(3),
+    Square(4),
+    Square(5),
+    Square(6),
+    Square(7),
+    Square(8),
+    Square(9),
+    Square(10),
+    Square(11),
+    Square(12),
+    Square(13),
+    Square(14),
+    Square(15),
+    Square(16),
+    Square(17),
+    Square(18),
+    Square(19),
+    Square(20),
+    Square(21),
+    Square(22),
+    Square(23),
+    Square(24),
+    Square(25),
+    Square(26),
+    Square(27),
+    Square(28),
+    Square(29),
+    Square(30),
+    Square(31),
+    Square(32),
+    Square(33),
+    Square(34),
+    Square(35),
+    Square(36),
+    Square(37),
+    Square(38),
+    Square(39),
+    Square(40),
+    Square(41),
+    Square(42),
+    Square(43),
+    Square(44),
+    Square(45),
+    Square(46),
+    Square(47),
+    Square(48),
+    Square(49),
+    Square(50),
+    Square(51),
+    Square(52),
+    Square(53),
+    Square(54),
+    Square(55),
+    Square(56),
+    Square(57),
+    Square(58),
+    Square(59),
+    Square(60),
+    Square(61),
+    Square(62),
+    Square(63),
+];

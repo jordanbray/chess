@@ -1,7 +1,7 @@
 use bitboard::{BitBoard, EMPTY};
 use color::Color;
-use square::Square;
 use file::File;
+use square::Square;
 /// What castle rights does a particular player have?
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum CastleRights {
@@ -15,7 +15,12 @@ pub enum CastleRights {
 pub const NUM_CASTLE_RIGHTS: usize = 4;
 
 /// Enumerate all castle rights.
-pub const ALL_CASTLE_RIGHTS: [CastleRights; NUM_CASTLE_RIGHTS] = [CastleRights::NoRights, CastleRights::KingSide, CastleRights::QueenSide, CastleRights::Both];
+pub const ALL_CASTLE_RIGHTS: [CastleRights; NUM_CASTLE_RIGHTS] = [
+    CastleRights::NoRights,
+    CastleRights::KingSide,
+    CastleRights::QueenSide,
+    CastleRights::Both,
+];
 
 impl CastleRights {
     /// Can I castle kingside?
@@ -30,15 +35,15 @@ impl CastleRights {
 
     /// What squares need to be empty to castle kingside?
     pub fn kingside_squares(&self, color: Color) -> BitBoard {
-        BitBoard::set(color.to_my_backrank(), File::F) ^
-        BitBoard::set(color.to_my_backrank(), File::G)
+        BitBoard::set(color.to_my_backrank(), File::F)
+            ^ BitBoard::set(color.to_my_backrank(), File::G)
     }
 
     /// What squares need to be empty to castle queenside?
     pub fn queenside_squares(&self, color: Color) -> BitBoard {
-        BitBoard::set(color.to_my_backrank(), File::B) ^
-        BitBoard::set(color.to_my_backrank(), File::C) ^
-        BitBoard::set(color.to_my_backrank(), File::D)
+        BitBoard::set(color.to_my_backrank(), File::B)
+            ^ BitBoard::set(color.to_my_backrank(), File::C)
+            ^ BitBoard::set(color.to_my_backrank(), File::D)
     }
 
     /// Remove castle rights, and return a new `CastleRights`.
@@ -63,7 +68,7 @@ impl CastleRights {
             1 => CastleRights::KingSide,
             2 => CastleRights::QueenSide,
             3 => CastleRights::Both,
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -73,8 +78,10 @@ impl CastleRights {
             CastleRights::NoRights => EMPTY,
             CastleRights::KingSide => BitBoard::set(color.to_my_backrank(), File::H),
             CastleRights::QueenSide => BitBoard::set(color.to_my_backrank(), File::A),
-            CastleRights::Both => BitBoard::set(color.to_my_backrank(), File::A) ^
-                                  BitBoard::set(color.to_my_backrank(), File::H)
+            CastleRights::Both => {
+                BitBoard::set(color.to_my_backrank(), File::A)
+                    ^ BitBoard::set(color.to_my_backrank(), File::H)
+            }
         }
     }
 
@@ -84,8 +91,7 @@ impl CastleRights {
         match square.get_file() {
             File::A => CastleRights::QueenSide,
             File::H => CastleRights::KingSide,
-            _       => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
-

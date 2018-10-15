@@ -1,8 +1,8 @@
+use castle_rights::{CastleRights, NUM_CASTLE_RIGHTS};
+use color::{Color, NUM_COLORS};
+use file::{File, NUM_FILES};
 use piece::{Piece, NUM_PIECES};
 use square::{Square, NUM_SQUARES};
-use color::{Color, NUM_COLORS};
-use castle_rights::{CastleRights, NUM_CASTLE_RIGHTS};
-use file::{File, NUM_FILES};
 
 /// Create a completely blank type.  This allows all the functions to be part of this type, which I
 /// think is a bit cleaner than bare functions everywhere.
@@ -15,19 +15,26 @@ impl Zobrist {
     /// Get the value for a particular piece
     pub fn piece(piece: Piece, square: Square, color: Color) -> u64 {
         unsafe {
-            *ZOBRIST_PIECES.get_unchecked(color.to_index()).get_unchecked(piece.to_index()).get_unchecked(square.to_index())
+            *ZOBRIST_PIECES
+                .get_unchecked(color.to_index())
+                .get_unchecked(piece.to_index())
+                .get_unchecked(square.to_index())
         }
     }
 
     pub fn castles(castle_rights: CastleRights, color: Color) -> u64 {
         unsafe {
-            *ZOBRIST_CASTLES.get_unchecked(color.to_index()).get_unchecked(castle_rights.to_index())
+            *ZOBRIST_CASTLES
+                .get_unchecked(color.to_index())
+                .get_unchecked(castle_rights.to_index())
         }
     }
 
     pub fn en_passant(file: File, color: Color) -> u64 {
         unsafe {
-            *ZOBRIST_EP.get_unchecked(color.to_index()).get_unchecked(file.to_index())
+            *ZOBRIST_EP
+                .get_unchecked(color.to_index())
+                .get_unchecked(file.to_index())
         }
     }
 

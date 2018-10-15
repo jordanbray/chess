@@ -1,10 +1,10 @@
 use bitboard::{BitBoard, EMPTY};
-use piece::Piece;
-use square::{Square, ALL_SQUARES};
-use rand::Rng;
-use rank::Rank;
 use file::File;
 use gen_tables::rays::get_rays;
+use piece::Piece;
+use rand::Rng;
+use rank::Rank;
+use square::{Square, ALL_SQUARES};
 
 // How many squares can a blocking piece be on for the rook?
 const ROOK_BITS: usize = 12;
@@ -16,20 +16,36 @@ pub const NUM_MOVES: usize = 64 * (1<<ROOK_BITS) /* Rook Moves */ +
 
 // Return a list of directions for the rook.
 fn rook_directions() -> Vec<fn(Square) -> Option<Square>> {
-    fn left(sq: Square) -> Option<Square> { sq.left() }
-    fn right(sq: Square) -> Option<Square> { sq.right() }
-    fn up(sq: Square) -> Option<Square> { sq.up() }
-    fn down(sq: Square) -> Option<Square> { sq.down() }
+    fn left(sq: Square) -> Option<Square> {
+        sq.left()
+    }
+    fn right(sq: Square) -> Option<Square> {
+        sq.right()
+    }
+    fn up(sq: Square) -> Option<Square> {
+        sq.up()
+    }
+    fn down(sq: Square) -> Option<Square> {
+        sq.down()
+    }
 
     vec![left, right, up, down]
 }
 
 // Return a list of directions for the bishop.
 fn bishop_directions() -> Vec<fn(Square) -> Option<Square>> {
-    fn nw(sq: Square) -> Option<Square> { sq.left().map_or(None, |s| s.up()) }
-    fn ne(sq: Square) -> Option<Square> { sq.right().map_or(None, |s| s.up()) }
-    fn sw(sq: Square) -> Option<Square> { sq.left().map_or(None, |s| s.down()) }
-    fn se(sq: Square) -> Option<Square> { sq.right().map_or(None, |s| s.down()) }
+    fn nw(sq: Square) -> Option<Square> {
+        sq.left().map_or(None, |s| s.up())
+    }
+    fn ne(sq: Square) -> Option<Square> {
+        sq.right().map_or(None, |s| s.up())
+    }
+    fn sw(sq: Square) -> Option<Square> {
+        sq.left().map_or(None, |s| s.down())
+    }
+    fn se(sq: Square) -> Option<Square> {
+        sq.right().map_or(None, |s| s.down())
+    }
 
     vec![nw, ne, sw, se]
 }
@@ -41,27 +57,28 @@ pub fn random_bitboard<R: Rng>(rng: &mut R) -> BitBoard {
 
 // Given a square and the type of piece, lookup the RAYS and remove the endpoint squares.
 pub fn magic_mask(sq: Square, piece: Piece) -> BitBoard {
-    get_rays(sq, piece) & 
-    if piece == Piece::Bishop {
+    get_rays(sq, piece) & if piece == Piece::Bishop {
         !gen_edges()
     } else {
-        !ALL_SQUARES.iter()
-                    .filter(|edge| (sq.get_rank() == edge.get_rank() &&
-                                    (edge.get_file() == File::A || edge.get_file() == File::H)) ||
-                                   (sq.get_file() == edge.get_file() &&
-                                    (edge.get_rank() == Rank::First || edge.get_rank() == Rank::Eighth)))
-                    .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
+        !ALL_SQUARES
+            .iter()
+            .filter(|edge| {
+                (sq.get_rank() == edge.get_rank()
+                    && (edge.get_file() == File::A || edge.get_file() == File::H))
+                    || (sq.get_file() == edge.get_file()
+                        && (edge.get_rank() == Rank::First || edge.get_rank() == Rank::Eighth))
+            })
+            .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
     }
 }
-
 
 // Given a bitboard, generate a list of every possible set of bitboards using those bits.
 // AKA, if 'n' bits are set, generate 2^n bitboards where b1|b2|b3|...b(2^n) == mask
 fn rays_to_questions(mask: BitBoard) -> Vec<BitBoard> {
-    let mut result = vec!();
+    let mut result = vec![];
     let squares = mask.collect::<Vec<_>>();
 
-    for i in 0..(1u64<<mask.popcnt()) {
+    for i in 0..(1u64 << mask.popcnt()) {
         let mut current = EMPTY;
         for j in 0..mask.popcnt() {
             if (i & (1u64 << j)) == (1u64 << j) {
@@ -80,9 +97,13 @@ pub fn questions_and_answers(sq: Square, piece: Piece) -> (Vec<BitBoard>, Vec<Bi
     let mask = magic_mask(sq, piece);
     let questions = rays_to_questions(mask);
 
-    let mut answers = vec!();
+    let mut answers = vec![];
 
-    let movement = if piece == Piece::Bishop { bishop_directions() } else { rook_directions() };
+    let movement = if piece == Piece::Bishop {
+        bishop_directions()
+    } else {
+        rook_directions()
+    };
 
     for question in questions.iter() {
         let mut answer = EMPTY;
@@ -104,13 +125,13 @@ pub fn questions_and_answers(sq: Square, piece: Piece) -> (Vec<BitBoard>, Vec<Bi
 
 // Generate the edges of the board as a BitBoard
 fn gen_edges() -> BitBoard {
-    ALL_SQUARES.iter()
-               .filter(|sq| sq.get_rank() == Rank::First ||
-                            sq.get_rank() == Rank::Eighth ||
-                            sq.get_file() == File::A ||
-                            sq.get_file() == File::H)
-               .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
-                            
+    ALL_SQUARES
+        .iter()
+        .filter(|sq| {
+            sq.get_rank() == Rank::First
+                || sq.get_rank() == Rank::Eighth
+                || sq.get_file() == File::A
+                || sq.get_file() == File::H
+        })
+        .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
 }
-
-

@@ -1,16 +1,20 @@
 use bitboard::{BitBoard, EMPTY};
-use piece::{Piece, NUM_PIECES, ALL_PIECES};
-use color::{Color, NUM_COLORS, ALL_COLORS};
-use castle_rights::CastleRights;
-use square::{Square, ALL_SQUARES};
-use magic::{get_bishop_rays, get_rook_rays, get_rook_moves, get_bishop_moves, get_king_moves, get_knight_moves, get_pawn_attacks, get_pawn_moves, line, between, get_rank, get_file, get_adjacent_files};
-use chess_move::ChessMove;
-use std::fmt;
-use rank::Rank;
-use file::File;
-use zobrist::Zobrist;
 use cache_table::CacheTable;
+use castle_rights::CastleRights;
+use chess_move::ChessMove;
+use color::{Color, ALL_COLORS, NUM_COLORS};
 use construct;
+use file::File;
+use magic::{
+    between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_file, get_king_moves,
+    get_knight_moves, get_pawn_attacks, get_pawn_moves, get_rank, get_rook_moves, get_rook_rays,
+    line,
+};
+use piece::{Piece, ALL_PIECES, NUM_PIECES};
+use rank::Rank;
+use square::{Square, ALL_SQUARES};
+use std::fmt;
+use zobrist::Zobrist;
 
 /// A representation of a chess board.  That's why you're here, right?
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -32,7 +36,7 @@ pub struct Board {
 pub enum BoardStatus {
     Ongoing,
     Stalemate,
-    Checkmate
+    Checkmate,
 }
 
 /// Never Call Directly!
@@ -50,7 +54,7 @@ macro_rules! pseudo_legal_moves {
             Piece::Bishop => get_bishop_moves($src, $combined),
             Piece::Rook => get_rook_moves($src, $combined),
             Piece::Queen => get_bishop_moves($src, $combined) ^ get_rook_moves($src, $combined),
-            Piece::King => get_king_moves($src)
+            Piece::King => get_king_moves($src),
         }
     };
 }
@@ -66,25 +70,142 @@ macro_rules! pseudo_legal_moves {
 ///  * the current index you want to write to in $move_list
 ///  * a `BitBoard` mask which represents squares you want to land on
 macro_rules! enumerate_moves {
-    ($board:expr, $move_list:expr, $index:expr, $dest_mask:expr) => { {
+    ($board:expr, $move_list:expr, $index:expr, $dest_mask:expr) => {{
         if $board.checkers == EMPTY {
-            enumerate_moves_one_piece!($board, Piece::Pawn, false, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::Knight, false, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::Bishop, false, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::Rook, false, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::Queen, false, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::King, false, false, $board.side_to_move, $move_list, $index, $dest_mask);
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Pawn,
+                false,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Knight,
+                false,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Bishop,
+                false,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Rook,
+                false,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Queen,
+                false,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::King,
+                false,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
         } else if $board.checkers.popcnt() == 1 {
-            enumerate_moves_one_piece!($board, Piece::Pawn, true, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::Knight, true, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::Bishop, true, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::Rook, true, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::Queen, true, false, $board.side_to_move, $move_list, $index, $dest_mask);
-            enumerate_moves_one_piece!($board, Piece::King, true, false, $board.side_to_move, $move_list, $index, $dest_mask);
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Pawn,
+                true,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Knight,
+                true,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Bishop,
+                true,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Rook,
+                true,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::Queen,
+                true,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::King,
+                true,
+                false,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
         } else {
-            enumerate_moves_one_piece!($board, Piece::King, true, true, $board.side_to_move, $move_list, $index, $dest_mask);
+            enumerate_moves_one_piece!(
+                $board,
+                Piece::King,
+                true,
+                true,
+                $board.side_to_move,
+                $move_list,
+                $index,
+                $dest_mask
+            );
         }
-    } };
+    }};
 }
 
 /// Never Call Directly!
@@ -319,7 +440,8 @@ macro_rules! enumerate_moves_one_piece {
 /// Construct the initial position.
 impl Default for Board {
     fn default() -> Board {
-        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned()).expect("Valid FEN")
+        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned())
+            .expect("Valid FEN")
     }
 }
 
@@ -355,7 +477,9 @@ impl Board {
         let mut board: Board = Board::new();
 
         let tokens: Vec<&str> = fen.split(' ').collect();
-        if tokens.len() != 6 { return None; }
+        if tokens.len() != 6 {
+            return None;
+        }
 
         let pieces = tokens[0];
         let side = tokens[1];
@@ -369,53 +493,97 @@ impl Board {
                 '/' => {
                     cur_rank = cur_rank.down();
                     cur_file = File::A;
-                }, '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {
-                    cur_file = File::from_index(cur_file.to_index() + (x as usize) - ('0' as usize));
-                }, 'r' => {
+                }
+                '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {
+                    cur_file =
+                        File::from_index(cur_file.to_index() + (x as usize) - ('0' as usize));
+                }
+                'r' => {
                     board.xor(Piece::Rook, BitBoard::set(cur_rank, cur_file), Color::Black);
                     cur_file = cur_file.right();
-                }, 'R' => {
+                }
+                'R' => {
                     board.xor(Piece::Rook, BitBoard::set(cur_rank, cur_file), Color::White);
                     cur_file = cur_file.right();
-                }, 'n' => {
-                    board.xor(Piece::Knight, BitBoard::set(cur_rank, cur_file), Color::Black);
+                }
+                'n' => {
+                    board.xor(
+                        Piece::Knight,
+                        BitBoard::set(cur_rank, cur_file),
+                        Color::Black,
+                    );
                     cur_file = cur_file.right();
-                }, 'N' => {
-                    board.xor(Piece::Knight, BitBoard::set(cur_rank, cur_file), Color::White);
+                }
+                'N' => {
+                    board.xor(
+                        Piece::Knight,
+                        BitBoard::set(cur_rank, cur_file),
+                        Color::White,
+                    );
                     cur_file = cur_file.right();
-                }, 'b' => {
-                    board.xor(Piece::Bishop, BitBoard::set(cur_rank, cur_file), Color::Black);
+                }
+                'b' => {
+                    board.xor(
+                        Piece::Bishop,
+                        BitBoard::set(cur_rank, cur_file),
+                        Color::Black,
+                    );
                     cur_file = cur_file.right();
-                }, 'B' => {
-                    board.xor(Piece::Bishop, BitBoard::set(cur_rank, cur_file), Color::White);
+                }
+                'B' => {
+                    board.xor(
+                        Piece::Bishop,
+                        BitBoard::set(cur_rank, cur_file),
+                        Color::White,
+                    );
                     cur_file = cur_file.right();
-                }, 'p' => {
+                }
+                'p' => {
                     board.xor(Piece::Pawn, BitBoard::set(cur_rank, cur_file), Color::Black);
                     cur_file = cur_file.right();
-                }, 'P' => {
+                }
+                'P' => {
                     board.xor(Piece::Pawn, BitBoard::set(cur_rank, cur_file), Color::White);
                     cur_file = cur_file.right();
-                }, 'q' => {
-                    board.xor(Piece::Queen, BitBoard::set(cur_rank, cur_file), Color::Black);
+                }
+                'q' => {
+                    board.xor(
+                        Piece::Queen,
+                        BitBoard::set(cur_rank, cur_file),
+                        Color::Black,
+                    );
                     cur_file = cur_file.right();
-                }, 'Q' => {
-                    board.xor(Piece::Queen, BitBoard::set(cur_rank, cur_file), Color::White);
+                }
+                'Q' => {
+                    board.xor(
+                        Piece::Queen,
+                        BitBoard::set(cur_rank, cur_file),
+                        Color::White,
+                    );
                     cur_file = cur_file.right();
-                }, 'k' => {
+                }
+                'k' => {
                     board.xor(Piece::King, BitBoard::set(cur_rank, cur_file), Color::Black);
                     cur_file = cur_file.right();
-                }, 'K' => {
+                }
+                'K' => {
                     board.xor(Piece::King, BitBoard::set(cur_rank, cur_file), Color::White);
                     cur_file = cur_file.right();
-                }, _ => { panic!(); }
+                }
+                _ => {
+                    panic!();
+                }
             }
         }
         match side {
             "w" | "W" => board.side_to_move = Color::White,
-            "b" | "B" => { board.side_to_move = Color::Black; board.hash ^= Zobrist::color(); board.pawn_hash ^= Zobrist::color(); },
-            _ => panic!()
+            "b" | "B" => {
+                board.side_to_move = Color::Black;
+                board.hash ^= Zobrist::color();
+                board.pawn_hash ^= Zobrist::color();
+            }
+            _ => panic!(),
         }
-
 
         if castles.contains("K") && castles.contains("Q") {
             board.castle_rights[Color::White.to_index()] = CastleRights::Both;
@@ -443,7 +611,7 @@ impl Board {
         let color = board.side_to_move;
 
         match Square::from_string(ep.to_owned()) {
-            None => {},
+            None => {}
             Some(sq) => {
                 board.side_to_move = !board.side_to_move;
                 board.set_ep(sq.ubackward(color));
@@ -478,7 +646,7 @@ impl Board {
     /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Seventh, File::F),
     ///                                        Square::make_square(Rank::Sixth, File::F),
     ///                                        None));
-    /// 
+    ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
     /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Second, File::D),
@@ -500,7 +668,8 @@ impl Board {
     /// assert_eq!(board.status(), BoardStatus::Checkmate);
     /// ```
     pub fn status(&self) -> BoardStatus {
-        let moves = self.enumerate_moves(&mut [ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
+        let moves =
+            self.enumerate_moves(&mut [ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
         match moves {
             0 => {
                 if self.checkers == EMPTY {
@@ -508,10 +677,8 @@ impl Board {
                 } else {
                     BoardStatus::Checkmate
                 }
-            },
-            _ => {
-                BoardStatus::Ongoing
             }
+            _ => BoardStatus::Ongoing,
         }
     }
 
@@ -550,10 +717,8 @@ impl Board {
     /// assert_eq!(board.color_combined(Color::White), white_pieces);
     /// assert_eq!(board.color_combined(Color::Black), black_pieces);
     /// ```
-     pub fn color_combined(&self, color: Color) -> BitBoard {
-        unsafe {
-            *self.color_combined.get_unchecked(color.to_index())
-        }
+    pub fn color_combined(&self, color: Color) -> BitBoard {
+        unsafe { *self.color_combined.get_unchecked(color.to_index()) }
     }
 
     /// Give me the `Square` the `color` king is on.
@@ -586,9 +751,7 @@ impl Board {
     /// assert_eq!(board.pieces(Piece::Rook), rooks);
     /// ```
     pub fn pieces(&self, piece: Piece) -> BitBoard {
-        unsafe {
-            *self.pieces.get_unchecked(piece.to_index())
-        }
+        unsafe { *self.pieces.get_unchecked(piece.to_index()) }
     }
 
     /// Grab the `CastleRights` for a particular side.
@@ -626,25 +789,24 @@ impl Board {
     /// assert_eq!(board.castle_rights(Color::Black), CastleRights::NoRights);
     /// ```
     pub fn castle_rights(&self, color: Color) -> CastleRights {
-        unsafe {
-            *self.castle_rights.get_unchecked(color.to_index())
-        }
+        unsafe { *self.castle_rights.get_unchecked(color.to_index()) }
     }
 
     /// Add castle rights for a particular side.  Note: this can create an invalid position.
     pub fn add_castle_rights(&mut self, color: Color, add: CastleRights) {
         unsafe {
             self.hash ^= Zobrist::castles(self.castle_rights(color), color);
-            *self.castle_rights.get_unchecked_mut(color.to_index()) = self.castle_rights(color).add(add);
+            *self.castle_rights.get_unchecked_mut(color.to_index()) =
+                self.castle_rights(color).add(add);
             self.hash ^= Zobrist::castles(self.castle_rights(color), color);
         }
     }
 
     /// Remove castle rights for a particular side.
-    /// 
+    ///
     /// ```
     /// use chess::{Board, CastleRights, Color};
-    /// 
+    ///
     /// let mut board = Board::default();
     /// assert_eq!(board.castle_rights(Color::White), CastleRights::Both);
     ///
@@ -654,7 +816,8 @@ impl Board {
     pub fn remove_castle_rights(&mut self, color: Color, remove: CastleRights) {
         unsafe {
             self.hash ^= Zobrist::castles(self.castle_rights(color), color);
-            *self.castle_rights.get_unchecked_mut(color.to_index()) = self.castle_rights(color).remove(remove);
+            *self.castle_rights.get_unchecked_mut(color.to_index()) =
+                self.castle_rights(color).remove(remove);
             self.hash ^= Zobrist::castles(self.castle_rights(color), color);
         }
     }
@@ -693,17 +856,17 @@ impl Board {
     }
 
     /// Remove some of my `CastleRights`.
-    /// 
+    ///
     /// ```
     /// use chess::{Board, CastleRights};
-    /// 
+    ///
     /// let mut board = Board::default();
     /// assert_eq!(board.my_castle_rights(), CastleRights::Both);
     ///
     /// board.remove_my_castle_rights(CastleRights::KingSide);
     /// assert_eq!(board.my_castle_rights(), CastleRights::QueenSide);
     /// ```
-     pub fn remove_my_castle_rights(&mut self, remove: CastleRights) {
+    pub fn remove_my_castle_rights(&mut self, remove: CastleRights) {
         let color = self.side_to_move();
         self.remove_castle_rights(color, remove);
     }
@@ -730,17 +893,17 @@ impl Board {
     }
 
     /// Remove some of my opponents `CastleRights`.
-    /// 
+    ///
     /// ```
     /// use chess::{Board, CastleRights};
-    /// 
+    ///
     /// let mut board = Board::default();
     /// assert_eq!(board.their_castle_rights(), CastleRights::Both);
     ///
     /// board.remove_their_castle_rights(CastleRights::KingSide);
     /// assert_eq!(board.their_castle_rights(), CastleRights::QueenSide);
     /// ```
-     pub fn remove_their_castle_rights(&mut self, remove: CastleRights) {
+    pub fn remove_their_castle_rights(&mut self, remove: CastleRights) {
         let color = !self.side_to_move();
         self.remove_castle_rights(color, remove);
     }
@@ -755,7 +918,8 @@ impl Board {
                 Piece::Pawn => {
                     self.hash ^= Zobrist::piece(piece, bb.to_square(), color);
                     self.pawn_hash ^= Zobrist::piece(piece, bb.to_square(), color);
-                } _ => {
+                }
+                _ => {
                     self.hash ^= Zobrist::piece(piece, bb.to_square(), color);
                 }
             }
@@ -848,7 +1012,6 @@ impl Board {
         result.update_pin_info();
 
         Some(result)
-
     }
 
     /// Switch the color of the player without actually making a move.  Returns None if the current
@@ -858,11 +1021,11 @@ impl Board {
     /// use chess::{Board, Color};
     ///
     /// let board = Board::default();
-    /// 
+    ///
     /// assert_eq!(board.side_to_move(), Color::White);
     ///
     /// let new_board = board.null_move().expect("Valid Position");
-    /// 
+    ///
     /// assert_eq!(new_board.side_to_move(), Color::Black);
     /// ```
     pub fn null_move(&self) -> Option<Board> {
@@ -877,7 +1040,6 @@ impl Board {
             Some(result)
         }
     }
-
 
     /// Does this board "make sense"?
     /// Do all the pieces make sense, do the bitboards combine correctly, etc?
@@ -911,9 +1073,10 @@ impl Board {
             return false;
         }
 
-
         // grab all the pieces by OR'ing together each piece() BitBoard
-        let combined = ALL_PIECES.iter().fold(EMPTY, |cur, next| cur | self.pieces(*next));
+        let combined = ALL_PIECES
+            .iter()
+            .fold(EMPTY, |cur, next| cur | self.pieces(*next));
 
         // make sure that's equal to the combined bitboard
         if combined != self.combined() {
@@ -932,9 +1095,12 @@ impl Board {
 
         // make sure the en_passant square has a pawn on it of the right color
         match self.en_passant {
-            None => {},
+            None => {}
             Some(x) => {
-                if self.pieces(Piece::Pawn) & self.color_combined(!self.side_to_move) & BitBoard::from_square(x) == EMPTY {
+                if self.pieces(Piece::Pawn)
+                    & self.color_combined(!self.side_to_move)
+                    & BitBoard::from_square(x) == EMPTY
+                {
                     return false;
                 }
             }
@@ -956,17 +1122,18 @@ impl Board {
 
             // the castle rights object will tell us which rooks shouldn't have moved yet.
             // verify there are rooks on all those squares
-            if castle_rights.unmoved_rooks(*color) &
-               self.pieces(Piece::Rook) &
-               self.color_combined(*color) !=
-                castle_rights.unmoved_rooks(*color) {
+            if castle_rights.unmoved_rooks(*color)
+                & self.pieces(Piece::Rook)
+                & self.color_combined(*color) != castle_rights.unmoved_rooks(*color)
+            {
                 return false;
             }
             // if we have castle rights, make sure we have a king on the (E, {1,8}) square,
             // depending on the color
             if castle_rights != CastleRights::NoRights {
-                if self.pieces(Piece::King) & self.color_combined(*color) !=
-                    get_file(File::E) & get_rank(color.to_my_backrank()) {
+                if self.pieces(Piece::King) & self.color_combined(*color)
+                    != get_file(File::E) & get_rank(color.to_my_backrank())
+                {
                     return false;
                 }
             }
@@ -1016,7 +1183,9 @@ impl Board {
                     return p;
                 }
             } */
-            if (self.pieces(Piece::Pawn) ^ self.pieces(Piece::Knight) ^ self.pieces(Piece::Bishop)) & opp == opp {
+            if (self.pieces(Piece::Pawn) ^ self.pieces(Piece::Knight) ^ self.pieces(Piece::Bishop))
+                & opp == opp
+            {
                 if self.pieces(Piece::Pawn) & opp == opp {
                     Some(Piece::Pawn)
                 } else if self.pieces(Piece::Knight) & opp == opp {
@@ -1026,7 +1195,7 @@ impl Board {
                 }
             } else {
                 if self.pieces(Piece::Rook) & opp == opp {
-                   Some(Piece::Rook)
+                    Some(Piece::Rook)
                 } else if self.pieces(Piece::Queen) & opp == opp {
                     Some(Piece::Queen)
                 } else {
@@ -1082,7 +1251,7 @@ impl Board {
     /// Unset the en_passant square.
     fn remove_ep(&mut self) {
         match self.en_passant {
-            None => {},
+            None => {}
             Some(sq) => {
                 self.en_passant = None;
                 self.hash ^= Zobrist::en_passant(sq.get_file(), !self.side_to_move);
@@ -1127,10 +1296,11 @@ impl Board {
     /// None.
     fn set_ep(&mut self, sq: Square) {
         // Only set self.en_passant if the pawn can actually be captured next move.
-        if get_adjacent_files(sq.get_file()) &
-           get_rank(sq.get_rank()) &
-           self.pieces(Piece::Pawn) &
-           self.color_combined(!self.side_to_move) != EMPTY {
+        if get_adjacent_files(sq.get_file())
+            & get_rank(sq.get_rank())
+            & self.pieces(Piece::Pawn)
+            & self.color_combined(!self.side_to_move) != EMPTY
+        {
             self.en_passant = Some(sq);
             self.hash ^= Zobrist::en_passant(sq.get_file(), self.side_to_move);
             self.pawn_hash ^= Zobrist::en_passant(sq.get_file(), self.side_to_move);
@@ -1145,7 +1315,7 @@ impl Board {
     /// let move1 = ChessMove::new(Square::make_square(Rank::Second, File::E),
     ///                            Square::make_square(Rank::Fourth, File::E),
     ///                            None);
-    /// 
+    ///
     /// let move2 = ChessMove::new(Square::make_square(Rank::Second, File::E),
     ///                            Square::make_square(Rank::Fifth, File::E),
     ///                            None);
@@ -1169,12 +1339,18 @@ impl Board {
         // Are you trying to promote?  Also, can you promote?
         match m.get_promotion() {
             None => {
-                if piece == Piece::Pawn && (m.get_dest().get_rank() == self.side_to_move.to_their_backrank()) {
+                if piece == Piece::Pawn
+                    && (m.get_dest().get_rank() == self.side_to_move.to_their_backrank())
+                {
                     return false;
                 }
             }
-            Some(Piece::Pawn) => { return false; },
-            Some(Piece::King) => { return false; },
+            Some(Piece::Pawn) => {
+                return false;
+            }
+            Some(Piece::King) => {
+                return false;
+            }
             Some(_) => {
                 if piece != Piece::Pawn {
                     return false;
@@ -1185,37 +1361,41 @@ impl Board {
             }
         }
 
-        if self.checkers.popcnt() >= 2 || piece == Piece::King { // double-check means only the king can move anyways
-              if self.checkers == EMPTY { // must be a king move, because popcnt() == 0
+        if self.checkers.popcnt() >= 2 || piece == Piece::King {
+            // double-check means only the king can move anyways
+            if self.checkers == EMPTY {
+                // must be a king move, because popcnt() == 0
                 // If the piece is a king, can we castle?
                 let ksq = m.get_source();
 
                 // If we can castle kingside, and we're trying to castle kingside
-                if self.my_castle_rights().has_kingside() &&
-                    m.get_dest() == ksq.uright().uright() {
-
+                if self.my_castle_rights().has_kingside() && m.get_dest() == ksq.uright().uright() {
                     // make sure the squares that need to be empty are empty
-                    if (self.combined() & self.my_castle_rights().kingside_squares(self.side_to_move)) == EMPTY {
-
+                    if (self.combined()
+                        & self.my_castle_rights().kingside_squares(self.side_to_move))
+                        == EMPTY
+                    {
                         // is the castle legal?
-                        if self.legal_king_move(ksq.uright()) &&
-                           self.legal_king_move(ksq.uright().uright()) {
+                        if self.legal_king_move(ksq.uright())
+                            && self.legal_king_move(ksq.uright().uright())
+                        {
                             return true;
                         }
                     }
                 }
 
                 // same thing, but queenside
-                if self.my_castle_rights().has_queenside() &&
-                    m.get_dest() == ksq.uleft().uleft() {
-
+                if self.my_castle_rights().has_queenside() && m.get_dest() == ksq.uleft().uleft() {
                     // are the squares empty?
-                    if (self.combined() & self.my_castle_rights().queenside_squares(self.side_to_move)) == EMPTY {
-
+                    if (self.combined()
+                        & self.my_castle_rights().queenside_squares(self.side_to_move))
+                        == EMPTY
+                    {
                         // is the queenside castle legal?
-                        if self.legal_king_move(ksq.uleft()) &&
-                           self.legal_king_move(ksq.uleft().uleft()) {
-                           return true;
+                        if self.legal_king_move(ksq.uleft())
+                            && self.legal_king_move(ksq.uleft().uleft())
+                        {
+                            return true;
                         }
                     }
                 }
@@ -1225,14 +1405,21 @@ impl Board {
             // particular king move is legal
             match piece {
                 Piece::King => {
-                    let moves = pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined()) &
-                                !self.color_combined(self.side_to_move);
-                    return moves & BitBoard::from_square(m.get_dest()) != EMPTY &&
-                           self.legal_king_move(m.get_dest());
-                },
-                _ => { return false; }
+                    let moves = pseudo_legal_moves!(
+                        piece,
+                        m.get_source(),
+                        self.side_to_move,
+                        self.combined()
+                    ) & !self.color_combined(self.side_to_move);
+                    return moves & BitBoard::from_square(m.get_dest()) != EMPTY
+                        && self.legal_king_move(m.get_dest());
+                }
+                _ => {
+                    return false;
+                }
             };
-        } else if self.checkers != EMPTY { // single-check
+        } else if self.checkers != EMPTY {
+            // single-check
             // Are you pinned?  Because, if so, you can't move at all (because we are in check)
             if self.pinned & BitBoard::from_square(m.get_source()) != EMPTY {
                 return false;
@@ -1267,17 +1454,21 @@ impl Board {
                 }
             }
 
-
             // Ok, you can move, but only if that move captures the checker OR places the piece
             // between the checker and the king
             // Also, you can't capture your own pieces (not sure if that's actually relevant here)
-            let moves = pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined()) &
-                        !self.color_combined(self.side_to_move) &
-                        (self.checkers | between(self.checkers.to_square(),
-                                                        (self.pieces(Piece::King) &
-                                                         self.color_combined(self.side_to_move)).to_square()));
+            let moves =
+                pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined())
+                    & !self.color_combined(self.side_to_move)
+                    & (self.checkers
+                        | between(
+                            self.checkers.to_square(),
+                            (self.pieces(Piece::King) & self.color_combined(self.side_to_move))
+                                .to_square(),
+                        ));
             return moves & BitBoard::from_square(m.get_dest()) != EMPTY;
-        } else { // not in check
+        } else {
+            // not in check
             // check for the passed pawn rule (similar to above, but slightly faster)
 
             // If it's a pawn, and the en_passant rule is in effect, and the passed pawn is the
@@ -1310,14 +1501,19 @@ impl Board {
             // yourself
             // If you are not pinned, you can move anywhere
             // BUT, you cannot capture your own pieces
-            let move_mask = !self.color_combined(self.side_to_move) &
-                            if self.pinned & BitBoard::from_square(m.get_source()) != EMPTY {
-                                line(m.get_source(),
-                                            (self.pieces(Piece::King) & self.color_combined(self.side_to_move)).to_square())
-                            } else {
-                                !EMPTY
-                            };
-            let moves = pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined()) & move_mask;
+            let move_mask = !self.color_combined(self.side_to_move)
+                & if self.pinned & BitBoard::from_square(m.get_source()) != EMPTY {
+                    line(
+                        m.get_source(),
+                        (self.pieces(Piece::King) & self.color_combined(self.side_to_move))
+                            .to_square(),
+                    )
+                } else {
+                    !EMPTY
+                };
+            let moves =
+                pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined())
+                    & move_mask;
             return moves & BitBoard::from_square(m.get_dest()) != EMPTY;
         }
     }
@@ -1337,16 +1533,19 @@ impl Board {
             Piece::Knight => true,
             Piece::Queen => true,
             Piece::Pawn => {
-                if chess_move.get_source().get_file() != chess_move.get_dest().get_file() &&
-                   self.piece_on(chess_move.get_dest()).is_none() { // en-passant
+                if chess_move.get_source().get_file() != chess_move.get_dest().get_file()
+                    && self.piece_on(chess_move.get_dest()).is_none()
+                {
+                    // en-passant
                     self.legal_ep_move(chess_move.get_source(), chess_move.get_dest())
                 } else {
                     true
                 }
-            },
+            }
             Piece::King => {
                 let bb = between(chess_move.get_source(), chess_move.get_dest());
-                if bb.popcnt() == 1 { // castles
+                if bb.popcnt() == 1 {
+                    // castles
                     if !self.legal_king_move(bb.to_square()) {
                         false
                     } else {
@@ -1373,7 +1572,7 @@ impl Board {
     /// let board = Board::default();
     /// assert_eq!(board.make_move(m).side_to_move(), Color::Black);
     /// ```
-     pub fn make_move(&self, m: ChessMove) -> Board {
+    pub fn make_move(&self, m: ChessMove) -> Board {
         let mut result = *self;
         let source = BitBoard::from_square(m.get_source());
         let dest = BitBoard::from_square(m.get_dest());
@@ -1384,15 +1583,20 @@ impl Board {
         let captured = self.piece_on(m.get_dest());
 
         match captured {
-            None => {},
+            None => {}
             Some(Piece::King) => panic!(),
             Some(p) => {
                 result.xor(p, dest, !self.side_to_move);
                 if p == Piece::Rook {
                     // if I capture their rook, and their rook has not moved yet, remove the castle
                     // rights for that side of the board
-                    if dest & result.their_castle_rights().unmoved_rooks(!result.side_to_move) != EMPTY {
-                        result.remove_their_castle_rights(CastleRights::rook_square_to_castle_rights(m.get_dest()));
+                    if dest & result
+                        .their_castle_rights()
+                        .unmoved_rooks(!result.side_to_move) != EMPTY
+                    {
+                        result.remove_their_castle_rights(
+                            CastleRights::rook_square_to_castle_rights(m.get_dest()),
+                        );
                     }
                 }
             }
@@ -1407,12 +1611,31 @@ impl Board {
                 result.remove_my_castle_rights(CastleRights::Both);
 
                 // if we castle, move the rook over too!
-                if m.get_source().get_file() == File::E && m.get_dest().get_file() == File::C { // queenside castle
-                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::A), self.side_to_move);
-                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::D), self.side_to_move);
-                } else if m.get_source().get_file() == File::E && m.get_dest().get_file() == File::G { // kingside castle
-                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::H), self.side_to_move);
-                    result.xor(Piece::Rook, BitBoard::set(self.side_to_move.to_my_backrank(), File::F), self.side_to_move);
+                if m.get_source().get_file() == File::E && m.get_dest().get_file() == File::C {
+                    // queenside castle
+                    result.xor(
+                        Piece::Rook,
+                        BitBoard::set(self.side_to_move.to_my_backrank(), File::A),
+                        self.side_to_move,
+                    );
+                    result.xor(
+                        Piece::Rook,
+                        BitBoard::set(self.side_to_move.to_my_backrank(), File::D),
+                        self.side_to_move,
+                    );
+                } else if m.get_source().get_file() == File::E && m.get_dest().get_file() == File::G
+                {
+                    // kingside castle
+                    result.xor(
+                        Piece::Rook,
+                        BitBoard::set(self.side_to_move.to_my_backrank(), File::H),
+                        self.side_to_move,
+                    );
+                    result.xor(
+                        Piece::Rook,
+                        BitBoard::set(self.side_to_move.to_my_backrank(), File::F),
+                        self.side_to_move,
+                    );
                 }
             }
 
@@ -1420,25 +1643,35 @@ impl Board {
                 // e.p. capture.  the capture variable is 'None' because no piece is on the
                 // destination square
                 if m.get_source().get_file() != m.get_dest().get_file() && captured.is_none() {
-                    result.xor(Piece::Pawn, BitBoard::from_square(self.en_passant.unwrap()), !self.side_to_move);
+                    result.xor(
+                        Piece::Pawn,
+                        BitBoard::from_square(self.en_passant.unwrap()),
+                        !self.side_to_move,
+                    );
                 }
 
                 match m.get_promotion() {
                     None => {
                         // double-move
-                        if (m.get_source().get_rank() == Rank::Second && m.get_dest().get_rank() == Rank::Fourth) ||
-                           (m.get_source().get_rank() == Rank::Seventh && m.get_dest().get_rank() == Rank::Fifth) {
+                        if (m.get_source().get_rank() == Rank::Second
+                            && m.get_dest().get_rank() == Rank::Fourth)
+                            || (m.get_source().get_rank() == Rank::Seventh
+                                && m.get_dest().get_rank() == Rank::Fifth)
+                        {
                             result.set_ep(m.get_dest());
                         }
 
                         // could be check!
-                        if get_pawn_attacks(m.get_dest(),
-                                                   result.side_to_move,
-                                                   result.pieces(Piece::King) &
-                                                   result.color_combined(!result.side_to_move)) != EMPTY {
+                        if get_pawn_attacks(
+                            m.get_dest(),
+                            result.side_to_move,
+                            result.pieces(Piece::King)
+                                & result.color_combined(!result.side_to_move),
+                        ) != EMPTY
+                        {
                             result.checkers ^= BitBoard::from_square(m.get_dest());
                         }
-                    },
+                    }
 
                     Some(Piece::Knight) => {
                         result.xor(Piece::Pawn, dest, self.side_to_move);
@@ -1446,12 +1679,14 @@ impl Board {
 
                         // promotion to a knight check is handled specially because checks from all other
                         // pieces are handled down below automatically
-                        if (get_knight_moves(m.get_dest()) &
-                            result.pieces(Piece::King) &
-                            result.color_combined(!result.side_to_move)) != EMPTY {
+                        if (get_knight_moves(m.get_dest())
+                            & result.pieces(Piece::King)
+                            & result.color_combined(!result.side_to_move))
+                            != EMPTY
+                        {
                             result.checkers ^= BitBoard::from_square(m.get_dest());
                         }
-                    },
+                    }
 
                     Some(p) => {
                         result.xor(Piece::Pawn, dest, self.side_to_move);
@@ -1461,9 +1696,10 @@ impl Board {
             }
 
             Piece::Knight => {
-                if (get_knight_moves(m.get_dest()) &
-                    result.pieces(Piece::King) &
-                    result.color_combined(!result.side_to_move)) != EMPTY {
+                if (get_knight_moves(m.get_dest())
+                    & result.pieces(Piece::King)
+                    & result.color_combined(!result.side_to_move)) != EMPTY
+                {
                     result.checkers ^= BitBoard::from_square(m.get_dest());
                 }
             }
@@ -1471,22 +1707,22 @@ impl Board {
             Piece::Rook => {
                 // if I move my rook, remove my castle rights on that side
                 if source & result.my_castle_rights().unmoved_rooks(result.side_to_move) == source {
-                    result.remove_my_castle_rights(CastleRights::rook_square_to_castle_rights(m.get_source()));
+                    result.remove_my_castle_rights(CastleRights::rook_square_to_castle_rights(
+                        m.get_source(),
+                    ));
                 }
             }
             _ => {}
         }
 
         // now, lets see if we're in check or pinned
-        let ksq = (result.pieces(Piece::King) & result.color_combined(!result.side_to_move)).to_square();
+        let ksq =
+            (result.pieces(Piece::King) & result.color_combined(!result.side_to_move)).to_square();
 
-        let attackers = result.color_combined(result.side_to_move) & (
-                        (get_bishop_rays(ksq) &
-                            (result.pieces(Piece::Bishop)|result.pieces(Piece::Queen))
-                        )|(get_rook_rays(ksq) &
-                            (result.pieces(Piece::Rook)|result.pieces(Piece::Queen))
-                        )
-                      );
+        let attackers = result.color_combined(result.side_to_move)
+            & ((get_bishop_rays(ksq) & (result.pieces(Piece::Bishop) | result.pieces(Piece::Queen)))
+                | (get_rook_rays(ksq)
+                    & (result.pieces(Piece::Rook) | result.pieces(Piece::Queen))));
 
         for sq in attackers {
             let between = between(sq, ksq) & result.combined();
@@ -1511,13 +1747,9 @@ impl Board {
 
         let ksq = (self.pieces(Piece::King) & self.color_combined(self.side_to_move)).to_square();
 
-        let pinners = self.color_combined(!self.side_to_move) & (
-                        (get_bishop_rays(ksq) &
-                            (self.pieces(Piece::Bishop)|self.pieces(Piece::Queen))
-                        )|(get_rook_rays(ksq) &
-                            (self.pieces(Piece::Rook)|self.pieces(Piece::Queen))
-                        )
-                      );
+        let pinners = self.color_combined(!self.side_to_move)
+            & ((get_bishop_rays(ksq) & (self.pieces(Piece::Bishop) | self.pieces(Piece::Queen)))
+                | (get_rook_rays(ksq) & (self.pieces(Piece::Rook) | self.pieces(Piece::Queen))));
 
         for sq in pinners {
             let between = between(sq, ksq) & self.combined();
@@ -1528,18 +1760,25 @@ impl Board {
             }
         }
 
-        self.checkers ^= get_knight_moves(ksq) &
-                         self.color_combined(!self.side_to_move) &
-                         self.pieces(Piece::Knight);
+        self.checkers ^= get_knight_moves(ksq)
+            & self.color_combined(!self.side_to_move)
+            & self.pieces(Piece::Knight);
 
-        self.checkers ^= get_pawn_attacks(ksq,
-                                                 self.side_to_move,
-                                                 self.color_combined(!self.side_to_move) & self.pieces(Piece::Pawn));
+        self.checkers ^= get_pawn_attacks(
+            ksq,
+            self.side_to_move,
+            self.color_combined(!self.side_to_move) & self.pieces(Piece::Pawn),
+        );
     }
 
     /// Run a perft-test with a cache and the chess moves and cache tables already allocated for
     /// each depth.
-    fn internal_perft_cache(&self, depth: u64, move_list: &mut Vec<[ChessMove; 256]>, caches: &mut Vec<CacheTable<u64>>) -> u64 {
+    fn internal_perft_cache(
+        &self,
+        depth: u64,
+        move_list: &mut Vec<[ChessMove; 256]>,
+        caches: &mut Vec<CacheTable<u64>>,
+    ) -> u64 {
         let cur = unsafe { caches.get_unchecked(depth as usize) }.get(self.hash);
         match cur {
             Some(x) => x,
@@ -1549,17 +1788,23 @@ impl Board {
                     result = 1;
                 } else if depth == 1 {
                     unsafe {
-                        result = self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) as u64;
+                        result = self.enumerate_moves(move_list.get_unchecked_mut(depth as usize))
+                            as u64;
                     }
                 } else {
-                    let length = unsafe { self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) };
+                    let length = unsafe {
+                        self.enumerate_moves(move_list.get_unchecked_mut(depth as usize))
+                    };
                     for x in 0..length {
-                        let m = unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
-                        let cur = self.make_move(m).internal_perft_cache(depth - 1, move_list, caches);
+                        let m =
+                            unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
+                        let cur =
+                            self.make_move(m)
+                                .internal_perft_cache(depth - 1, move_list, caches);
                         result += cur;
                     }
                 }
-                unsafe {caches.get_unchecked_mut(depth as usize) }.add(self.hash, result);
+                unsafe { caches.get_unchecked_mut(depth as usize) }.add(self.hash, result);
                 result
             }
         }
@@ -1571,11 +1816,10 @@ impl Board {
         if depth == 0 {
             1
         } else if depth == 1 {
-            unsafe {
-                self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) as u64
-            }
+            unsafe { self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) as u64 }
         } else {
-            let length = unsafe { self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) };
+            let length =
+                unsafe { self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) };
             for x in 0..length {
                 let m = unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
                 let cur = self.make_move(m).internal_perft(depth - 1, move_list);
@@ -1596,7 +1840,9 @@ impl Board {
                 self.enumerate_moves_brute_force(move_list.get_unchecked_mut(depth as usize)) as u64
             }
         } else {
-            let length = unsafe { self.enumerate_moves_brute_force(move_list.get_unchecked_mut(depth as usize)) };
+            let length = unsafe {
+                self.enumerate_moves_brute_force(move_list.get_unchecked_mut(depth as usize))
+            };
             for x in 0..length {
                 let m = unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
                 let cur = self.make_move(m).internal_perft(depth - 1, move_list);
@@ -1608,7 +1854,12 @@ impl Board {
         // test the result with the perft() function
         if actual != self.perft(depth) {
             if depth == 1 {
-                println!("Got {} moves. Correct is {} moves\n{}", actual, self.perft(depth), self);
+                println!(
+                    "Got {} moves. Correct is {} moves\n{}",
+                    actual,
+                    self.perft(depth),
+                    self
+                );
             } else {
                 let good = self.enumerate_moves(&mut move_list[depth as usize]);
                 let bad = self.enumerate_moves_brute_force(&mut move_list[depth as usize]);
@@ -1623,7 +1874,7 @@ impl Board {
     /// Run a perft-test.
     pub fn perft(&self, depth: u64) -> u64 {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
-        for _ in 0..(depth+1) {
+        for _ in 0..(depth + 1) {
             move_list.push([ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
         }
         self.internal_perft(depth, &mut move_list)
@@ -1632,7 +1883,7 @@ impl Board {
     /// Run a perft-test using brute force move generation.
     pub fn perft_brute_force(&self, depth: u64) -> u64 {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
-        for _ in 0..(depth+1) {
+        for _ in 0..(depth + 1) {
             move_list.push([ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
         }
         self.internal_perft_brute_force(depth, &mut move_list)
@@ -1642,7 +1893,7 @@ impl Board {
     pub fn perft_cache(&self, depth: u64, cache_size_per_depth: usize) -> u64 {
         let mut move_list: Vec<[ChessMove; 256]> = Vec::new();
         let mut caches: Vec<CacheTable<u64>> = Vec::new();
-        for _ in 0..(depth+1) {
+        for _ in 0..(depth + 1) {
             move_list.push([ChessMove::new(ALL_SQUARES[0], ALL_SQUARES[0], None); 256]);
             caches.push(CacheTable::new(cache_size_per_depth, 0));
         }
@@ -1661,54 +1912,56 @@ impl Board {
 
     /// Is a particular king move legal?
     pub fn legal_king_move(&self, dest: Square) -> bool {
-        let combined = self.combined() ^
-               (self.pieces(Piece::King) & self.color_combined(self.side_to_move)) |
-               BitBoard::from_square(dest);
+        let combined = self.combined()
+            ^ (self.pieces(Piece::King) & self.color_combined(self.side_to_move))
+            | BitBoard::from_square(dest);
 
         let mut attackers = EMPTY;
 
-        let rooks = (self.pieces(Piece::Rook) | self.pieces(Piece::Queen)) & self.color_combined(!self.side_to_move);
+        let rooks = (self.pieces(Piece::Rook) | self.pieces(Piece::Queen))
+            & self.color_combined(!self.side_to_move);
 
         if (get_rook_rays(dest) & rooks) != EMPTY {
             attackers |= get_rook_moves(dest, combined) & rooks;
         }
 
-        let bishops = (self.pieces(Piece::Bishop) | self.pieces(Piece::Queen)) & self.color_combined(!self.side_to_move);
+        let bishops = (self.pieces(Piece::Bishop) | self.pieces(Piece::Queen))
+            & self.color_combined(!self.side_to_move);
 
         if (get_bishop_rays(dest) & bishops) != EMPTY {
             attackers |= get_bishop_moves(dest, combined) & bishops;
         }
 
         let knight_rays = get_knight_moves(dest);
-        attackers |= knight_rays &
-                     self.pieces(Piece::Knight) &
-                     self.color_combined(!self.side_to_move);
+        attackers |=
+            knight_rays & self.pieces(Piece::Knight) & self.color_combined(!self.side_to_move);
 
         let king_rays = get_king_moves(dest);
-        attackers |= king_rays &
-                     self.pieces(Piece::King) &
-                     self.color_combined(!self.side_to_move);
+        attackers |= king_rays & self.pieces(Piece::King) & self.color_combined(!self.side_to_move);
 
         if attackers != EMPTY {
             return false;
         }
-        attackers |= get_pawn_attacks(dest,
-                                      self.side_to_move,
-                                      self.pieces(Piece::Pawn) & self.color_combined(!self.side_to_move));
+        attackers |= get_pawn_attacks(
+            dest,
+            self.side_to_move,
+            self.pieces(Piece::Pawn) & self.color_combined(!self.side_to_move),
+        );
 
         return attackers == EMPTY;
     }
 
     /// Is a particular en-passant capture legal?
     pub fn legal_ep_move(&self, source: Square, dest: Square) -> bool {
-        let combined = self.combined() ^
-                       BitBoard::from_square(self.en_passant.unwrap()) ^
-                       BitBoard::from_square(source) ^
-                       BitBoard::from_square(dest);
+        let combined = self.combined()
+            ^ BitBoard::from_square(self.en_passant.unwrap())
+            ^ BitBoard::from_square(source)
+            ^ BitBoard::from_square(dest);
 
         let ksq = (self.pieces(Piece::King) & self.color_combined(self.side_to_move)).to_square();
 
-        let rooks = (self.pieces(Piece::Rook) | self.pieces(Piece::Queen)) & self.color_combined(!self.side_to_move);
+        let rooks = (self.pieces(Piece::Rook) | self.pieces(Piece::Queen))
+            & self.color_combined(!self.side_to_move);
 
         if (get_rook_rays(ksq) & rooks) != EMPTY {
             if (get_rook_moves(ksq, combined) & rooks) != EMPTY {
@@ -1716,7 +1969,8 @@ impl Board {
             }
         }
 
-        let bishops = (self.pieces(Piece::Bishop) | self.pieces(Piece::Queen)) & self.color_combined(!self.side_to_move);
+        let bishops = (self.pieces(Piece::Bishop) | self.pieces(Piece::Queen))
+            & self.color_combined(!self.side_to_move);
 
         if (get_bishop_rays(ksq) & bishops) != EMPTY {
             if (get_bishop_moves(ksq, combined) & bishops) != EMPTY {
@@ -1740,7 +1994,11 @@ impl Board {
 
 #[test]
 fn perft_kiwipete() {
-    Board::perft_test("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1".to_owned(), 5, 193690690);
+    Board::perft_test(
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1".to_owned(),
+        5,
+        193690690,
+    );
 }
 
 #[test]
@@ -1785,22 +2043,38 @@ fn perft_8() {
 
 #[test]
 fn perft_9() {
-    Board::perft_test("r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1".to_owned(), 4, 1274206);
+    Board::perft_test(
+        "r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1".to_owned(),
+        4,
+        1274206,
+    );
 }
 
 #[test]
 fn perft_10() {
-    Board::perft_test("r3k2r/7b/8/8/8/8/1B4BQ/R3K2R b KQkq - 0 1".to_owned(), 4, 1274206);
+    Board::perft_test(
+        "r3k2r/7b/8/8/8/8/1B4BQ/R3K2R b KQkq - 0 1".to_owned(),
+        4,
+        1274206,
+    );
 }
 
 #[test]
 fn perft_11() {
-    Board::perft_test("r3k2r/8/3Q4/8/8/5q2/8/R3K2R b KQkq - 0 1".to_owned(), 4, 1720476);
+    Board::perft_test(
+        "r3k2r/8/3Q4/8/8/5q2/8/R3K2R b KQkq - 0 1".to_owned(),
+        4,
+        1720476,
+    );
 }
 
 #[test]
 fn perft_12() {
-    Board::perft_test("r3k2r/8/5Q2/8/8/3q4/8/R3K2R w KQkq - 0 1".to_owned(), 4, 1720476);
+    Board::perft_test(
+        "r3k2r/8/5Q2/8/8/3q4/8/R3K2R w KQkq - 0 1".to_owned(),
+        4,
+        1720476,
+    );
 }
 
 #[test]
@@ -1885,7 +2159,11 @@ impl fmt::Display for Board {
                 if self.combined() & bb == EMPTY {
                     s.push_str(" . ");
                 } else {
-                    let color = if (self.color_combined(Color::White) & bb) == bb { Color::White } else { Color::Black };
+                    let color = if (self.color_combined(Color::White) & bb) == bb {
+                        Color::White
+                    } else {
+                        Color::Black
+                    };
 
                     let mut piece = match self.piece_on(sq).unwrap() {
                         Piece::Pawn => 'p',
@@ -1893,7 +2171,7 @@ impl fmt::Display for Board {
                         Piece::Bishop => 'b',
                         Piece::Rook => 'r',
                         Piece::Queen => 'q',
-                        Piece::King => 'k'
+                        Piece::King => 'k',
                     };
                     if color == Color::White {
                         piece = piece.to_uppercase().last().unwrap();
@@ -1911,7 +2189,11 @@ impl fmt::Display for Board {
             s.push_str("\n");
         }
         s.push_str("   A  B  C  D  E  F  G  H\n");
-        s.push_str(if self.side_to_move() == Color::White { "Whites Turn\n" } else { "Blacks Turn\n" });
+        s.push_str(if self.side_to_move() == Color::White {
+            "Whites Turn\n"
+        } else {
+            "Blacks Turn\n"
+        });
         write!(f, "{}", s)
     }
 }

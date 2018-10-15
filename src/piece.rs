@@ -8,20 +8,27 @@ pub enum Piece {
     Bishop,
     Rook,
     Queen,
-    King
+    King,
 }
 
 /// How many piece types are there?
 pub const NUM_PIECES: usize = 6;
 
 /// An array representing each piece type, in order of ascending value.
-pub const ALL_PIECES: [Piece; NUM_PIECES] = [Piece::Pawn, Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen, Piece::King];
+pub const ALL_PIECES: [Piece; NUM_PIECES] = [
+    Piece::Pawn,
+    Piece::Knight,
+    Piece::Bishop,
+    Piece::Rook,
+    Piece::Queen,
+    Piece::King,
+];
 
 /// How many ways can I promote?
 pub const NUM_PROMOTION_PIECES: usize = 4;
 
 /// What pieces can I promote to?
-pub const PROMOTION_PIECES: [Piece; 4] = [ Piece::Queen, Piece::Knight, Piece::Rook, Piece::Bishop ];
+pub const PROMOTION_PIECES: [Piece; 4] = [Piece::Queen, Piece::Knight, Piece::Rook, Piece::Bishop];
 
 impl Piece {
     /// Convert the `Piece` to a `usize` for table lookups.
@@ -32,13 +39,17 @@ impl Piece {
 
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match *self {
-            Piece::Pawn => "p",
-            Piece::Knight => "n",
-            Piece::Bishop => "b",
-            Piece::Rook => "r",
-            Piece::Queen => "q",
-            Piece::King => "k"
-        })
+        write!(
+            f,
+            "{}",
+            match *self {
+                Piece::Pawn => "p",
+                Piece::Knight => "n",
+                Piece::Bishop => "b",
+                Piece::Rook => "r",
+                Piece::Queen => "q",
+                Piece::King => "k",
+            }
+        )
     }
 }

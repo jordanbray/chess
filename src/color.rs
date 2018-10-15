@@ -1,11 +1,11 @@
-use std::ops::Not;
 use rank::Rank;
+use std::ops::Not;
 
 /// Represent a color.
 #[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]
 pub enum Color {
     White,
-    Black
+    Black,
 }
 
 /// How many colors are there?
@@ -24,7 +24,7 @@ impl Color {
     pub fn to_my_backrank(&self) -> Rank {
         match *self {
             Color::White => Rank::First,
-            Color::Black => Rank::Eighth
+            Color::Black => Rank::Eighth,
         }
     }
 
@@ -33,7 +33,7 @@ impl Color {
     pub fn to_their_backrank(&self) -> Rank {
         match *self {
             Color::White => Rank::Eighth,
-            Color::Black => Rank::First
+            Color::Black => Rank::First,
         }
     }
 
@@ -41,7 +41,7 @@ impl Color {
     pub fn to_second_rank(&self) -> Rank {
         match *self {
             Color::White => Rank::Second,
-            Color::Black => Rank::Seventh
+            Color::Black => Rank::Seventh,
         }
     }
 
@@ -49,7 +49,7 @@ impl Color {
     pub fn to_seventh_rank(&self) -> Rank {
         match *self {
             Color::White => Rank::Seventh,
-            Color::Black => Rank::Second
+            Color::Black => Rank::Second,
         }
     }
 }

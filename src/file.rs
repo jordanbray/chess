@@ -17,14 +17,21 @@ pub enum File {
 pub const NUM_FILES: usize = 8;
 
 /// Enumerate all files
-pub const ALL_FILES: [File; NUM_FILES] = [File::A, File::B, File::C, File::D, File::E, File::F, File::G, File::H];
+pub const ALL_FILES: [File; NUM_FILES] = [
+    File::A,
+    File::B,
+    File::C,
+    File::D,
+    File::E,
+    File::F,
+    File::G,
+    File::H,
+];
 
 impl File {
     /// Convert a `usize` into a `File` (the inverse of to_index).  If i > 7, wrap around.
     pub fn from_index(i: usize) -> File {
-        unsafe {
-            transmute((i as u8) & 7)
-        }
+        unsafe { transmute((i as u8) & 7) }
     }
 
     /// Go one file to the left.  If impossible, wrap around.

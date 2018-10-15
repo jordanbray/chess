@@ -7,17 +7,16 @@
 // it to be easily followed.
 extern crate rand;
 mod bitboard;
-mod square;
-mod rank;
-mod file;
-mod color;
-mod piece;
 mod castle_rights;
+mod color;
+mod file;
 mod gen_tables;
+mod piece;
+mod rank;
+mod square;
 
 use gen_tables::generate_all_tables;
 // Generate everything.
 fn main() {
     generate_all_tables();
 }
-
