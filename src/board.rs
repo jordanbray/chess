@@ -15,6 +15,7 @@ use rank::Rank;
 use square::{Square, ALL_SQUARES};
 use std::fmt;
 use zobrist::Zobrist;
+use movegen::*;
 
 /// A representation of a chess board.  That's why you're here, right?
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -59,6 +60,42 @@ macro_rules! pseudo_legal_moves {
     };
 }
 
+
+
+macro_rules! push_pawn {
+    ($move_list:expr, $index:expr) => {{ #[inline(always)] |src, bb, promotion| {
+        if promotion {
+            for dest in bb {
+                unsafe {
+                    *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, Some(Piece::Knight));
+                    *$move_list.get_unchecked_mut($index + 1) = ChessMove::new(src, dest, Some(Piece::Bishop));
+                    *$move_list.get_unchecked_mut($index + 2) = ChessMove::new(src, dest, Some(Piece::Queen));
+                    *$move_list.get_unchecked_mut($index + 3) = ChessMove::new(src, dest, Some(Piece::Rook));
+                    $index += 4;
+                }
+            }
+        } else {
+            for dest in bb {
+                unsafe {
+                    *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
+                    $index += 1;
+                }
+            }
+        }
+    }}};
+}
+
+macro_rules! push {
+    ($move_list:expr, $index:expr) => {{ #[inline(always)] |src, bb, _promotion| {
+        for dest in bb {
+            unsafe {
+                *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
+                $index += 1;
+            }
+        }
+    }}};
+}
+
 /// Never Call Directly!
 ///
 /// Enumerate all legal moves for a particular board.
@@ -70,371 +107,30 @@ macro_rules! pseudo_legal_moves {
 ///  * the current index you want to write to in $move_list
 ///  * a `BitBoard` mask which represents squares you want to land on
 macro_rules! enumerate_moves {
-    ($board:expr, $move_list:expr, $index:expr, $dest_mask:expr) => {{
-        if $board.checkers == EMPTY {
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Pawn,
-                false,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Knight,
-                false,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Bishop,
-                false,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Rook,
-                false,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Queen,
-                false,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::King,
-                false,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-        } else if $board.checkers.popcnt() == 1 {
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Pawn,
-                true,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Knight,
-                true,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Bishop,
-                true,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Rook,
-                true,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::Queen,
-                true,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::King,
-                true,
-                false,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
+    ($board:expr, $move_list:expr, $index:expr, $mask:expr) => {{
+        let checkers = $board.checkers();
+        let combined = $board.combined();
+        let color = $board.side_to_move();
+        let my_pieces = $board.color_combined(color);
+        let ksq = ($board.pieces(Piece::King) & my_pieces).to_square();
+         if checkers == EMPTY {
+            PawnType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push_pawn!($move_list, $index));
+            KnightType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            BishopType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            RookType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            QueenType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            KingType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+        } else if checkers.popcnt() == 1 {
+            PawnType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push_pawn!($move_list, $index));
+            KnightType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            BishopType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            RookType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            QueenType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            KingType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
         } else {
-            enumerate_moves_one_piece!(
-                $board,
-                Piece::King,
-                true,
-                true,
-                $board.side_to_move,
-                $move_list,
-                $index,
-                $dest_mask
-            );
+            KingType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
         }
     }};
-}
-
-/// Never Call Directly!
-///
-/// Note: It is absolutely wrong to call the `enumerate_moves_one_piece` macro by itself.  You will
-/// get invalid results due to some internal assumptions about when it will be called.
-///
-/// Enumerate all legal moves for one piece.
-///
-/// You must pass in:
-///  * a `Board`
-///  * a `Piece` type
-///  * whether or not you are currently in check (a boolean)
-///  * your color
-///  * an array of `ChessMove` objects big enough to store the moves
-///  ** Note: If the array of `ChessMove`s is not large enough, the program will seg. fault.
-///  * the current index you want to write to in $move_list
-///  * a `BitBoard` mask which represents the squares you want to land on.
-macro_rules! enumerate_moves_one_piece {
-    ($board:expr, $piece_type:expr, $in_check:expr, $double_check:expr, $color:expr, $move_list:expr, $index:expr, $dest_mask:expr) => { {
-        unsafe {
-            let combined = $board.combined();
-            let my_pieces = $board.color_combined($color);
-            let pieces = $board.pieces($piece_type) & my_pieces;
-            let pinned = $board.pinned;
-            let checkers = $board.checkers;
-
-            // if the piece is a king, iterate over all pseudo-legal moves, and check to see if it
-            // leaves you in check with `legal_king_move`.
-            if $piece_type == Piece::King {
-                let ksq = pieces.to_square();
-                let mut moves = pseudo_legal_moves!($piece_type, ksq, $color, combined) & $dest_mask;
-
-                // if we are in check, and it is not double check, do not allow the king to move to
-                // any square along the line between the king and attacker (unless the king
-                // captures the attacker.  This has two caveats:
-                //  * If the checker is a knight, the line between the king and the knight is
-                //    empty, and the king cannot capture the knight, so this is a pointless feature.
-                //  * If the piece is a pawn, the king *can* move along the line between the king
-                //    and the pawn.  As a result, this *must* check that the checker is not a pawn
-                if $in_check &&
-                  !$double_check &&
-                  ($board.checkers & $board.pieces(Piece::Knight)) == EMPTY &&
-                  ($board.checkers & $board.pieces(Piece::Pawn)) == EMPTY {
-                    moves &= !(line(ksq, $board.checkers.to_square()) ^ $board.checkers);
-                }
-
-                // if we are in double-check, do not allow the king to move to any square along the
-                // line between the king and the attackers.  There are two caveats, like before:
-                //  * If a checker is a knight, the feature is useless, but its expensive to check
-                //    if it a knight, so I let the logic run anyways.
-                //  * It is impossible to end up in double-check, and have one of the checking
-                //    pieces be a pawn.  As a result, we don't check that here, either.
-                //
-                // This if statement could be an 'else if' (the conditions will never both be true
-                // at the same time), but since it's all inlined by the compiler anyways, I don't
-                // bother to add the else.
-                if $in_check && $double_check {
-                    let checker1 = $board.checkers.to_square();
-                    let checker2 = ($board.checkers & !BitBoard::from_square(checker1)).to_square();
-                    moves &= !((line(ksq, checker1) | line(ksq, checker2)) ^ $board.checkers);
-                }
-
-                // triple-check is impossible in a normal chess game.
-
-                // At this point, there is no way (that I know of) to eliminate more king moves.
-                // As a result, we need to check these the slow way.  Iterate over the moves, check
-                // if they are legal and, if they are, add them to the list of legal moves.
-                for dest in moves {
-                    if $board.legal_king_move(dest) {
-                        *$move_list.get_unchecked_mut($index) = ChessMove::new(ksq, dest, None);
-                        $index += 1;
-                    }
-                }
-
-                // If we are not in check, we may be able to castle.
-                // We can do so iff:
-                //  * the `Board` structure says we can.
-                //  * the squares between my king and my rook are empty.
-                //  * no enemy pieces are attacking the squares between the king, and the kings
-                //    destination square.
-                //  ** This is determined by going to the left or right, and calling
-                //     'legal_king_move' for that square.
-                if !$in_check {
-                    if $board.my_castle_rights().has_kingside() &&
-                        ($board.combined() & $board.my_castle_rights().kingside_squares($color)) == EMPTY {
-                        if $board.legal_king_move(ksq.uright()) &&
-                           $board.legal_king_move(ksq.uright().uright()) {
-                            *$move_list.get_unchecked_mut($index) = ChessMove::new(ksq, ksq.uright().uright(), None);
-                            $index += 1;
-                        }
-                    }
-
-                    if $board.my_castle_rights().has_queenside() &&
-                        ($board.combined() & $board.my_castle_rights().queenside_squares($color)) == EMPTY {
-                        if $board.legal_king_move(ksq.uleft()) &&
-                           $board.legal_king_move(ksq.uleft().uleft()) {
-                            *$move_list.get_unchecked_mut($index) = ChessMove::new(ksq, ksq.uleft().uleft(), None);
-                            $index += 1;
-                        }
-                    }
-                }
-            } else {
-                // generate a normal piece move
-
-                // get the king square for pinned piece consideration
-                let ksq = ($board.pieces(Piece::King) & $board.color_combined($color)).to_square();
-
-                // the seventh rank bitboard is used for pawns to determine promotion
-                let seventh_rank = get_rank($color.to_seventh_rank());
-
-                // if the piece is not pinned:
-                //  * And I'm currently in check:
-                //  ** I can move to any square between my king and the dude putting me in check.
-                //  ** I can catpure the dude putting me in check
-                //  ** I will not be at this section of code if I'm in double-check
-                //  * And I'm currently NOT in check:
-                //  ** I can move anywhere!
-                if $piece_type != Piece::Pawn {
-                    for src in pieces & !pinned {
-                        let moves = pseudo_legal_moves!($piece_type, src, $color, combined) &
-                                    $dest_mask &
-                                    (if $in_check { between(checkers.to_square(), ksq) ^ checkers } else { !EMPTY });
-
-                        // If I'm not a pawn, just add each move to the move list.
-                        for dest in moves {
-                            *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
-                            $index += 1;
-                        }
-                    }
-                } else {
-                    // If I am a pawn, add any 'non-promotion' move to the move list.
-                    for src in pieces & !pinned & !seventh_rank {
-                         let moves = pseudo_legal_moves!($piece_type, src, $color, combined) &
-                                    $dest_mask &
-                                    (if $in_check { between(checkers.to_square(), ksq) ^ checkers } else { !EMPTY });
-                         for dest in moves {
-                            *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
-                            $index += 1;
-                         }
-                    }
-
-                    // If I am a pawn, add all 'promotion' moves to the move list.
-                    for src in pieces & !pinned & seventh_rank {
-                        let moves = pseudo_legal_moves!($piece_type, src, $color, combined) &
-                                    $dest_mask &
-                                    (if $in_check { between(checkers.to_square(), ksq) ^ checkers } else { !EMPTY });
-                        for dest in moves {
-                            *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, Some(Piece::Queen));
-                            *$move_list.get_unchecked_mut($index+1) = ChessMove::new(src, dest, Some(Piece::Knight));
-                            *$move_list.get_unchecked_mut($index+2) = ChessMove::new(src, dest, Some(Piece::Rook));
-                            *$move_list.get_unchecked_mut($index+3) = ChessMove::new(src, dest, Some(Piece::Bishop));
-                            $index += 4;
-                        }
-                    }
-                }
-
-                // If I'm not in check AND I'm pinned
-                //  * I can still move along the line between my pinner and my king
-                //  * I can still capture my pinner
-                //  * If I'm a knight, I cannot move at all due to the way knights move.
-                if !$in_check {
-                    if $piece_type != Piece::Pawn  && $piece_type != Piece::Knight {
-                        // for each pinned piece of this type
-                        for src in pieces & pinned {
-                            // grab all the moves that put me between my pinner and my king, and
-                            // possibly capture my attacker
-                            // * Note: Due to how lines work, the line between my pinner and my king is
-                            //         the same as the line between ME and my king.  So lets use the
-                            //         second definition because it's easier to code.
-                            let moves = pseudo_legal_moves!($piece_type, src, $color, combined) &
-                                        $dest_mask &
-                                        line(src, ksq);
-
-                            // Same as above.  If I'm not a pawn, just add all the moves to the moves
-                            // list
-                            for dest in moves {
-                                *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
-                                $index += 1;
-                            }
-                        }
-                    } else if $piece_type == Piece::Pawn {
-                        for src in pieces & pinned & !seventh_rank {
-                            // If I am a pawn, add all 'non-promotion' moves to the move list.
-                            let moves = pseudo_legal_moves!($piece_type, src, $color, combined) &
-                                        $dest_mask &
-                                        line(src, ksq);
-
-                            for dest in moves {
-                                *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
-                                $index += 1;
-                            }
-                        }
-                        for src in pieces & pinned & seventh_rank {
-                            let moves = pseudo_legal_moves!($piece_type, src, $color, combined) &
-                                        $dest_mask &
-                                        line(src, ksq);
-                            for dest in moves {
-                                *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, Some(Piece::Queen));
-                                *$move_list.get_unchecked_mut($index+1) = ChessMove::new(src, dest, Some(Piece::Knight));
-                                *$move_list.get_unchecked_mut($index+2) = ChessMove::new(src, dest, Some(Piece::Rook));
-                                *$move_list.get_unchecked_mut($index+3) = ChessMove::new(src, dest, Some(Piece::Bishop));
-                                $index += 4;
-                            }
-                        }
-                    }
-                }
-
-                // and, lastly, passed pawn moves
-                // What a stupid chess rule...
-                // This type of move has its own implementation of legal_*_move, which is called
-                // legal_ep_move.
-                if $piece_type == Piece::Pawn && $board.en_passant.is_some() {
-                    let ep_sq = $board.en_passant.unwrap();
-                    if !$in_check || ($in_check && (checkers & BitBoard::from_square(ep_sq)) != EMPTY) {
-                        let rank = get_rank(ep_sq.get_rank());
-                        let passed_pawn_pieces = pieces & !pinned & get_adjacent_files(ep_sq.get_file()) & rank;
-                        let dest = ep_sq.uforward($color);
-                        for src in passed_pawn_pieces {
-                            if $board.legal_ep_move(src, dest) {
-                                *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
-                                $index += 1;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } };
 }
 
 /// Construct the initial position.
@@ -1244,7 +940,7 @@ impl Board {
     pub fn enumerate_moves(&self, moves: &mut [ChessMove; 256]) -> usize {
         let mut index = 0usize;
         let not_my_pieces = !self.color_combined(self.side_to_move);
-        enumerate_moves!(self, moves, index, not_my_pieces);
+        enumerate_moves!(*self, moves, index, not_my_pieces);
         index
     }
 
@@ -1911,6 +1607,7 @@ impl Board {
     }
 
     /// Is a particular king move legal?
+    #[inline(always)]
     pub fn legal_king_move(&self, dest: Square) -> bool {
         let combined = self.combined()
             ^ (self.pieces(Piece::King) & self.color_combined(self.side_to_move))

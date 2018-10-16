@@ -60,6 +60,6 @@ mod square;
 pub use square::*;
 
 mod movegen;
-pub use movegen::*;
+pub use movegen::MoveGen;
 
 mod zobrist;

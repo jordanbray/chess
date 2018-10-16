@@ -12,18 +12,20 @@ use magic::{
 pub trait PieceType {
     fn is(piece: Piece) -> bool;
     fn into_piece() -> Piece;
+    #[inline(always)]
     fn pseudo_legals(src: Square, color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard;
+    #[inline(always)]
     fn legals<T, F>(board: Board,
                  mask: BitBoard,
+                 combined: BitBoard,
+                 my_pieces: BitBoard,
+                 color: Color,
+                 ksq: Square,
                  mut store_moves: F)
             where T: CheckType, F: FnMut(Square, BitBoard, bool) {
-        let color = board.side_to_move();
-        let combined = board.combined();
-        let my_pieces = board.color_combined(color);
         let pieces = board.pieces(Self::into_piece()) & my_pieces;
         let pinned = board.pinned();
         let checkers = board.checkers();
-        let ksq = (board.pieces(Piece::King) & my_pieces).to_square();
         
         let check_mask = if T::IN_CHECK {
                    between(checkers.to_square(), ksq) ^ checkers
@@ -76,22 +78,23 @@ impl PieceType for PawnType {
         Piece::Pawn
     }
 
+    #[inline(always)]
     fn pseudo_legals(src: Square, color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard {
         get_pawn_moves(src, color, combined) & mask
     }
 
-
+    #[inline(always)]
     fn legals<T, F>(board: Board,
                  mask: BitBoard,
+                 combined: BitBoard,
+                 my_pieces: BitBoard,
+                 color: Color,
+                 ksq: Square,
                  mut store_moves: F)
             where T: CheckType, F: FnMut(Square, BitBoard, bool) {
-        let color = board.side_to_move();
-        let combined = board.combined();
-        let my_pieces = board.color_combined(color);
         let pieces = board.pieces(Self::into_piece()) & my_pieces;
         let pinned = board.pinned();
         let checkers = board.checkers();
-        let ksq = (board.pieces(Piece::King) & my_pieces).to_square();
         
         let check_mask = if T::IN_CHECK {
                    between(checkers.to_square(), ksq) ^ checkers
@@ -107,7 +110,9 @@ impl PieceType for PawnType {
         if !T::IN_CHECK {
             for src in pieces & pinned {
                 let moves = Self::pseudo_legals(src, color, combined, mask) & line(ksq, src);
-                store_moves(src, moves, src.get_rank() == color.to_seventh_rank());
+                if moves != EMPTY {
+                    store_moves(src, moves, src.get_rank() == color.to_seventh_rank());
+                }
             }
         }
          
@@ -134,6 +139,7 @@ impl PieceType for BishopType {
         Piece::Bishop
     }
 
+    #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard {
         get_bishop_moves(src, combined) & mask
     }
@@ -148,21 +154,23 @@ impl PieceType for KnightType {
         Piece::Knight
     }
 
+    #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, _combined: BitBoard, mask: BitBoard) -> BitBoard {
         get_knight_moves(src) & mask
     }
 
+    #[inline(always)]
     fn legals<T, F>(board: Board,
                  mask: BitBoard,
+                 combined: BitBoard,
+                 my_pieces: BitBoard,
+                 color: Color,
+                 ksq: Square,
                  mut store_moves: F)
             where T: CheckType, F: FnMut(Square, BitBoard, bool) {
-        let color = board.side_to_move();
-        let combined = board.combined();
-        let my_pieces = board.color_combined(color);
         let pieces = board.pieces(Self::into_piece()) & my_pieces;
         let pinned = board.pinned();
         let checkers = board.checkers();
-        let ksq = (board.pieces(Piece::King) & my_pieces).to_square();
         
         let check_mask = if T::IN_CHECK {
                    between(checkers.to_square(), ksq) ^ checkers
@@ -186,6 +194,7 @@ impl PieceType for RookType {
         Piece::Rook
     }
 
+    #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard {
         get_rook_moves(src, combined) & mask
     }
@@ -200,6 +209,7 @@ impl PieceType for QueenType {
         Piece::Queen
     }
 
+    #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard {
         (get_rook_moves(src, combined) ^ get_bishop_moves(src, combined)) & mask
     }
@@ -214,19 +224,20 @@ impl PieceType for KingType {
         Piece::King
     }
 
+    #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, _combined: BitBoard, mask: BitBoard) -> BitBoard {
         get_king_moves(src) & mask
     }
 
+    #[inline(always)]
     fn legals<T, F>(board: Board,
                  mask: BitBoard,
+                 combined: BitBoard,
+                 _my_pieces: BitBoard,
+                 color: Color,
+                 ksq: Square,
                  mut store_moves: F)
             where T: CheckType, F: FnMut(Square, BitBoard, bool) {
-        let color = board.side_to_move();
-        let combined = board.combined();
-        let my_pieces = board.color_combined(color);
-        let pieces = board.pieces(Piece::King) & my_pieces;
-        let ksq = pieces.to_square();
         let mut moves = Self::pseudo_legals(ksq, color, combined, mask);
 
         let copy = moves;
