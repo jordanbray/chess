@@ -10,12 +10,12 @@ use magic::{
     get_knight_moves, get_pawn_attacks, get_pawn_moves, get_rank, get_rook_moves, get_rook_rays,
     line,
 };
+use movegen::*;
 use piece::{Piece, ALL_PIECES, NUM_PIECES};
 use rank::Rank;
 use square::{Square, ALL_SQUARES};
 use std::fmt;
 use zobrist::Zobrist;
-use movegen::*;
 
 /// A representation of a chess board.  That's why you're here, right?
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -60,21 +60,40 @@ macro_rules! pseudo_legal_moves {
     };
 }
 
-
-
 macro_rules! push_pawn {
-    ($move_list:expr, $index:expr) => {{ #[inline(always)] |src, bb, promotion| {
-        if promotion {
-            for dest in bb {
-                unsafe {
-                    *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, Some(Piece::Knight));
-                    *$move_list.get_unchecked_mut($index + 1) = ChessMove::new(src, dest, Some(Piece::Bishop));
-                    *$move_list.get_unchecked_mut($index + 2) = ChessMove::new(src, dest, Some(Piece::Queen));
-                    *$move_list.get_unchecked_mut($index + 3) = ChessMove::new(src, dest, Some(Piece::Rook));
-                    $index += 4;
+    ($move_list:expr, $index:expr) => {{
+        #[inline(always)]
+        |src, bb, promotion| {
+            if promotion {
+                for dest in bb {
+                    unsafe {
+                        *$move_list.get_unchecked_mut($index) =
+                            ChessMove::new(src, dest, Some(Piece::Knight));
+                        *$move_list.get_unchecked_mut($index + 1) =
+                            ChessMove::new(src, dest, Some(Piece::Bishop));
+                        *$move_list.get_unchecked_mut($index + 2) =
+                            ChessMove::new(src, dest, Some(Piece::Queen));
+                        *$move_list.get_unchecked_mut($index + 3) =
+                            ChessMove::new(src, dest, Some(Piece::Rook));
+                        $index += 4;
+                    }
+                }
+            } else {
+                for dest in bb {
+                    unsafe {
+                        *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
+                        $index += 1;
+                    }
                 }
             }
-        } else {
+        }
+    }};
+}
+
+macro_rules! push {
+    ($move_list:expr, $index:expr) => {{
+        #[inline(always)]
+        |src, bb, _promotion| {
             for dest in bb {
                 unsafe {
                     *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
@@ -82,18 +101,7 @@ macro_rules! push_pawn {
                 }
             }
         }
-    }}};
-}
-
-macro_rules! push {
-    ($move_list:expr, $index:expr) => {{ #[inline(always)] |src, bb, _promotion| {
-        for dest in bb {
-            unsafe {
-                *$move_list.get_unchecked_mut($index) = ChessMove::new(src, dest, None);
-                $index += 1;
-            }
-        }
-    }}};
+    }};
 }
 
 /// Never Call Directly!
@@ -113,22 +121,126 @@ macro_rules! enumerate_moves {
         let color = $board.side_to_move();
         let my_pieces = $board.color_combined(color);
         let ksq = ($board.pieces(Piece::King) & my_pieces).to_square();
-         if checkers == EMPTY {
-            PawnType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push_pawn!($move_list, $index));
-            KnightType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
-            BishopType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
-            RookType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
-            QueenType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
-            KingType::legals::<NotInCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+        if checkers == EMPTY {
+            PawnType::legals::<NotInCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push_pawn!($move_list, $index),
+            );
+            KnightType::legals::<NotInCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
+            BishopType::legals::<NotInCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
+            RookType::legals::<NotInCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
+            QueenType::legals::<NotInCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
+            KingType::legals::<NotInCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
         } else if checkers.popcnt() == 1 {
-            PawnType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push_pawn!($move_list, $index));
-            KnightType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
-            BishopType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
-            RookType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
-            QueenType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
-            KingType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            PawnType::legals::<InCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push_pawn!($move_list, $index),
+            );
+            KnightType::legals::<InCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
+            BishopType::legals::<InCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
+            RookType::legals::<InCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
+            QueenType::legals::<InCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
+            KingType::legals::<InCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
         } else {
-            KingType::legals::<InCheckType, _>($board, $mask, combined, my_pieces, color, ksq, push!($move_list, $index));
+            KingType::legals::<InCheckType, _>(
+                $board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                push!($move_list, $index),
+            );
         }
     }};
 }
@@ -795,7 +907,8 @@ impl Board {
             Some(x) => {
                 if self.pieces(Piece::Pawn)
                     & self.color_combined(!self.side_to_move)
-                    & BitBoard::from_square(x) == EMPTY
+                    & BitBoard::from_square(x)
+                    == EMPTY
                 {
                     return false;
                 }
@@ -820,7 +933,8 @@ impl Board {
             // verify there are rooks on all those squares
             if castle_rights.unmoved_rooks(*color)
                 & self.pieces(Piece::Rook)
-                & self.color_combined(*color) != castle_rights.unmoved_rooks(*color)
+                & self.color_combined(*color)
+                != castle_rights.unmoved_rooks(*color)
             {
                 return false;
             }
@@ -880,7 +994,8 @@ impl Board {
                 }
             } */
             if (self.pieces(Piece::Pawn) ^ self.pieces(Piece::Knight) ^ self.pieces(Piece::Bishop))
-                & opp == opp
+                & opp
+                == opp
             {
                 if self.pieces(Piece::Pawn) & opp == opp {
                     Some(Piece::Pawn)
@@ -995,7 +1110,8 @@ impl Board {
         if get_adjacent_files(sq.get_file())
             & get_rank(sq.get_rank())
             & self.pieces(Piece::Pawn)
-            & self.color_combined(!self.side_to_move) != EMPTY
+            & self.color_combined(!self.side_to_move)
+            != EMPTY
         {
             self.en_passant = Some(sq);
             self.hash ^= Zobrist::en_passant(sq.get_file(), self.side_to_move);
@@ -1156,12 +1272,11 @@ impl Board {
             let moves =
                 pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined())
                     & !self.color_combined(self.side_to_move)
-                    & (self.checkers
-                        | between(
-                            self.checkers.to_square(),
-                            (self.pieces(Piece::King) & self.color_combined(self.side_to_move))
-                                .to_square(),
-                        ));
+                    & (self.checkers | between(
+                        self.checkers.to_square(),
+                        (self.pieces(Piece::King) & self.color_combined(self.side_to_move))
+                            .to_square(),
+                    ));
             return moves & BitBoard::from_square(m.get_dest()) != EMPTY;
         } else {
             // not in check
@@ -1197,16 +1312,17 @@ impl Board {
             // yourself
             // If you are not pinned, you can move anywhere
             // BUT, you cannot capture your own pieces
-            let move_mask = !self.color_combined(self.side_to_move)
-                & if self.pinned & BitBoard::from_square(m.get_source()) != EMPTY {
-                    line(
-                        m.get_source(),
-                        (self.pieces(Piece::King) & self.color_combined(self.side_to_move))
-                            .to_square(),
-                    )
-                } else {
-                    !EMPTY
-                };
+            let move_mask = !self.color_combined(self.side_to_move) & if self.pinned
+                & BitBoard::from_square(m.get_source())
+                != EMPTY
+            {
+                line(
+                    m.get_source(),
+                    (self.pieces(Piece::King) & self.color_combined(self.side_to_move)).to_square(),
+                )
+            } else {
+                !EMPTY
+            };
             let moves =
                 pseudo_legal_moves!(piece, m.get_source(), self.side_to_move, self.combined())
                     & move_mask;
@@ -1288,7 +1404,8 @@ impl Board {
                     // rights for that side of the board
                     if dest & result
                         .their_castle_rights()
-                        .unmoved_rooks(!result.side_to_move) != EMPTY
+                        .unmoved_rooks(!result.side_to_move)
+                        != EMPTY
                     {
                         result.remove_their_castle_rights(
                             CastleRights::rook_square_to_castle_rights(m.get_dest()),
@@ -1394,7 +1511,8 @@ impl Board {
             Piece::Knight => {
                 if (get_knight_moves(m.get_dest())
                     & result.pieces(Piece::King)
-                    & result.color_combined(!result.side_to_move)) != EMPTY
+                    & result.color_combined(!result.side_to_move))
+                    != EMPTY
                 {
                     result.checkers ^= BitBoard::from_square(m.get_dest());
                 }
@@ -1416,7 +1534,8 @@ impl Board {
             (result.pieces(Piece::King) & result.color_combined(!result.side_to_move)).to_square();
 
         let attackers = result.color_combined(result.side_to_move)
-            & ((get_bishop_rays(ksq) & (result.pieces(Piece::Bishop) | result.pieces(Piece::Queen)))
+            & ((get_bishop_rays(ksq)
+                & (result.pieces(Piece::Bishop) | result.pieces(Piece::Queen)))
                 | (get_rook_rays(ksq)
                     & (result.pieces(Piece::Rook) | result.pieces(Piece::Queen))));
 

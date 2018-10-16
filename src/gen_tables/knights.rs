@@ -21,8 +21,7 @@ pub fn gen_knight_moves() {
 
                     ((src_rank - dest_rank).abs() == 2 && (src_file - dest_file).abs() == 1)
                         || ((src_rank - dest_rank).abs() == 1 && (src_file - dest_file).abs() == 2)
-                })
-                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
 }

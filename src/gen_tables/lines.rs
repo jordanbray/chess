@@ -39,8 +39,7 @@ pub fn gen_lines() {
                         } else {
                             false
                         }
-                    })
-                    .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                    }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
             }
         }
     }

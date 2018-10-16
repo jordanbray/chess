@@ -67,8 +67,7 @@ pub fn magic_mask(sq: Square, piece: Piece) -> BitBoard {
                     && (edge.get_file() == File::A || edge.get_file() == File::H))
                     || (sq.get_file() == edge.get_file()
                         && (edge.get_rank() == Rank::First || edge.get_rank() == Rank::Eighth))
-            })
-            .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
+            }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
     }
 }
 
@@ -132,6 +131,5 @@ fn gen_edges() -> BitBoard {
                 || sq.get_rank() == Rank::Eighth
                 || sq.get_file() == File::A
                 || sq.get_file() == File::H
-        })
-        .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
+        }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
 }

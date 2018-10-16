@@ -22,8 +22,7 @@ pub fn gen_bishop_rays() {
                     let dest_file = dest.get_file().to_index() as i8;
 
                     (src_rank - dest_rank).abs() == (src_file - dest_file).abs() && *src != **dest
-                })
-                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
 }
@@ -41,8 +40,7 @@ pub fn gen_rook_rays() {
                     let dest_file = dest.get_file().to_index();
 
                     (src_rank == dest_rank || src_file == dest_file) && *src != **dest
-                })
-                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
 }

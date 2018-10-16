@@ -105,7 +105,8 @@ pub fn get_pawn_attacks(sq: Square, color: Color, blockers: BitBoard) -> BitBoar
     unsafe {
         *PAWN_ATTACKS
             .get_unchecked(color.to_index())
-            .get_unchecked(sq.to_index()) & blockers
+            .get_unchecked(sq.to_index())
+            & blockers
     }
 }
 
@@ -118,7 +119,8 @@ pub fn get_pawn_quiets(sq: Square, color: Color, blockers: BitBoard) -> BitBoard
         } else {
             *PAWN_MOVES
                 .get_unchecked(color.to_index())
-                .get_unchecked(sq.to_index()) & !blockers
+                .get_unchecked(sq.to_index())
+                & !blockers
         }
     }
 }
@@ -133,7 +135,8 @@ pub fn get_pawn_moves(sq: Square, color: Color, blockers: BitBoard) -> BitBoard 
 /// This line does extend past the squares.
 pub fn line(sq1: Square, sq2: Square) -> BitBoard {
     unsafe {
-        *LINE.get_unchecked(sq1.to_index())
+        *LINE
+            .get_unchecked(sq1.to_index())
             .get_unchecked(sq2.to_index())
     }
 }

@@ -1,17 +1,17 @@
 use bitboard::{BitBoard, EMPTY};
 use board::Board;
 use chess_move::ChessMove;
+use movegen::piece_type::*;
 use piece::{Piece, NUM_PROMOTION_PIECES, PROMOTION_PIECES};
 use square::Square;
 use std::iter::ExactSizeIterator;
 use std::mem;
-use movegen::piece_type::*;
 
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
 struct SquareAndBitBoard {
     square: Square,
     bitboard: BitBoard,
-    promotion: bool
+    promotion: bool,
 }
 
 /// Never Call Directly!
@@ -32,21 +32,125 @@ macro_rules! enumerate_moves {
         let ksq = ($movegen.board.pieces(Piece::King) & my_pieces).to_square();
 
         if checkers == EMPTY {
-            PawnType::legals::<NotInCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            KnightType::legals::<NotInCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            BishopType::legals::<NotInCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            RookType::legals::<NotInCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            QueenType::legals::<NotInCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            KingType::legals::<NotInCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
+            PawnType::legals::<NotInCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            KnightType::legals::<NotInCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            BishopType::legals::<NotInCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            RookType::legals::<NotInCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            QueenType::legals::<NotInCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            KingType::legals::<NotInCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
         } else if checkers.popcnt() == 1 {
-            PawnType::legals::<InCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            KnightType::legals::<InCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            BishopType::legals::<InCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            RookType::legals::<InCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            QueenType::legals::<InCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
-            KingType::legals::<InCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
+            PawnType::legals::<InCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            KnightType::legals::<InCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            BishopType::legals::<InCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            RookType::legals::<InCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            QueenType::legals::<InCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
+            KingType::legals::<InCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
         } else {
-            KingType::legals::<InCheckType, _>($movegen.board, $mask, combined, my_pieces, color, ksq, |x, y, z| $movegen.push(x, y, z));
+            KingType::legals::<InCheckType, _>(
+                $movegen.board,
+                $mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+                |x, y, z| $movegen.push(x, y, z),
+            );
         }
     }};
 }
@@ -146,7 +250,7 @@ impl MoveGen {
             self.moves[self.pieces] = SquareAndBitBoard {
                 square: square,
                 bitboard: bitboard,
-                promotion: promotion
+                promotion: promotion,
             };
             self.pieces += 1;
         }
