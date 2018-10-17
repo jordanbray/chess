@@ -28,7 +28,6 @@ pub struct Board {
     pinned: BitBoard,
     checkers: BitBoard,
     hash: u64,
-    pawn_hash: u64,
     en_passant: Option<Square>,
 }
 
@@ -266,7 +265,6 @@ impl Board {
             pinned: EMPTY,
             checkers: EMPTY,
             hash: 0,
-            pawn_hash: 0,
             en_passant: None,
         }
     }
@@ -388,7 +386,6 @@ impl Board {
             "b" | "B" => {
                 board.side_to_move = Color::Black;
                 board.hash ^= Zobrist::color();
-                board.pawn_hash ^= Zobrist::color();
             }
             _ => panic!(),
         }
@@ -722,15 +719,7 @@ impl Board {
             *self.pieces.get_unchecked_mut(piece.to_index()) ^= bb;
             *self.color_combined.get_unchecked_mut(color.to_index()) ^= bb;
             self.combined ^= bb;
-            match piece {
-                Piece::Pawn => {
-                    self.hash ^= Zobrist::piece(piece, bb.to_square(), color);
-                    self.pawn_hash ^= Zobrist::piece(piece, bb.to_square(), color);
-                }
-                _ => {
-                    self.hash ^= Zobrist::piece(piece, bb.to_square(), color);
-                }
-            }
+            self.hash ^= Zobrist::piece(piece, bb.to_square(), color);
         }
     }
 
@@ -843,7 +832,6 @@ impl Board {
             let mut result = *self;
             result.side_to_move = !result.side_to_move;
             result.hash ^= Zobrist::color();
-            result.pawn_hash ^= Zobrist::color();
             result.update_pin_info();
             Some(result)
         }
@@ -965,7 +953,7 @@ impl Board {
 
     /// Get a pawn hash of the board (a hash that only changes on color change and pawn moves).
     pub fn get_pawn_hash(&self) -> u64 {
-        self.pawn_hash
+        0
     }
 
     /// What piece is on a particular `Square`?  Is there even one?
@@ -1066,7 +1054,6 @@ impl Board {
             Some(sq) => {
                 self.en_passant = None;
                 self.hash ^= Zobrist::en_passant(sq.get_file(), !self.side_to_move);
-                self.pawn_hash ^= Zobrist::en_passant(sq.get_file(), !self.side_to_move);
             }
         }
     }
@@ -1115,7 +1102,6 @@ impl Board {
         {
             self.en_passant = Some(sq);
             self.hash ^= Zobrist::en_passant(sq.get_file(), self.side_to_move);
-            self.pawn_hash ^= Zobrist::en_passant(sq.get_file(), self.side_to_move);
         }
     }
 
@@ -1386,45 +1372,39 @@ impl Board {
     /// ```
     pub fn make_move(&self, m: ChessMove) -> Board {
         let mut result = *self;
-        let source = BitBoard::from_square(m.get_source());
-        let dest = BitBoard::from_square(m.get_dest());
-        let moved = self.piece_on(m.get_source()).unwrap();
-
-        result.xor(moved, source, self.side_to_move);
-        result.xor(moved, dest, self.side_to_move);
-        let captured = self.piece_on(m.get_dest());
-
-        match captured {
-            None => {}
-            Some(Piece::King) => panic!(),
-            Some(p) => {
-                result.xor(p, dest, !self.side_to_move);
-                if p == Piece::Rook {
-                    // if I capture their rook, and their rook has not moved yet, remove the castle
-                    // rights for that side of the board
-                    if dest & result
-                        .their_castle_rights()
-                        .unmoved_rooks(!result.side_to_move)
-                        != EMPTY
-                    {
-                        result.remove_their_castle_rights(
-                            CastleRights::rook_square_to_castle_rights(m.get_dest()),
-                        );
-                    }
-                }
-            }
-        }
-
         result.remove_ep();
         result.checkers = EMPTY;
         result.pinned = EMPTY;
+        let source = m.get_source();
+        let dest = m.get_dest();
+
+        let source_bb = BitBoard::from_square(source);
+        let dest_bb = BitBoard::from_square(dest);
+        let moved = self.piece_on(source).unwrap();
+
+        result.xor(moved, source_bb, self.side_to_move);
+        result.xor(moved, dest_bb, self.side_to_move);
+        if let Some(captured) = self.piece_on(dest) {
+            result.xor(captured, dest_bb, !self.side_to_move);
+        }
+
+        result.remove_their_castle_rights(CastleRights::square_to_castle_rights(
+            !self.side_to_move,
+            dest,
+        ));
+
+        result.remove_my_castle_rights(CastleRights::square_to_castle_rights(
+            self.side_to_move,
+            source,
+        ));
+
+        let opp_king = result.pieces(Piece::King) & result.color_combined(!result.side_to_move);
 
         match moved {
             Piece::King => {
-                result.remove_my_castle_rights(CastleRights::Both);
-
+                //result.remove_my_castle_rights(CastleRights::Both);
                 // if we castle, move the rook over too!
-                if m.get_source().get_file() == File::E && m.get_dest().get_file() == File::C {
+                if source.get_file() == File::E && dest.get_file() == File::C {
                     // queenside castle
                     result.xor(
                         Piece::Rook,
@@ -1436,8 +1416,7 @@ impl Board {
                         BitBoard::set(self.side_to_move.to_my_backrank(), File::D),
                         self.side_to_move,
                     );
-                } else if m.get_source().get_file() == File::E && m.get_dest().get_file() == File::G
-                {
+                } else if source.get_file() == File::E && dest.get_file() == File::G {
                     // kingside castle
                     result.xor(
                         Piece::Rook,
@@ -1453,80 +1432,47 @@ impl Board {
             }
 
             Piece::Pawn => {
-                // e.p. capture.  the capture variable is 'None' because no piece is on the
-                // destination square
-                if m.get_source().get_file() != m.get_dest().get_file() && captured.is_none() {
-                    result.xor(
-                        Piece::Pawn,
-                        BitBoard::from_square(self.en_passant.unwrap()),
-                        !self.side_to_move,
-                    );
-                }
-
                 match m.get_promotion() {
                     None => {
                         // double-move
-                        if (m.get_source().get_rank() == Rank::Second
-                            && m.get_dest().get_rank() == Rank::Fourth)
-                            || (m.get_source().get_rank() == Rank::Seventh
-                                && m.get_dest().get_rank() == Rank::Fifth)
+                        if (source.get_rank() == Rank::Second && dest.get_rank() == Rank::Fourth)
+                            || (source.get_rank() == Rank::Seventh
+                                && dest.get_rank() == Rank::Fifth)
                         {
-                            result.set_ep(m.get_dest());
+                            result.set_ep(dest);
+                        }
+                        // e.p. capture.  the capture variable is 'None' because no piece is on the
+                        // destination square
+                        else if let Some(ep) = self.en_passant {
+                            if ep.uforward(self.side_to_move) == dest {
+                                result.xor(
+                                    Piece::Pawn,
+                                    BitBoard::from_square(ep),
+                                    !self.side_to_move,
+                                );
+                            }
                         }
 
                         // could be check!
-                        if get_pawn_attacks(
-                            m.get_dest(),
-                            result.side_to_move,
-                            result.pieces(Piece::King)
-                                & result.color_combined(!result.side_to_move),
-                        ) != EMPTY
-                        {
-                            result.checkers ^= BitBoard::from_square(m.get_dest());
-                        }
-                    }
-
-                    Some(Piece::Knight) => {
-                        result.xor(Piece::Pawn, dest, self.side_to_move);
-                        result.xor(Piece::Knight, dest, self.side_to_move);
-
-                        // promotion to a knight check is handled specially because checks from all other
-                        // pieces are handled down below automatically
-                        if (get_knight_moves(m.get_dest())
-                            & result.pieces(Piece::King)
-                            & result.color_combined(!result.side_to_move))
-                            != EMPTY
-                        {
-                            result.checkers ^= BitBoard::from_square(m.get_dest());
+                        if get_pawn_attacks(dest, result.side_to_move, opp_king) != EMPTY {
+                            result.checkers ^= BitBoard::from_square(dest);
                         }
                     }
 
                     Some(p) => {
-                        result.xor(Piece::Pawn, dest, self.side_to_move);
-                        result.xor(p, dest, self.side_to_move);
+                        result.xor(Piece::Pawn, dest_bb, self.side_to_move);
+                        result.xor(p, dest_bb, self.side_to_move);
                     }
                 }
             }
 
-            Piece::Knight => {
-                if (get_knight_moves(m.get_dest())
-                    & result.pieces(Piece::King)
-                    & result.color_combined(!result.side_to_move))
-                    != EMPTY
-                {
-                    result.checkers ^= BitBoard::from_square(m.get_dest());
-                }
-            }
-
-            Piece::Rook => {
-                // if I move my rook, remove my castle rights on that side
-                if source & result.my_castle_rights().unmoved_rooks(result.side_to_move) == source {
-                    result.remove_my_castle_rights(CastleRights::rook_square_to_castle_rights(
-                        m.get_source(),
-                    ));
-                }
-            }
             _ => {}
+        }
+
+        if result.pieces(Piece::Knight) & dest_bb != EMPTY {
+            if get_knight_moves(dest) & opp_king != EMPTY {
+                result.checkers ^= dest_bb;
+            }
         }
 
         // now, lets see if we're in check or pinned
@@ -1550,7 +1496,6 @@ impl Board {
 
         result.side_to_move = !result.side_to_move;
         result.hash ^= Zobrist::color();
-        result.pawn_hash ^= Zobrist::color();
 
         result
     }

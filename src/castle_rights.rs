@@ -22,6 +22,29 @@ pub const ALL_CASTLE_RIGHTS: [CastleRights; NUM_CASTLE_RIGHTS] = [
     CastleRights::Both,
 ];
 
+const CASTLES_PER_SQUARE: [[u8; 64]; 2] = [
+    [
+        2, 0, 0, 0, 3, 0, 0, 1, // 1
+        0, 0, 0, 0, 0, 0, 0, 0, // 2
+        0, 0, 0, 0, 0, 0, 0, 0, // 3
+        0, 0, 0, 0, 0, 0, 0, 0, // 4
+        0, 0, 0, 0, 0, 0, 0, 0, // 5
+        0, 0, 0, 0, 0, 0, 0, 0, // 6
+        0, 0, 0, 0, 0, 0, 0, 0, // 7
+        0, 0, 0, 0, 0, 0, 0, 0, // 8
+    ],
+    [
+        0, 0, 0, 0, 0, 0, 0, 0, // 1
+        0, 0, 0, 0, 0, 0, 0, 0, // 2
+        0, 0, 0, 0, 0, 0, 0, 0, // 3
+        0, 0, 0, 0, 0, 0, 0, 0, // 4
+        0, 0, 0, 0, 0, 0, 0, 0, // 5
+        0, 0, 0, 0, 0, 0, 0, 0, // 6
+        0, 0, 0, 0, 0, 0, 0, 0, // 7
+        2, 0, 0, 0, 3, 0, 0, 1,
+    ],
+];
+
 impl CastleRights {
     /// Can I castle kingside?
     pub fn has_kingside(&self) -> bool {
@@ -31,6 +54,14 @@ impl CastleRights {
     /// Can I castle queenside?
     pub fn has_queenside(&self) -> bool {
         self.to_index() & 2 == 2
+    }
+
+    pub fn square_to_castle_rights(color: Color, sq: Square) -> CastleRights {
+        CastleRights::from_index(unsafe {
+            *CASTLES_PER_SQUARE
+                .get_unchecked(color.to_index())
+                .get_unchecked(sq.to_index())
+        } as usize)
     }
 
     /// What squares need to be empty to castle kingside?
