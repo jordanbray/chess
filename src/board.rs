@@ -8,7 +8,7 @@ use file::File;
 use magic::{
     between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_file, get_king_moves,
     get_knight_moves, get_pawn_attacks, get_pawn_moves, get_rank, get_rook_moves, get_rook_rays,
-    line,
+    line, get_castle_moves
 };
 use movegen::*;
 use piece::{Piece, ALL_PIECES, NUM_PIECES};
@@ -974,7 +974,7 @@ impl Board {
         if self.combined() & opp == EMPTY {
             None
         } else {
-            // naiive algorithm
+            //naiive algorithm
             /*
             for p in ALL_PIECES {
                 if self.pieces(*p) & opp {
@@ -983,19 +983,19 @@ impl Board {
             } */
             if (self.pieces(Piece::Pawn) ^ self.pieces(Piece::Knight) ^ self.pieces(Piece::Bishop))
                 & opp
-                == opp
+                != EMPTY
             {
-                if self.pieces(Piece::Pawn) & opp == opp {
+                if self.pieces(Piece::Pawn) & opp != EMPTY {
                     Some(Piece::Pawn)
-                } else if self.pieces(Piece::Knight) & opp == opp {
+                } else if self.pieces(Piece::Knight) & opp != EMPTY {
                     Some(Piece::Knight)
                 } else {
                     Some(Piece::Bishop)
                 }
             } else {
-                if self.pieces(Piece::Rook) & opp == opp {
+                if self.pieces(Piece::Rook) & opp != EMPTY {
                     Some(Piece::Rook)
-                } else if self.pieces(Piece::Queen) & opp == opp {
+                } else if self.pieces(Piece::Queen) & opp != EMPTY {
                     Some(Piece::Queen)
                 } else {
                     Some(Piece::King)
@@ -1380,6 +1380,7 @@ impl Board {
 
         let source_bb = BitBoard::from_square(source);
         let dest_bb = BitBoard::from_square(dest);
+        let move_bb = source_bb ^ dest_bb;
         let moved = self.piece_on(source).unwrap();
 
         result.xor(moved, source_bb, self.side_to_move);
@@ -1400,77 +1401,44 @@ impl Board {
 
         let opp_king = result.pieces(Piece::King) & result.color_combined(!result.side_to_move);
 
-        match moved {
-            Piece::King => {
-                //result.remove_my_castle_rights(CastleRights::Both);
-                // if we castle, move the rook over too!
-                if source.get_file() == File::E && dest.get_file() == File::C {
-                    // queenside castle
-                    result.xor(
-                        Piece::Rook,
-                        BitBoard::set(self.side_to_move.to_my_backrank(), File::A),
-                        self.side_to_move,
-                    );
-                    result.xor(
-                        Piece::Rook,
-                        BitBoard::set(self.side_to_move.to_my_backrank(), File::D),
-                        self.side_to_move,
-                    );
-                } else if source.get_file() == File::E && dest.get_file() == File::G {
-                    // kingside castle
-                    result.xor(
-                        Piece::Rook,
-                        BitBoard::set(self.side_to_move.to_my_backrank(), File::H),
-                        self.side_to_move,
-                    );
-                    result.xor(
-                        Piece::Rook,
-                        BitBoard::set(self.side_to_move.to_my_backrank(), File::F),
-                        self.side_to_move,
-                    );
-                }
-            }
+        let castles = moved == Piece::King &&
+                      (move_bb & get_castle_moves()) == move_bb;
 
-            Piece::Pawn => {
-                match m.get_promotion() {
-                    None => {
-                        // double-move
-                        if (source.get_rank() == Rank::Second && dest.get_rank() == Rank::Fourth)
-                            || (source.get_rank() == Rank::Seventh
-                                && dest.get_rank() == Rank::Fifth)
-                        {
-                            result.set_ep(dest);
-                        }
-                        // e.p. capture.  the capture variable is 'None' because no piece is on the
-                        // destination square
-                        else if let Some(ep) = self.en_passant {
-                            if ep.uforward(self.side_to_move) == dest {
-                                result.xor(
-                                    Piece::Pawn,
-                                    BitBoard::from_square(ep),
-                                    !self.side_to_move,
-                                );
-                            }
-                        }
+        const CASTLE_ROOK_START: [File; 8] =
+            [File::A, File::A, File::A, File::A, File::H, File::H, File::H, File::H];
+        const CASTLE_ROOK_END: [File; 8] =
+            [File::D, File::D, File::D, File::D, File::F, File::F, File::F, File::F];
 
-                        // could be check!
-                        if get_pawn_attacks(dest, result.side_to_move, opp_king) != EMPTY {
-                            result.checkers ^= BitBoard::from_square(dest);
-                        }
-                    }
+        let double_move = get_rank(self.side_to_move.to_second_rank()) ^
+                          get_rank(self.side_to_move.to_fourth_rank());
 
-                    Some(p) => {
-                        result.xor(Piece::Pawn, dest_bb, self.side_to_move);
-                        result.xor(p, dest_bb, self.side_to_move);
-                    }
-                }
-            }
-
-            _ => {}
+        if moved == Piece::Pawn && (move_bb & double_move) == move_bb {
+            result.set_ep(dest);
+        } else if moved == Piece::Pawn && 
+                  Some(dest.ubackward(self.side_to_move)) == self.en_passant {
+            result.xor(
+                Piece::Pawn,
+                BitBoard::from_square(dest.ubackward(self.side_to_move)),
+                !self.side_to_move,
+            );
+        } else if castles {
+            let my_backrank = self.side_to_move.to_my_backrank();
+            let index = dest.get_file().to_index();
+            let start = BitBoard::set(my_backrank, unsafe { *CASTLE_ROOK_START.get_unchecked(index) });
+            let end = BitBoard::set(my_backrank, unsafe { *CASTLE_ROOK_END.get_unchecked(index) });
+            result.xor(Piece::Rook, start, self.side_to_move);
+            result.xor(Piece::Rook, end, self.side_to_move);
+        } else if let Some(promotion) = m.get_promotion() {
+            result.xor(Piece::Pawn, dest_bb, self.side_to_move);
+            result.xor(promotion, dest_bb, self.side_to_move);
         }
 
         if result.pieces(Piece::Knight) & dest_bb != EMPTY {
             if get_knight_moves(dest) & opp_king != EMPTY {
+                result.checkers ^= dest_bb;
+            }
+        } else if result.pieces(Piece::Pawn) & dest_bb != EMPTY {
+            if get_pawn_attacks(dest, result.side_to_move, opp_king) != EMPTY {
                 result.checkers ^= dest_bb;
             }
         }

@@ -2,7 +2,9 @@ use std::fs::File;
 use std::io::Write;
 
 use bitboard::{BitBoard, EMPTY};
-use square::ALL_SQUARES;
+use square::{Square, ALL_SQUARES};
+use rank::Rank;
+use file::{File as ChessFile};
 
 // Given a square, what are the valid king moves?
 static mut KING_MOVES: [BitBoard; 64] = [EMPTY; 64];
@@ -27,6 +29,23 @@ pub fn gen_king_moves() {
     }
 }
 
+fn gen_castle_moves() -> BitBoard {
+    let c1 = Square::make_square(Rank::First, ChessFile::C);
+    let c8 = Square::make_square(Rank::Eighth, ChessFile::C);
+    let e1 = Square::make_square(Rank::First, ChessFile::E);
+    let e8 = Square::make_square(Rank::Eighth, ChessFile::E);
+    let g1 = Square::make_square(Rank::First, ChessFile::G);
+    let g8 = Square::make_square(Rank::Eighth, ChessFile::G);
+
+    BitBoard::from_square(c1) ^
+    BitBoard::from_square(c8) ^
+    BitBoard::from_square(e1) ^
+    BitBoard::from_square(e8) ^
+    BitBoard::from_square(g1) ^
+    BitBoard::from_square(g8)
+}
+
+
 // Write the KING_MOVES array to the specified file.
 pub fn write_king_moves(f: &mut File) {
     write!(f, "const KING_MOVES: [BitBoard; 64] = [\n").unwrap();
@@ -34,4 +53,6 @@ pub fn write_king_moves(f: &mut File) {
         unsafe { write!(f, "    BitBoard({}),\n", KING_MOVES[i].to_size(0)).unwrap() };
     }
     write!(f, "];\n").unwrap();
+
+    write!(f, "const CASTLE_MOVES: BitBoard = BitBoard({});\n", gen_castle_moves().to_size(0));
 }

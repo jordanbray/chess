@@ -110,6 +110,10 @@ pub fn get_pawn_attacks(sq: Square, color: Color, blockers: BitBoard) -> BitBoar
     }
 }
 
+pub fn get_castle_moves() -> BitBoard {
+    CASTLE_MOVES
+}
+
 /// Get the quiet pawn moves (non-captures) for a particular square, given the pawn's color and
 /// the potential blocking pieces.
 pub fn get_pawn_quiets(sq: Square, color: Color, blockers: BitBoard) -> BitBoard {
