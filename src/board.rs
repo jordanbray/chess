@@ -410,9 +410,6 @@ impl Board {
             board.castle_rights[Color::Black.to_index()] = CastleRights::NoRights;
         }
 
-        board.hash ^= Zobrist::castles(board.castle_rights[Color::Black.to_index()], Color::Black);
-        board.hash ^= Zobrist::castles(board.castle_rights[Color::White.to_index()], Color::White);
-
         let color = board.side_to_move;
 
         match Square::from_string(ep.to_owned()) {
@@ -600,10 +597,8 @@ impl Board {
     /// Add castle rights for a particular side.  Note: this can create an invalid position.
     pub fn add_castle_rights(&mut self, color: Color, add: CastleRights) {
         unsafe {
-            self.hash ^= Zobrist::castles(self.castle_rights(color), color);
             *self.castle_rights.get_unchecked_mut(color.to_index()) =
                 self.castle_rights(color).add(add);
-            self.hash ^= Zobrist::castles(self.castle_rights(color), color);
         }
     }
 
@@ -620,10 +615,8 @@ impl Board {
     /// ```
     pub fn remove_castle_rights(&mut self, color: Color, remove: CastleRights) {
         unsafe {
-            self.hash ^= Zobrist::castles(self.castle_rights(color), color);
             *self.castle_rights.get_unchecked_mut(color.to_index()) =
                 self.castle_rights(color).remove(remove);
-            self.hash ^= Zobrist::castles(self.castle_rights(color), color);
         }
     }
 
@@ -948,7 +941,14 @@ impl Board {
 
     /// Get a hash of the board.
     pub fn get_hash(&self) -> u64 {
-        self.hash
+        self.hash ^
+        if let Some(ep) = self.en_passant {
+            Zobrist::en_passant(ep.get_file(), !self.side_to_move)
+        } else {
+            0
+        } ^
+        Zobrist::castles(self.castle_rights[self.side_to_move.to_index()], self.side_to_move) ^
+        Zobrist::castles(self.castle_rights[!self.side_to_move.to_index()], !self.side_to_move)
     }
 
     /// Get a pawn hash of the board (a hash that only changes on color change and pawn moves).
@@ -1049,13 +1049,7 @@ impl Board {
 
     /// Unset the en_passant square.
     fn remove_ep(&mut self) {
-        match self.en_passant {
-            None => {}
-            Some(sq) => {
-                self.en_passant = None;
-                self.hash ^= Zobrist::en_passant(sq.get_file(), !self.side_to_move);
-            }
-        }
+        self.en_passant = None;
     }
 
     /// Give me the en_passant square, if it exists.
@@ -1101,7 +1095,6 @@ impl Board {
             != EMPTY
         {
             self.en_passant = Some(sq);
-            self.hash ^= Zobrist::en_passant(sq.get_file(), self.side_to_move);
         }
     }
 
@@ -1412,7 +1405,10 @@ impl Board {
         let double_move = get_rank(self.side_to_move.to_second_rank()) ^
                           get_rank(self.side_to_move.to_fourth_rank());
 
-        if moved == Piece::Pawn && (move_bb & double_move) == move_bb {
+        if let Some(promotion) = m.get_promotion() {
+            result.xor(Piece::Pawn, dest_bb, self.side_to_move);
+            result.xor(promotion, dest_bb, self.side_to_move);
+        } else if moved == Piece::Pawn && (move_bb & double_move) == move_bb {
             result.set_ep(dest);
         } else if moved == Piece::Pawn && 
                   Some(dest.ubackward(self.side_to_move)) == self.en_passant {
@@ -1428,9 +1424,6 @@ impl Board {
             let end = BitBoard::set(my_backrank, unsafe { *CASTLE_ROOK_END.get_unchecked(index) });
             result.xor(Piece::Rook, start, self.side_to_move);
             result.xor(Piece::Rook, end, self.side_to_move);
-        } else if let Some(promotion) = m.get_promotion() {
-            result.xor(Piece::Pawn, dest_bb, self.side_to_move);
-            result.xor(promotion, dest_bb, self.side_to_move);
         }
 
         if result.pieces(Piece::Knight) & dest_bb != EMPTY {
@@ -1507,7 +1500,7 @@ impl Board {
         move_list: &mut Vec<[ChessMove; 256]>,
         caches: &mut Vec<CacheTable<u64>>,
     ) -> u64 {
-        let cur = unsafe { caches.get_unchecked(depth as usize) }.get(self.hash);
+        let cur = unsafe { caches.get_unchecked(depth as usize) }.get(self.get_hash());
         match cur {
             Some(x) => x,
             None => {
@@ -1532,7 +1525,7 @@ impl Board {
                         result += cur;
                     }
                 }
-                unsafe { caches.get_unchecked_mut(depth as usize) }.add(self.hash, result);
+                unsafe { caches.get_unchecked_mut(depth as usize) }.add(self.get_hash(), result);
                 result
             }
         }

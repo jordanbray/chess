@@ -1,3 +1,5 @@
+use std::hint::unreachable_unchecked;
+
 use bitboard::{BitBoard, EMPTY};
 use color::Color;
 use file::File;
@@ -99,7 +101,7 @@ impl CastleRights {
             1 => CastleRights::KingSide,
             2 => CastleRights::QueenSide,
             3 => CastleRights::Both,
-            _ => unreachable!(),
+            _ => unsafe { unreachable_unchecked() },
         }
     }
 
