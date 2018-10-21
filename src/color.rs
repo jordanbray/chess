@@ -48,7 +48,7 @@ impl Color {
     pub fn to_fourth_rank(&self) -> Rank {
         match *self {
             Color::White => Rank::Fourth,
-            Color::Black => Rank::Fifth
+            Color::Black => Rank::Fifth,
         }
     }
 

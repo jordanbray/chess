@@ -30,10 +30,11 @@ macro_rules! enumerate_moves {
         let color = $movegen.board.side_to_move();
         let my_pieces = $movegen.board.color_combined(color);
         let ksq = ($movegen.board.pieces(Piece::King) & my_pieces).to_square();
+        let board = $movegen.board;
 
         if checkers == EMPTY {
             PawnType::legals::<NotInCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -42,7 +43,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             KnightType::legals::<NotInCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -51,7 +52,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             BishopType::legals::<NotInCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -60,7 +61,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             RookType::legals::<NotInCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -69,7 +70,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             QueenType::legals::<NotInCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -78,7 +79,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             KingType::legals::<NotInCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -88,7 +89,7 @@ macro_rules! enumerate_moves {
             );
         } else if checkers.popcnt() == 1 {
             PawnType::legals::<InCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -97,7 +98,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             KnightType::legals::<InCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -106,7 +107,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             BishopType::legals::<InCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -115,7 +116,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             RookType::legals::<InCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -124,7 +125,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             QueenType::legals::<InCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -133,7 +134,7 @@ macro_rules! enumerate_moves {
                 |x, y, z| $movegen.push(x, y, z),
             );
             KingType::legals::<InCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -143,7 +144,7 @@ macro_rules! enumerate_moves {
             );
         } else {
             KingType::legals::<InCheckType, _>(
-                $movegen.board,
+                &board,
                 $mask,
                 combined,
                 my_pieces,
@@ -313,7 +314,9 @@ impl MoveGen {
             iterable.len()
         } else {
             for m in iterable {
-                let cur = MoveGen::movegen_perft_test(board.make_move(m), depth - 1);
+                let mut bresult = unsafe { mem::uninitialized() };
+                board.make_move(m, &mut bresult);
+                let cur = MoveGen::movegen_perft_test(bresult, depth - 1);
                 result += cur;
             }
             result
@@ -337,11 +340,15 @@ impl MoveGen {
         } else {
             iterable.set_iterator_mask(targets);
             for x in &mut iterable {
-                result += MoveGen::movegen_perft_test_piecewise(board.make_move(x), depth - 1);
+                let mut bresult = unsafe { mem::uninitialized() };
+                board.make_move(m, &mut bresult);
+                result += MoveGen::movegen_perft_test_piecewise(bresult, depth - 1);
             }
             iterable.set_iterator_mask(!EMPTY);
             for x in &mut iterable {
-                result += MoveGen::movegen_perft_test_piecewise(board.make_move(x), depth - 1);
+                let mut bresult = unsafe { mem::uninitialized() };
+                board.make_move(m, &mut bresult);
+                result += MoveGen::movegen_perft_test_piecewise(bresult, depth - 1);
             }
             result
         }

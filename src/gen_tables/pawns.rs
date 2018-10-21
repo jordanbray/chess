@@ -3,6 +3,8 @@ use std::io::Write;
 
 use bitboard::{BitBoard, EMPTY};
 use color::ALL_COLORS;
+use file::ALL_FILES;
+use rank::Rank;
 use square::ALL_SQUARES;
 
 // Given a square, what are the valid quiet pawn moves (non-captures)?
@@ -63,6 +65,26 @@ pub fn gen_pawn_attacks() {
     }
 }
 
+pub fn gen_source_double_moves() -> BitBoard {
+    let mut result = BitBoard(0);
+    for rank in [Rank::Second, Rank::Seventh].iter() {
+        for file in ALL_FILES.iter() {
+            result ^= BitBoard::set(*rank, *file);
+        }
+    }
+    result
+}
+
+pub fn gen_dest_double_moves() -> BitBoard {
+    let mut result = BitBoard(0);
+    for rank in [Rank::Fourth, Rank::Fifth].iter() {
+        for file in ALL_FILES.iter() {
+            result ^= BitBoard::set(*rank, *file);
+        }
+    }
+    result
+}
+
 // Write the PAWN_MOVES array to the specified file.
 pub fn write_pawn_moves(f: &mut File) {
     write!(f, "const PAWN_MOVES: [[BitBoard; 64]; 2] = [[\n").unwrap();
@@ -89,4 +111,16 @@ pub fn write_pawn_attacks(f: &mut File) {
         }
     }
     write!(f, "]];\n").unwrap();
+
+    write!(
+        f,
+        "const PAWN_SOURCE_DOUBLE_MOVES: BitBoard = BitBoard({0});\n",
+        gen_source_double_moves().to_size(0)
+    );
+
+    write!(
+        f,
+        "const PAWN_DEST_DOUBLE_MOVES: BitBoard = BitBoard({0});\n",
+        gen_dest_double_moves().to_size(0)
+    );
 }

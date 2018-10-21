@@ -168,3 +168,11 @@ pub fn get_file(file: File) -> BitBoard {
 pub fn get_adjacent_files(file: File) -> BitBoard {
     unsafe { *ADJACENT_FILES.get_unchecked(file.to_index()) }
 }
+
+pub fn get_pawn_source_double_moves() -> BitBoard {
+    PAWN_SOURCE_DOUBLE_MOVES
+}
+
+pub fn get_pawn_dest_double_moves() -> BitBoard {
+    PAWN_DEST_DOUBLE_MOVES
+}

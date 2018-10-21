@@ -16,7 +16,7 @@ pub trait PieceType {
     fn pseudo_legals(src: Square, color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard;
     #[inline(always)]
     fn legals<T, F>(
-        board: Board,
+        board: &Board,
         mask: BitBoard,
         combined: BitBoard,
         my_pieces: BitBoard,
@@ -89,7 +89,7 @@ impl PieceType for PawnType {
 
     #[inline(always)]
     fn legals<T, F>(
-        board: Board,
+        board: &Board,
         mask: BitBoard,
         combined: BitBoard,
         my_pieces: BitBoard,
@@ -169,7 +169,7 @@ impl PieceType for KnightType {
 
     #[inline(always)]
     fn legals<T, F>(
-        board: Board,
+        board: &Board,
         mask: BitBoard,
         combined: BitBoard,
         my_pieces: BitBoard,
@@ -243,7 +243,7 @@ impl PieceType for KingType {
 
     #[inline(always)]
     fn legals<T, F>(
-        board: Board,
+        board: &Board,
         mask: BitBoard,
         combined: BitBoard,
         _my_pieces: BitBoard,

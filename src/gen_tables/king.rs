@@ -2,9 +2,9 @@ use std::fs::File;
 use std::io::Write;
 
 use bitboard::{BitBoard, EMPTY};
-use square::{Square, ALL_SQUARES};
+use file::File as ChessFile;
 use rank::Rank;
-use file::{File as ChessFile};
+use square::{Square, ALL_SQUARES};
 
 // Given a square, what are the valid king moves?
 static mut KING_MOVES: [BitBoard; 64] = [EMPTY; 64];
@@ -37,14 +37,13 @@ fn gen_castle_moves() -> BitBoard {
     let g1 = Square::make_square(Rank::First, ChessFile::G);
     let g8 = Square::make_square(Rank::Eighth, ChessFile::G);
 
-    BitBoard::from_square(c1) ^
-    BitBoard::from_square(c8) ^
-    BitBoard::from_square(e1) ^
-    BitBoard::from_square(e8) ^
-    BitBoard::from_square(g1) ^
-    BitBoard::from_square(g8)
+    BitBoard::from_square(c1)
+        ^ BitBoard::from_square(c8)
+        ^ BitBoard::from_square(e1)
+        ^ BitBoard::from_square(e8)
+        ^ BitBoard::from_square(g1)
+        ^ BitBoard::from_square(g8)
 }
-
 
 // Write the KING_MOVES array to the specified file.
 pub fn write_king_moves(f: &mut File) {
@@ -54,5 +53,9 @@ pub fn write_king_moves(f: &mut File) {
     }
     write!(f, "];\n").unwrap();
 
-    write!(f, "const CASTLE_MOVES: BitBoard = BitBoard({});\n", gen_castle_moves().to_size(0));
+    write!(
+        f,
+        "const CASTLE_MOVES: BitBoard = BitBoard({});\n",
+        gen_castle_moves().to_size(0)
+    );
 }

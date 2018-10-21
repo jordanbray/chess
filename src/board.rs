@@ -6,15 +6,16 @@ use color::{Color, ALL_COLORS, NUM_COLORS};
 use construct;
 use file::File;
 use magic::{
-    between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_file, get_king_moves,
-    get_knight_moves, get_pawn_attacks, get_pawn_moves, get_rank, get_rook_moves, get_rook_rays,
-    line, get_castle_moves
+    between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_castle_moves, get_file,
+    get_king_moves, get_knight_moves, get_pawn_attacks, get_pawn_dest_double_moves, get_pawn_moves,
+    get_pawn_source_double_moves, get_rank, get_rook_moves, get_rook_rays, line,
 };
 use movegen::*;
 use piece::{Piece, ALL_PIECES, NUM_PIECES};
 use rank::Rank;
 use square::{Square, ALL_SQUARES};
 use std::fmt;
+use std::mem;
 use zobrist::Zobrist;
 
 /// A representation of a chess board.  That's why you're here, right?
@@ -941,14 +942,20 @@ impl Board {
 
     /// Get a hash of the board.
     pub fn get_hash(&self) -> u64 {
-        self.hash ^
-        if let Some(ep) = self.en_passant {
-            Zobrist::en_passant(ep.get_file(), !self.side_to_move)
-        } else {
-            0
-        } ^
-        Zobrist::castles(self.castle_rights[self.side_to_move.to_index()], self.side_to_move) ^
-        Zobrist::castles(self.castle_rights[!self.side_to_move.to_index()], !self.side_to_move)
+        self.hash
+            ^ if let Some(ep) = self.en_passant {
+                Zobrist::en_passant(ep.get_file(), !self.side_to_move)
+            } else {
+                0
+            }
+            ^ Zobrist::castles(
+                self.castle_rights[self.side_to_move.to_index()],
+                self.side_to_move,
+            )
+            ^ Zobrist::castles(
+                self.castle_rights[!self.side_to_move.to_index()],
+                !self.side_to_move,
+            )
     }
 
     /// Get a pawn hash of the board (a hash that only changes on color change and pawn moves).
@@ -1043,7 +1050,7 @@ impl Board {
     pub fn enumerate_moves(&self, moves: &mut [ChessMove; 256]) -> usize {
         let mut index = 0usize;
         let not_my_pieces = !self.color_combined(self.side_to_move);
-        enumerate_moves!(*self, moves, index, not_my_pieces);
+        enumerate_moves!(self, moves, index, not_my_pieces);
         index
     }
 
@@ -1363,8 +1370,8 @@ impl Board {
     /// let board = Board::default();
     /// assert_eq!(board.make_move(m).side_to_move(), Color::Black);
     /// ```
-    pub fn make_move(&self, m: ChessMove) -> Board {
-        let mut result = *self;
+    pub fn make_move(&self, m: ChessMove, result: &mut Board) {
+        *result = *self;
         result.remove_ep();
         result.checkers = EMPTY;
         result.pinned = EMPTY;
@@ -1394,52 +1401,69 @@ impl Board {
 
         let opp_king = result.pieces(Piece::King) & result.color_combined(!result.side_to_move);
 
-        let castles = moved == Piece::King &&
-                      (move_bb & get_castle_moves()) == move_bb;
+        let castles = moved == Piece::King && (move_bb & get_castle_moves()) == move_bb;
 
-        const CASTLE_ROOK_START: [File; 8] =
-            [File::A, File::A, File::A, File::A, File::H, File::H, File::H, File::H];
-        const CASTLE_ROOK_END: [File; 8] =
-            [File::D, File::D, File::D, File::D, File::F, File::F, File::F, File::F];
+        let ksq = opp_king.to_square();
 
-        let double_move = get_rank(self.side_to_move.to_second_rank()) ^
-                          get_rank(self.side_to_move.to_fourth_rank());
+        const CASTLE_ROOK_START: [File; 8] = [
+            File::A,
+            File::A,
+            File::A,
+            File::A,
+            File::H,
+            File::H,
+            File::H,
+            File::H,
+        ];
+        const CASTLE_ROOK_END: [File; 8] = [
+            File::D,
+            File::D,
+            File::D,
+            File::D,
+            File::F,
+            File::F,
+            File::F,
+            File::F,
+        ];
 
-        if let Some(promotion) = m.get_promotion() {
-            result.xor(Piece::Pawn, dest_bb, self.side_to_move);
-            result.xor(promotion, dest_bb, self.side_to_move);
-        } else if moved == Piece::Pawn && (move_bb & double_move) == move_bb {
-            result.set_ep(dest);
-        } else if moved == Piece::Pawn && 
-                  Some(dest.ubackward(self.side_to_move)) == self.en_passant {
-            result.xor(
-                Piece::Pawn,
-                BitBoard::from_square(dest.ubackward(self.side_to_move)),
-                !self.side_to_move,
-            );
+        if moved == Piece::Knight {
+            result.checkers ^= get_knight_moves(ksq) & dest_bb;
+        } else if moved == Piece::Pawn {
+            if let Some(Piece::Knight) = m.get_promotion() {
+                result.xor(Piece::Pawn, dest_bb, self.side_to_move);
+                result.xor(Piece::Knight, dest_bb, self.side_to_move);
+                result.checkers ^= get_knight_moves(ksq) & dest_bb;
+            } else if let Some(promotion) = m.get_promotion() {
+                result.xor(Piece::Pawn, dest_bb, self.side_to_move);
+                result.xor(promotion, dest_bb, self.side_to_move);
+            } else if (source_bb & get_pawn_source_double_moves()) != EMPTY
+                && (dest_bb & get_pawn_dest_double_moves()) != EMPTY
+            {
+                result.set_ep(dest);
+                result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+            } else if Some(dest.ubackward(self.side_to_move)) == self.en_passant {
+                result.xor(
+                    Piece::Pawn,
+                    BitBoard::from_square(dest.ubackward(self.side_to_move)),
+                    !self.side_to_move,
+                );
+                result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+            } else {
+                result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+            }
         } else if castles {
             let my_backrank = self.side_to_move.to_my_backrank();
             let index = dest.get_file().to_index();
-            let start = BitBoard::set(my_backrank, unsafe { *CASTLE_ROOK_START.get_unchecked(index) });
-            let end = BitBoard::set(my_backrank, unsafe { *CASTLE_ROOK_END.get_unchecked(index) });
+            let start = BitBoard::set(my_backrank, unsafe {
+                *CASTLE_ROOK_START.get_unchecked(index)
+            });
+            let end = BitBoard::set(my_backrank, unsafe {
+                *CASTLE_ROOK_END.get_unchecked(index)
+            });
             result.xor(Piece::Rook, start, self.side_to_move);
             result.xor(Piece::Rook, end, self.side_to_move);
         }
-
-        if result.pieces(Piece::Knight) & dest_bb != EMPTY {
-            if get_knight_moves(dest) & opp_king != EMPTY {
-                result.checkers ^= dest_bb;
-            }
-        } else if result.pieces(Piece::Pawn) & dest_bb != EMPTY {
-            if get_pawn_attacks(dest, result.side_to_move, opp_king) != EMPTY {
-                result.checkers ^= dest_bb;
-            }
-        }
-
         // now, lets see if we're in check or pinned
-        let ksq =
-            (result.pieces(Piece::King) & result.color_combined(!result.side_to_move)).to_square();
-
         let attackers = result.color_combined(result.side_to_move)
             & ((get_bishop_rays(ksq)
                 & (result.pieces(Piece::Bishop) | result.pieces(Piece::Queen)))
@@ -1457,8 +1481,6 @@ impl Board {
 
         result.side_to_move = !result.side_to_move;
         result.hash ^= Zobrist::color();
-
-        result
     }
 
     /// Update the pin information.
@@ -1519,9 +1541,9 @@ impl Board {
                     for x in 0..length {
                         let m =
                             unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
-                        let cur =
-                            self.make_move(m)
-                                .internal_perft_cache(depth - 1, move_list, caches);
+                        let mut bresult = unsafe { mem::uninitialized() };
+                        self.make_move(m, &mut bresult);
+                        let cur = bresult.internal_perft_cache(depth - 1, move_list, caches);
                         result += cur;
                     }
                 }
@@ -1543,7 +1565,9 @@ impl Board {
                 unsafe { self.enumerate_moves(move_list.get_unchecked_mut(depth as usize)) };
             for x in 0..length {
                 let m = unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
-                let cur = self.make_move(m).internal_perft(depth - 1, move_list);
+                let mut bresult = unsafe { mem::uninitialized() };
+                self.make_move(m, &mut bresult);
+                let cur = bresult.internal_perft(depth - 1, move_list);
                 result += cur;
             }
             result
@@ -1566,7 +1590,9 @@ impl Board {
             };
             for x in 0..length {
                 let m = unsafe { *move_list.get_unchecked(depth as usize).get_unchecked(x) };
-                let cur = self.make_move(m).internal_perft(depth - 1, move_list);
+                let mut bresult = unsafe { mem::uninitialized() };
+                self.make_move(m, &mut bresult);
+                let cur = bresult.internal_perft(depth - 1, move_list);
                 result += cur;
             }
             result
