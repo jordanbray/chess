@@ -24,13 +24,13 @@ struct SquareAndBitBoard {
 ///  Note: The pawn moves *must* be generated first due to assumptions made by the `MoveGen`
 ///        struct.
 macro_rules! enumerate_moves {
-    ($movegen:expr, $mask:expr, $skip_legal_check:expr) => {{
-        let checkers = $movegen.board.checkers();
-        let combined = $movegen.board.combined();
-        let color = $movegen.board.side_to_move();
-        let my_pieces = $movegen.board.color_combined(color);
-        let ksq = ($movegen.board.pieces(Piece::King) & my_pieces).to_square();
-        let board = $movegen.board;
+    ($movegen:expr, $board:expr, $mask:expr, $skip_legal_check:expr) => {{
+        let checkers = $board.checkers();
+        let combined = $board.combined();
+        let color = $board.side_to_move();
+        let my_pieces = $board.color_combined(color);
+        let ksq = ($board.pieces(Piece::King) & my_pieces).to_square();
+        let board = $board;
 
         if checkers == EMPTY {
             PawnType::legals::<NotInCheckType, _>(
@@ -183,7 +183,7 @@ macro_rules! enumerate_moves {
 /// let board = Board::default();
 ///
 /// // create an iterable
-/// let mut iterable = MoveGen::new(board, true);
+/// let mut iterable = MoveGen::new_legal(&board);
 ///
 /// // make sure .len() works.
 /// assert_eq!(iterable.len(), 20); // the .len() function does *not* consume the iterator
@@ -211,7 +211,6 @@ macro_rules! enumerate_moves {
 ///
 /// ```
 pub struct MoveGen {
-    board: Board,
     moves: [SquareAndBitBoard; 18],
     pieces: usize,
     promotion_index: usize,
@@ -220,29 +219,37 @@ pub struct MoveGen {
 }
 
 impl MoveGen {
-    /// Create a new `MoveGen` structure, specifying whether or not you want legal or pseudo_legal
-    /// moves
-    ///
-    /// Note the board.legal_quick() function, which checks the legality of pseudo_legal
-    /// moves generated specifically by this structure.  That way, if you call
-    /// `MoveGen::new(board, false)`, but you want to check legality later,
-    /// you can call `board.legal_quick(...)` on that chess move, without the full
-    /// expense of the `board.legal(...)` function.
-    pub fn new(board: Board, legal: bool) -> MoveGen {
+    /// Create a new `MoveGen` structure, only generating legal moves
+    pub fn new_legal(board: &Board) -> MoveGen {
         let mut result = MoveGen {
-            board: board,
             moves: unsafe { mem::uninitialized() },
             pieces: 0,
             promotion_index: 0,
             iterator_mask: !EMPTY,
             index: 0,
         };
-        let mask = !result.board.color_combined(result.board.side_to_move());
-        if legal {
-            enumerate_moves!(result, mask, false);
-        } else {
-            enumerate_moves!(result, mask, true);
-        }
+        let mask = !board.color_combined(board.side_to_move());
+        enumerate_moves!(result, board, mask, false);
+        result
+    }
+
+    /// Create a new `MoveGen` structure, generating all legal moves, and some pseudo-legal moves.
+    ///
+    /// Note the board.legal_quick() function, which checks the legality of pseudo-legal
+    /// moves generated specifically by this structure.  That way, if you call
+    /// `MoveGen::new_pseudo_legal(&board)`, but you want to check legality later,
+    /// you can call `board.legal_quick(...)` on that chess move, without the full
+    /// expense of the `board.legal(...)` function.
+     pub fn new_pseudo_legal(board: &Board) -> MoveGen {
+        let mut result = MoveGen {
+            moves: unsafe { mem::uninitialized() },
+            pieces: 0,
+            promotion_index: 0,
+            iterator_mask: !EMPTY,
+            index: 0,
+        };
+        let mask = !board.color_combined(board.side_to_move());
+        enumerate_moves!(result, board, mask, true);
         result
     }
 
@@ -306,8 +313,8 @@ impl MoveGen {
     }
 
     /// Fastest perft test with this structure
-    pub fn movegen_perft_test(board: Board, depth: usize) -> usize {
-        let iterable = MoveGen::new(board, true);
+    pub fn movegen_perft_test(board: &Board, depth: usize) -> usize {
+        let iterable = MoveGen::new_legal(board);
 
         let mut result: usize = 0;
         if depth == 1 {
@@ -316,7 +323,7 @@ impl MoveGen {
             for m in iterable {
                 let mut bresult = unsafe { mem::uninitialized() };
                 board.make_move(m, &mut bresult);
-                let cur = MoveGen::movegen_perft_test(bresult, depth - 1);
+                let cur = MoveGen::movegen_perft_test(&bresult, depth - 1);
                 result += cur;
             }
             result
@@ -325,8 +332,8 @@ impl MoveGen {
 
     #[cfg(test)]
     /// Do a perft test after splitting the moves up into two groups
-    pub fn movegen_perft_test_piecewise(board: Board, depth: usize) -> usize {
-        let mut iterable = MoveGen::new(board, true);
+    pub fn movegen_perft_test_piecewise(board: &Board, depth: usize) -> usize {
+        let mut iterable = MoveGen::new_legal(board);
 
         let targets = board.color_combined(!board.side_to_move());
         let mut result: usize = 0;
@@ -342,21 +349,21 @@ impl MoveGen {
             for x in &mut iterable {
                 let mut bresult = unsafe { mem::uninitialized() };
                 board.make_move(x, &mut bresult);
-                result += MoveGen::movegen_perft_test_piecewise(bresult, depth - 1);
+                result += MoveGen::movegen_perft_test_piecewise(&bresult, depth - 1);
             }
             iterable.set_iterator_mask(!EMPTY);
             for x in &mut iterable {
                 let mut bresult = unsafe { mem::uninitialized() };
                 board.make_move(x, &mut bresult);
-                result += MoveGen::movegen_perft_test_piecewise(bresult, depth - 1);
+                result += MoveGen::movegen_perft_test_piecewise(&bresult, depth - 1);
             }
             result
         }
     }
 
     #[cfg(test)]
-    pub fn movegen_perft_test_legality(board: Board, depth: usize) -> usize {
-        let iterable = MoveGen::new(board, false);
+    pub fn movegen_perft_test_legality(board: &Board, depth: usize) -> usize {
+        let iterable = MoveGen::new_pseudo_legal(board);
 
         let mut result: usize = 0;
         if depth == 1 {
@@ -366,7 +373,7 @@ impl MoveGen {
                 if board.legal_quick(m) {
                     let mut bresult = unsafe { mem::uninitialized() };
                     board.make_move(m, &mut bresult);
-                    let cur = MoveGen::movegen_perft_test_legality(bresult, depth - 1);
+                    let cur = MoveGen::movegen_perft_test_legality(&bresult, depth - 1);
                     result += cur;
                 }
             }
@@ -450,9 +457,9 @@ fn movegen_perft_test(board: String, depth: usize, result: usize) {
 
     let board = Board::from_fen(board).unwrap();
 
-    assert_eq!(MoveGen::movegen_perft_test(board, depth), result);
-    assert_eq!(MoveGen::movegen_perft_test_piecewise(board, depth), result);
-    assert_eq!(MoveGen::movegen_perft_test_legality(board, depth), result);
+    assert_eq!(MoveGen::movegen_perft_test(&board, depth), result);
+    assert_eq!(MoveGen::movegen_perft_test_piecewise(&board, depth), result);
+    assert_eq!(MoveGen::movegen_perft_test_legality(&board, depth), result);
 }
 
 #[test]
