@@ -4,6 +4,9 @@ use bitboard::{BitBoard, EMPTY};
 use color::Color;
 use file::File;
 use square::Square;
+
+use magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
+
 /// What castle rights does a particular player have?
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum CastleRights {
@@ -68,15 +71,12 @@ impl CastleRights {
 
     /// What squares need to be empty to castle kingside?
     pub fn kingside_squares(&self, color: Color) -> BitBoard {
-        BitBoard::set(color.to_my_backrank(), File::F)
-            ^ BitBoard::set(color.to_my_backrank(), File::G)
+        unsafe { *KINGSIDE_CASTLE_SQUARES.get_unchecked(color.to_index()) }
     }
 
     /// What squares need to be empty to castle queenside?
     pub fn queenside_squares(&self, color: Color) -> BitBoard {
-        BitBoard::set(color.to_my_backrank(), File::B)
-            ^ BitBoard::set(color.to_my_backrank(), File::C)
-            ^ BitBoard::set(color.to_my_backrank(), File::D)
+        unsafe { *QUEENSIDE_CASTLE_SQUARES.get_unchecked(color.to_index()) }
     }
 
     /// Remove castle rights, and return a new `CastleRights`.

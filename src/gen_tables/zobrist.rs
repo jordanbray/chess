@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::Write;
 // we use the same types as the rest of the library.
-use castle_rights::NUM_CASTLE_RIGHTS;
 use color::NUM_COLORS;
 use file::NUM_FILES;
 use piece::NUM_PIECES;
@@ -37,10 +36,10 @@ pub fn write_zobrist(f: &mut File) {
 
     write!(
         f,
-        "const ZOBRIST_CASTLES: [[u64; NUM_CASTLE_RIGHTS]; NUM_COLORS] = [[\n"
+        "const ZOBRIST_CASTLES: [[u64; 4]; NUM_COLORS] = [[\n"
     ).unwrap();
     for i in 0..NUM_COLORS {
-        for _ in 0..NUM_CASTLE_RIGHTS {
+        for _ in 0..4 {
             write!(f, "    {},\n", rng.next_u64()).unwrap();
         }
         if i != NUM_COLORS - 1 {

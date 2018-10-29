@@ -1,4 +1,4 @@
-use castle_rights::{CastleRights, NUM_CASTLE_RIGHTS};
+use castle_rights::CastleRights;
 use color::{Color, NUM_COLORS};
 use file::{File, NUM_FILES};
 use piece::{Piece, NUM_PIECES};

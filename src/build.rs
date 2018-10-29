@@ -7,7 +7,6 @@
 // it to be easily followed.
 extern crate rand;
 mod bitboard;
-mod castle_rights;
 mod color;
 mod file;
 mod gen_tables;

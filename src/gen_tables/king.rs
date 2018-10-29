@@ -5,9 +5,13 @@ use bitboard::{BitBoard, EMPTY};
 use file::File as ChessFile;
 use rank::Rank;
 use square::{Square, ALL_SQUARES};
+use color::ALL_COLORS;
 
 // Given a square, what are the valid king moves?
 static mut KING_MOVES: [BitBoard; 64] = [EMPTY; 64];
+static mut KINGSIDE_CASTLE_SQUARES: [BitBoard; 2] = [EMPTY; 2];
+static mut QUEENSIDE_CASTLE_SQUARES: [BitBoard; 2] = [EMPTY; 2];
+
 
 // Generate the KING_MOVES array.
 pub fn gen_king_moves() {
@@ -27,7 +31,33 @@ pub fn gen_king_moves() {
                 }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
+
+    gen_kingside_castle_squares();
+    gen_queenside_castle_squares();
 }
+
+fn gen_kingside_castle_squares() {
+    for color in ALL_COLORS.iter() {
+        unsafe {
+            KINGSIDE_CASTLE_SQUARES[color.to_index()] = 
+                BitBoard::set(color.to_my_backrank(), ChessFile::F) ^
+                BitBoard::set(color.to_my_backrank(), ChessFile::G);
+        }
+    }
+}
+
+fn gen_queenside_castle_squares() {
+    for color in ALL_COLORS.iter() {
+        unsafe {
+            QUEENSIDE_CASTLE_SQUARES[color.to_index()] = 
+                 BitBoard::set(color.to_my_backrank(), ChessFile::B) ^
+                 BitBoard::set(color.to_my_backrank(), ChessFile::C) ^
+                 BitBoard::set(color.to_my_backrank(), ChessFile::D);
+        }
+    }
+}
+
+
 
 fn gen_castle_moves() -> BitBoard {
     let c1 = Square::make_square(Rank::First, ChessFile::C);
@@ -52,6 +82,16 @@ pub fn write_king_moves(f: &mut File) {
         unsafe { write!(f, "    BitBoard({}),\n", KING_MOVES[i].to_size(0)).unwrap() };
     }
     write!(f, "];\n").unwrap();
+
+    write!(f, "pub const KINGSIDE_CASTLE_SQUARES: [BitBoard; 2] = [\n").unwrap();
+    unsafe { write!(f, " BitBoard({}), BitBoard({})];\n",
+                    KINGSIDE_CASTLE_SQUARES[0].to_size(0),
+                    KINGSIDE_CASTLE_SQUARES[1].to_size(0)).unwrap() };
+
+    write!(f, "pub const QUEENSIDE_CASTLE_SQUARES: [BitBoard; 2] = [\n").unwrap();
+    unsafe { write!(f, " BitBoard({}), BitBoard({})];\n",
+                    QUEENSIDE_CASTLE_SQUARES[0].to_size(0),
+                    QUEENSIDE_CASTLE_SQUARES[1].to_size(0)).unwrap() };
 
     write!(
         f,
