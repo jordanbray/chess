@@ -341,13 +341,13 @@ impl MoveGen {
             iterable.set_iterator_mask(targets);
             for x in &mut iterable {
                 let mut bresult = unsafe { mem::uninitialized() };
-                board.make_move(m, &mut bresult);
+                board.make_move(x, &mut bresult);
                 result += MoveGen::movegen_perft_test_piecewise(bresult, depth - 1);
             }
             iterable.set_iterator_mask(!EMPTY);
             for x in &mut iterable {
                 let mut bresult = unsafe { mem::uninitialized() };
-                board.make_move(m, &mut bresult);
+                board.make_move(x, &mut bresult);
                 result += MoveGen::movegen_perft_test_piecewise(bresult, depth - 1);
             }
             result
@@ -364,7 +364,9 @@ impl MoveGen {
         } else {
             for m in iterable {
                 if board.legal_quick(m) {
-                    let cur = MoveGen::movegen_perft_test_legality(board.make_move(m), depth - 1);
+                    let mut bresult = unsafe { mem::uninitialized() };
+                    board.make_move(m, &mut bresult);
+                    let cur = MoveGen::movegen_perft_test_legality(bresult, depth - 1);
                     result += cur;
                 }
             }

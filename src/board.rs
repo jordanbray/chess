@@ -440,33 +440,33 @@ impl Board {
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Second, File::E),
-    ///                                        Square::make_square(Rank::Fourth, File::E),
-    ///                                        None));
+    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::Second, File::E),
+    ///                                            Square::make_square(Rank::Fourth, File::E),
+    ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Seventh, File::F),
-    ///                                        Square::make_square(Rank::Sixth, File::F),
-    ///                                        None));
+    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::Seventh, File::F),
+    ///                                            Square::make_square(Rank::Sixth, File::F),
+    ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Second, File::D),
-    ///                                        Square::make_square(Rank::Fourth, File::D),
-    ///                                        None));
+    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::Second, File::D),
+    ///                                            Square::make_square(Rank::Fourth, File::D),
+    ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::Seventh, File::G),
-    ///                                        Square::make_square(Rank::Fifth, File::G),
-    ///                                        None));
+    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::Seventh, File::G),
+    ///                                            Square::make_square(Rank::Fifth, File::G),
+    ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move(ChessMove::new(Square::make_square(Rank::First, File::D),
-    ///                                        Square::make_square(Rank::Fifth, File::H),
-    ///                                        None));
+    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::First, File::D),
+    ///                                            Square::make_square(Rank::Fifth, File::H),
+    ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Checkmate);
     /// ```
@@ -583,10 +583,10 @@ impl Board {
     /// assert_eq!(board.castle_rights(Color::White), CastleRights::Both);
     /// assert_eq!(board.castle_rights(Color::Black), CastleRights::Both);
     ///
-    /// board = board.make_move(move1)
-    ///              .make_move(move2)
-    ///              .make_move(move3)
-    ///              .make_move(move4);
+    /// board = board.make_move_new(move1)
+    ///              .make_move_new(move2)
+    ///              .make_move_new(move3)
+    ///              .make_move_new(move4);
     ///
     /// assert_eq!(board.castle_rights(Color::White), CastleRights::KingSide);
     /// assert_eq!(board.castle_rights(Color::Black), CastleRights::NoRights);
@@ -953,7 +953,7 @@ impl Board {
                 self.side_to_move,
             )
             ^ Zobrist::castles(
-                self.castle_rights[!self.side_to_move.to_index()],
+                self.castle_rights[(!self.side_to_move).to_index()],
                 !self.side_to_move,
             )
     }
@@ -1080,10 +1080,10 @@ impl Board {
     ///                            Square::make_square(Rank::Fifth, File::E),
     ///                            None);
     ///
-    /// let board = Board::default().make_move(move1)
-    ///                             .make_move(move2)
-    ///                             .make_move(move3)
-    ///                             .make_move(move4);
+    /// let board = Board::default().make_move_new(move1)
+    ///                             .make_move_new(move2)
+    ///                             .make_move_new(move3)
+    ///                             .make_move_new(move4);
     ///
     /// assert_eq!(board.en_passant(), Some(Square::make_square(Rank::Fifth, File::E)));
     /// ```
@@ -1356,7 +1356,8 @@ impl Board {
         }
     }
 
-    /// Make a chess move.
+
+    /// Make a chess move onto a new board.
     ///
     /// panic!() if king is captured.
     ///
@@ -1368,7 +1369,29 @@ impl Board {
     ///                        None);
     ///
     /// let board = Board::default();
-    /// assert_eq!(board.make_move(m).side_to_move(), Color::Black);
+    /// assert_eq!(board.make_move_new(m).side_to_move(), Color::Black);
+    /// ```
+     pub fn make_move_new(&self, m: ChessMove) -> Board {
+        let mut result = unsafe { mem::uninitialized() };
+        self.make_move(m, &mut result);
+        result
+    }
+
+    /// Make a chess move onto an already allocated `Board`.
+    ///
+    /// panic!() if king is captured.
+    ///
+    /// ```
+    /// use chess::{Board, ChessMove, Square, Rank, File, Color};
+    ///
+    /// let m = ChessMove::new(Square::make_square(Rank::Second, File::D),
+    ///                        Square::make_square(Rank::Fourth, File::D),
+    ///                        None);
+    ///
+    /// let board = Board::default();
+    /// let mut result = Board::default();
+    /// board.make_move(m, &mut result);
+    /// assert_eq!(result.side_to_move(), Color::Black);
     /// ```
     pub fn make_move(&self, m: ChessMove, result: &mut Board) {
         *result = *self;
