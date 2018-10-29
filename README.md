@@ -82,7 +82,7 @@ Here we make a move on the chess board.  The board is a copy-on-make structure, 
                          None);
 
   let board = Board::default();
-  assert_eq!(board.make_move(m).side_to_move(), Color::Black);
+  assert_eq!(board.make_move_new(m).side_to_move(), Color::Black);
 ```
 
 ## Compile-time Options
