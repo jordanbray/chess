@@ -20,10 +20,10 @@ use crate::gen_tables::ranks_files::*;
 use crate::gen_tables::rays::*;
 use crate::gen_tables::zobrist::*;
 
-#[cfg(target_feature = "bmi2")]
-use gen_tables::bmis::*;
 #[cfg(not(target_feature = "bmi2"))]
 use crate::gen_tables::magic::*;
+#[cfg(target_feature = "bmi2")]
+use gen_tables::bmis::*;
 
 pub fn generate_all_tables() {
     gen_lines();

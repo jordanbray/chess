@@ -2,9 +2,9 @@ use crate::bitboard::{BitBoard, EMPTY};
 use crate::file::File;
 use crate::gen_tables::rays::get_rays;
 use crate::piece::Piece;
-use rand::Rng;
 use crate::rank::Rank;
 use crate::square::{Square, ALL_SQUARES};
+use rand::Rng;
 
 // How many squares can a blocking piece be on for the rook?
 const ROOK_BITS: usize = 12;

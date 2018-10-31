@@ -240,7 +240,7 @@ impl MoveGen {
     /// `MoveGen::new_pseudo_legal(&board)`, but you want to check legality later,
     /// you can call `board.legal_quick(...)` on that chess move, without the full
     /// expense of the `board.legal(...)` function.
-     pub fn new_pseudo_legal(board: &Board) -> MoveGen {
+    pub fn new_pseudo_legal(board: &Board) -> MoveGen {
         let mut result = MoveGen {
             moves: unsafe { mem::uninitialized() },
             pieces: 0,

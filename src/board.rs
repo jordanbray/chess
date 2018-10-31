@@ -14,9 +14,9 @@ use crate::movegen::*;
 use crate::piece::{Piece, ALL_PIECES, NUM_PIECES};
 use crate::rank::Rank;
 use crate::square::{Square, ALL_SQUARES};
+use crate::zobrist::Zobrist;
 use std::fmt;
 use std::mem;
-use crate::zobrist::Zobrist;
 
 /// A representation of a chess board.  That's why you're here, right?
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -1356,7 +1356,6 @@ impl Board {
         }
     }
 
-
     /// Make a chess move onto a new board.
     ///
     /// panic!() if king is captured.
@@ -1371,7 +1370,7 @@ impl Board {
     /// let board = Board::default();
     /// assert_eq!(board.make_move_new(m).side_to_move(), Color::Black);
     /// ```
-     pub fn make_move_new(&self, m: ChessMove) -> Board {
+    pub fn make_move_new(&self, m: ChessMove) -> Board {
         let mut result = unsafe { mem::uninitialized() };
         self.make_move(m, &mut result);
         result
