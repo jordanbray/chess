@@ -13,7 +13,7 @@ This library is follows semver for version numbering in the format MAJOR.MINOR.P
 
 ## Requires Rust 1.27 or Greater
 
-This library requires rust version 1.27 or greater in order to check for the BMI2 instruction-set at compile-time.
+This library requires rust version 1.27 or greater in order to check for the BMI2 instruction-set at compile-time.  Additionally, this build is compatible with rust 2018.
 
 ## Examples
 
