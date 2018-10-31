@@ -1,10 +1,10 @@
-use bitboard::{BitBoard, EMPTY};
-use board::Board;
-use color::Color;
-use piece::Piece;
-use square::Square;
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::board::Board;
+use crate::color::Color;
+use crate::piece::Piece;
+use crate::square::Square;
 
-use magic::{
+use crate::magic::{
     between, get_adjacent_files, get_bishop_moves, get_king_moves, get_knight_moves,
     get_pawn_moves, get_rank, get_rook_moves, line,
 };

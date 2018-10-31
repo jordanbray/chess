@@ -1,8 +1,8 @@
-use bitboard::{BitBoard, EMPTY};
-use color::Color;
-use file::File;
-use rank::Rank;
-use square::Square;
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::color::Color;
+use crate::file::File;
+use crate::rank::Rank;
+use crate::square::Square;
 #[cfg(target_feature = "bmi2")]
 use std::arch::x86_64::{_pdep_u64, _pext_u64};
 

@@ -1,6 +1,6 @@
-use file::File;
-use rank::Rank;
-use square::*;
+use crate::file::File;
+use crate::rank::Rank;
+use crate::square::*;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, Not};
 

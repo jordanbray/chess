@@ -1,6 +1,6 @@
-use color::Color;
-use file::File;
-use rank::Rank;
+use crate::color::Color;
+use crate::file::File;
+use crate::rank::Rank;
 use std::fmt;
 
 /// Represent a square on the chess board

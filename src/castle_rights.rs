@@ -1,11 +1,11 @@
 use std::hint::unreachable_unchecked;
 
-use bitboard::{BitBoard, EMPTY};
-use color::Color;
-use file::File;
-use square::Square;
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::color::Color;
+use crate::file::File;
+use crate::square::Square;
 
-use magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
+use crate::magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
 
 /// What castle rights does a particular player have?
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]

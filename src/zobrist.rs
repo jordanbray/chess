@@ -1,8 +1,8 @@
-use castle_rights::CastleRights;
-use color::{Color, NUM_COLORS};
-use file::{File, NUM_FILES};
-use piece::{Piece, NUM_PIECES};
-use square::{Square, NUM_SQUARES};
+use crate::castle_rights::CastleRights;
+use crate::color::{Color, NUM_COLORS};
+use crate::file::{File, NUM_FILES};
+use crate::piece::{Piece, NUM_PIECES};
+use crate::square::{Square, NUM_SQUARES};
 
 /// Create a completely blank type.  This allows all the functions to be part of this type, which I
 /// think is a bit cleaner than bare functions everywhere.

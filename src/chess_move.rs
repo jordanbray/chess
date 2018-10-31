@@ -1,5 +1,5 @@
-use piece::Piece;
-use square::Square;
+use crate::piece::Piece;
+use crate::square::Square;
 use std::cmp::Ordering;
 use std::fmt;
 

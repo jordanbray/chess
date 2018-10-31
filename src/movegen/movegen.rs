@@ -1,9 +1,9 @@
-use bitboard::{BitBoard, EMPTY};
-use board::Board;
-use chess_move::ChessMove;
-use movegen::piece_type::*;
-use piece::{Piece, NUM_PROMOTION_PIECES, PROMOTION_PIECES};
-use square::Square;
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::board::Board;
+use crate::chess_move::ChessMove;
+use crate::movegen::piece_type::*;
+use crate::piece::{Piece, NUM_PROMOTION_PIECES, PROMOTION_PIECES};
+use crate::square::Square;
 use std::iter::ExactSizeIterator;
 use std::mem;
 
@@ -449,7 +449,7 @@ impl Iterator for MoveGen {
 }
 
 #[cfg(test)]
-use construct;
+use crate::construct;
 
 #[cfg(test)]
 fn movegen_perft_test(board: String, depth: usize, result: usize) {

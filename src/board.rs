@@ -1,22 +1,22 @@
-use bitboard::{BitBoard, EMPTY};
-use cache_table::CacheTable;
-use castle_rights::CastleRights;
-use chess_move::ChessMove;
-use color::{Color, ALL_COLORS, NUM_COLORS};
-use construct;
-use file::File;
-use magic::{
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::cache_table::CacheTable;
+use crate::castle_rights::CastleRights;
+use crate::chess_move::ChessMove;
+use crate::color::{Color, ALL_COLORS, NUM_COLORS};
+use crate::construct;
+use crate::file::File;
+use crate::magic::{
     between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_castle_moves, get_file,
     get_king_moves, get_knight_moves, get_pawn_attacks, get_pawn_dest_double_moves, get_pawn_moves,
     get_pawn_source_double_moves, get_rank, get_rook_moves, get_rook_rays, line,
 };
-use movegen::*;
-use piece::{Piece, ALL_PIECES, NUM_PIECES};
-use rank::Rank;
-use square::{Square, ALL_SQUARES};
+use crate::movegen::*;
+use crate::piece::{Piece, ALL_PIECES, NUM_PIECES};
+use crate::rank::Rank;
+use crate::square::{Square, ALL_SQUARES};
 use std::fmt;
 use std::mem;
-use zobrist::Zobrist;
+use crate::zobrist::Zobrist;
 
 /// A representation of a chess board.  That's why you're here, right?
 #[derive(Copy, Clone, PartialEq, Debug)]

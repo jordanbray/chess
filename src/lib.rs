@@ -20,46 +20,46 @@
 //!
 
 mod board;
-pub use board::*;
+pub use crate::board::*;
 
 mod bitboard;
-pub use bitboard::{BitBoard, EMPTY};
+pub use crate::bitboard::{BitBoard, EMPTY};
 
 mod cache_table;
-pub use cache_table::*;
+pub use crate::cache_table::*;
 
 mod castle_rights;
-pub use castle_rights::*;
+pub use crate::castle_rights::*;
 
 mod chess_move;
-pub use chess_move::*;
+pub use crate::chess_move::*;
 
 mod color;
-pub use color::*;
+pub use crate::color::*;
 
 mod construct;
-pub use construct::*;
+pub use crate::construct::*;
 
 mod file;
-pub use file::*;
+pub use crate::file::*;
 
 mod magic;
-pub use magic::{
+pub use crate::magic::{
     between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_file, get_king_moves,
     get_knight_moves, get_pawn_attacks, get_pawn_moves, get_pawn_quiets, get_rank, get_rook_moves,
     get_rook_rays, line, EDGES,
 };
 
 mod piece;
-pub use piece::*;
+pub use crate::piece::*;
 
 mod rank;
-pub use rank::*;
+pub use crate::rank::*;
 
 mod square;
-pub use square::*;
+pub use crate::square::*;
 
 mod movegen;
-pub use movegen::MoveGen;
+pub use crate::movegen::MoveGen;
 
 mod zobrist;

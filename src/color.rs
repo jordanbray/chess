@@ -1,4 +1,4 @@
-use rank::Rank;
+use crate::rank::Rank;
 use std::ops::Not;
 
 /// Represent a color.
