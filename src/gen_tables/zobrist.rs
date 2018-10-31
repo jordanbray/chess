@@ -1,11 +1,11 @@
 use std::fs::File;
 use std::io::Write;
 // we use the same types as the rest of the library.
-use color::NUM_COLORS;
-use file::NUM_FILES;
-use piece::NUM_PIECES;
+use crate::color::NUM_COLORS;
+use crate::file::NUM_FILES;
+use crate::piece::NUM_PIECES;
 use rand::{weak_rng, Rng, SeedableRng};
-use square::NUM_SQUARES;
+use crate::square::NUM_SQUARES;
 
 // write the ZOBRIEST_* arrays to a file.  I don't generate it, because its just
 // a bunch of random u64s

@@ -1,11 +1,11 @@
 use std::fs::File;
 use std::io::Write;
 
-use bitboard::{BitBoard, EMPTY};
-use file::File as ChessFile;
-use rank::Rank;
-use square::{Square, ALL_SQUARES};
-use color::ALL_COLORS;
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::file::File as ChessFile;
+use crate::rank::Rank;
+use crate::square::{Square, ALL_SQUARES};
+use crate::color::ALL_COLORS;
 
 // Given a square, what are the valid king moves?
 static mut KING_MOVES: [BitBoard; 64] = [EMPTY; 64];

@@ -1,10 +1,10 @@
 use std::fs::File;
 use std::io::Write;
 
-use bitboard::{BitBoard, EMPTY};
-use file::File as ChessFile;
-use rank::Rank;
-use square::ALL_SQUARES;
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::file::File as ChessFile;
+use crate::rank::Rank;
+use crate::square::ALL_SQUARES;
 
 // Given a rank, what squares are on that rank?
 // This will be generated here, and then put into the magic_gen.rs as a const array.

@@ -14,7 +14,7 @@ mod piece;
 mod rank;
 mod square;
 
-use gen_tables::generate_all_tables;
+use crate::gen_tables::generate_all_tables;
 // Generate everything.
 fn main() {
     generate_all_tables();

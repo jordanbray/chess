@@ -1,8 +1,8 @@
 use std::fs::File;
 use std::io::Write;
 
-use bitboard::{BitBoard, EMPTY};
-use square::ALL_SQUARES;
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::square::ALL_SQUARES;
 
 // Given two squares, lookup a line between those two squares, or return EMPTY.
 // This will be generated here, and then put into the magic_gen.rs as a const array.

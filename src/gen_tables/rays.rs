@@ -1,6 +1,6 @@
-use bitboard::{BitBoard, EMPTY};
-use piece::Piece;
-use square::{Square, ALL_SQUARES};
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::piece::Piece;
+use crate::square::{Square, ALL_SQUARES};
 use std::fs::File;
 use std::io::Write;
 

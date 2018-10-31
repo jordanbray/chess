@@ -1,11 +1,11 @@
 use std::fs::File;
 use std::io::Write;
 
-use bitboard::{BitBoard, EMPTY};
-use color::ALL_COLORS;
-use file::ALL_FILES;
-use rank::Rank;
-use square::ALL_SQUARES;
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::color::ALL_COLORS;
+use crate::file::ALL_FILES;
+use crate::rank::Rank;
+use crate::square::ALL_SQUARES;
 
 // Given a square, what are the valid quiet pawn moves (non-captures)?
 static mut PAWN_MOVES: [[BitBoard; 64]; 2] = [[EMPTY; 64]; 2];

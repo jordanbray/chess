@@ -1,8 +1,8 @@
 use std::fs::File;
 use std::io::Write;
 
-use bitboard::{BitBoard, EMPTY};
-use square::ALL_SQUARES;
+use crate::bitboard::{BitBoard, EMPTY};
+use crate::square::ALL_SQUARES;
 
 // Given a square, what are the valid knight moves?
 static mut KNIGHT_MOVES: [BitBoard; 64] = [EMPTY; 64];

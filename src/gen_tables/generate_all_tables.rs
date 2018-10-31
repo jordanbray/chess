@@ -11,19 +11,19 @@ use std::env;
 use std::fs::File;
 use std::path::Path;
 
-use gen_tables::between::*;
-use gen_tables::king::*;
-use gen_tables::knights::*;
-use gen_tables::lines::*;
-use gen_tables::pawns::*;
-use gen_tables::ranks_files::*;
-use gen_tables::rays::*;
-use gen_tables::zobrist::*;
+use crate::gen_tables::between::*;
+use crate::gen_tables::king::*;
+use crate::gen_tables::knights::*;
+use crate::gen_tables::lines::*;
+use crate::gen_tables::pawns::*;
+use crate::gen_tables::ranks_files::*;
+use crate::gen_tables::rays::*;
+use crate::gen_tables::zobrist::*;
 
 #[cfg(target_feature = "bmi2")]
 use gen_tables::bmis::*;
 #[cfg(not(target_feature = "bmi2"))]
-use gen_tables::magic::*;
+use crate::gen_tables::magic::*;
 
 pub fn generate_all_tables() {
     gen_lines();
