@@ -135,7 +135,6 @@ pub fn gen_all_magic() {
 
 // Write the MAGIC_NUMBERS and MOVES arrays to the specified file.
 pub fn write_magic(f: &mut File) {
-    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
     write!(f, "#[derive(Copy, Clone)]\n").unwrap();
     write!(f, "struct Magic {{\n").unwrap();
     write!(f, "    magic_number: BitBoard,\n").unwrap();
@@ -144,7 +143,6 @@ pub fn write_magic(f: &mut File) {
     write!(f, "    rightshift: u8\n").unwrap();
     write!(f, "}}\n\n").unwrap();
 
-    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
     write!(f, "const MAGIC_NUMBERS: [[Magic; 64]; 2] = [[\n").unwrap();
     for i in 0..2 {
         for j in 0..64 {
@@ -163,7 +161,6 @@ pub fn write_magic(f: &mut File) {
     write!(f, "]];\n").unwrap();
 
     unsafe {
-        write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
         write!(f, "const MOVES: [BitBoard; {}] = [\n", GENERATED_NUM_MOVES).unwrap();
         for i in 0..GENERATED_NUM_MOVES {
             write!(f, "    BitBoard({}),\n", MOVES[i].to_size(0)).unwrap();

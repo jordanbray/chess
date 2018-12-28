@@ -57,18 +57,20 @@ pub fn random_bitboard<R: Rng>(rng: &mut R) -> BitBoard {
 
 // Given a square and the type of piece, lookup the RAYS and remove the endpoint squares.
 pub fn magic_mask(sq: Square, piece: Piece) -> BitBoard {
-    get_rays(sq, piece) & if piece == Piece::Bishop {
-        !gen_edges()
-    } else {
-        !ALL_SQUARES
-            .iter()
-            .filter(|edge| {
-                (sq.get_rank() == edge.get_rank()
-                    && (edge.get_file() == File::A || edge.get_file() == File::H))
-                    || (sq.get_file() == edge.get_file()
-                        && (edge.get_rank() == Rank::First || edge.get_rank() == Rank::Eighth))
-            }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
-    }
+    get_rays(sq, piece)
+        & if piece == Piece::Bishop {
+            !gen_edges()
+        } else {
+            !ALL_SQUARES
+                .iter()
+                .filter(|edge| {
+                    (sq.get_rank() == edge.get_rank()
+                        && (edge.get_file() == File::A || edge.get_file() == File::H))
+                        || (sq.get_file() == edge.get_file()
+                            && (edge.get_rank() == Rank::First || edge.get_rank() == Rank::Eighth))
+                })
+                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
+        }
 }
 
 // Given a bitboard, generate a list of every possible set of bitboards using those bits.
@@ -131,5 +133,6 @@ fn gen_edges() -> BitBoard {
                 || sq.get_rank() == Rank::Eighth
                 || sq.get_file() == File::A
                 || sq.get_file() == File::H
-        }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
+        })
+        .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
 }

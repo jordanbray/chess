@@ -22,7 +22,8 @@ pub fn gen_bishop_rays() {
                     let dest_file = dest.get_file().to_index() as i8;
 
                     (src_rank - dest_rank).abs() == (src_file - dest_file).abs() && *src != **dest
-                }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                })
+                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
 }
@@ -40,7 +41,8 @@ pub fn gen_rook_rays() {
                     let dest_file = dest.get_file().to_index();
 
                     (src_rank == dest_rank || src_file == dest_file) && *src != **dest
-                }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                })
+                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
 }
@@ -51,11 +53,8 @@ pub fn get_rays(sq: Square, piece: Piece) -> BitBoard {
 
 // Write the RAYS array to the specified file.
 pub fn write_rays(f: &mut File) {
-    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
     write!(f, "const ROOK: usize = {};\n", 0).unwrap();
-    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
     write!(f, "const BISHOP: usize = {};\n", 1).unwrap();
-    write!(f, "#[cfg(not(target_feature=\"bmi2\"))]").unwrap();
     write!(f, "const RAYS: [[BitBoard; 64]; 2] = [[\n").unwrap();
     for i in 0..2 {
         for j in 0..64 {

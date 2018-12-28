@@ -20,10 +20,8 @@ use crate::gen_tables::ranks_files::*;
 use crate::gen_tables::rays::*;
 use crate::gen_tables::zobrist::*;
 
-#[cfg(not(target_feature = "bmi2"))]
+use crate::gen_tables::bmis::*;
 use crate::gen_tables::magic::*;
-#[cfg(target_feature = "bmi2")]
-use gen_tables::bmis::*;
 
 pub fn generate_all_tables() {
     gen_lines();
@@ -36,6 +34,7 @@ pub fn generate_all_tables() {
     gen_pawn_moves();
     gen_all_magic();
     gen_bitboard_data();
+    gen_all_bmis();
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let magic_path = Path::new(&out_dir).join("magic_gen.rs");
@@ -49,6 +48,7 @@ pub fn generate_all_tables() {
     write_pawn_attacks(&mut f);
     write_pawn_moves(&mut f);
     write_magic(&mut f);
+    write_bmis(&mut f);
     write_bitboard_data(&mut f);
 
     let zobrist_path = Path::new(&out_dir).join("zobrist_gen.rs");

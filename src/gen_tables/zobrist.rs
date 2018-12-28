@@ -18,7 +18,8 @@ pub fn write_zobrist(f: &mut File) {
     write!(
         f,
         "const ZOBRIST_PIECES: [[[u64; NUM_SQUARES]; NUM_PIECES]; NUM_COLORS] = [[[\n"
-    ).unwrap();
+    )
+    .unwrap();
     for i in 0..NUM_COLORS {
         for j in 0..NUM_PIECES {
             for _ in 0..NUM_SQUARES {

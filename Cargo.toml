@@ -13,6 +13,10 @@ keywords = ["chess", "move", "generator"]
 license = "MIT"
 documentation = "https://jordanbray.github.io/chess/chess/index.html"
 
+[dependencies]
+arrayvec = "0.4.10"
+nodrop = "0.1.13"
+
 [profile.release]
 opt-level = 3
 debug = false

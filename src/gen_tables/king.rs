@@ -27,7 +27,8 @@ pub fn gen_king_moves() {
                     ((src_rank - dest_rank).abs() == 1 || (src_rank - dest_rank).abs() == 0)
                         && ((src_file - dest_file).abs() == 1 || (src_file - dest_file).abs() == 0)
                         && *src != **dest
-                }).fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
+                })
+                .fold(EMPTY, |b, s| b | BitBoard::from_square(*s));
         }
     }
 
@@ -87,7 +88,8 @@ pub fn write_king_moves(f: &mut File) {
             " BitBoard({}), BitBoard({})];\n",
             KINGSIDE_CASTLE_SQUARES[0].to_size(0),
             KINGSIDE_CASTLE_SQUARES[1].to_size(0)
-        ).unwrap()
+        )
+        .unwrap()
     };
 
     write!(f, "pub const QUEENSIDE_CASTLE_SQUARES: [BitBoard; 2] = [\n").unwrap();
@@ -97,12 +99,14 @@ pub fn write_king_moves(f: &mut File) {
             " BitBoard({}), BitBoard({})];\n",
             QUEENSIDE_CASTLE_SQUARES[0].to_size(0),
             QUEENSIDE_CASTLE_SQUARES[1].to_size(0)
-        ).unwrap()
+        )
+        .unwrap()
     };
 
     write!(
         f,
         "const CASTLE_MOVES: BitBoard = BitBoard({});\n",
         gen_castle_moves().to_size(0)
-    );
+    )
+    .unwrap();
 }

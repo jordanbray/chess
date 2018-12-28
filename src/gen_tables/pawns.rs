@@ -116,11 +116,13 @@ pub fn write_pawn_attacks(f: &mut File) {
         f,
         "const PAWN_SOURCE_DOUBLE_MOVES: BitBoard = BitBoard({0});\n",
         gen_source_double_moves().to_size(0)
-    );
+    )
+    .unwrap();
 
     write!(
         f,
         "const PAWN_DEST_DOUBLE_MOVES: BitBoard = BitBoard({0});\n",
         gen_dest_double_moves().to_size(0)
-    );
+    )
+    .unwrap();
 }

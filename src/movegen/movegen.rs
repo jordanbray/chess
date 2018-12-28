@@ -1,9 +1,12 @@
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::board::Board;
 use crate::chess_move::ChessMove;
+use crate::magic::between;
 use crate::movegen::piece_type::*;
 use crate::piece::{Piece, NUM_PROMOTION_PIECES, PROMOTION_PIECES};
 use crate::square::Square;
+use arrayvec::ArrayVec;
+use nodrop::NoDrop;
 use std::iter::ExactSizeIterator;
 use std::mem;
 
@@ -12,6 +15,23 @@ struct SquareAndBitBoard {
     square: Square,
     bitboard: BitBoard,
     promotion: bool,
+}
+
+fn push(
+    vec: &mut NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>,
+    square: Square,
+    bitboard: BitBoard,
+    promotion: bool,
+) {
+    if bitboard != EMPTY {
+        unsafe {
+            vec.push_unchecked(SquareAndBitBoard {
+                square: square,
+                bitboard: bitboard,
+                promotion: promotion,
+            });
+        }
+    }
 }
 
 /// Never Call Directly!
@@ -24,13 +44,14 @@ struct SquareAndBitBoard {
 ///  Note: The pawn moves *must* be generated first due to assumptions made by the `MoveGen`
 ///        struct.
 macro_rules! enumerate_moves {
-    ($movegen:expr, $board:expr, $mask:expr, $skip_legal_check:expr) => {{
+    ($board:expr, $mask:expr, $skip_legal_check:expr) => {{
         let checkers = $board.checkers();
         let combined = $board.combined();
         let color = $board.side_to_move();
         let my_pieces = $board.color_combined(color);
         let ksq = ($board.pieces(Piece::King) & my_pieces).to_square();
         let board = $board;
+        let mut movevec = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 18]>::new());
 
         if checkers == EMPTY {
             PawnType::legals::<NotInCheckType, _>(
@@ -40,7 +61,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             KnightType::legals::<NotInCheckType, _>(
                 &board,
@@ -49,7 +70,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             BishopType::legals::<NotInCheckType, _>(
                 &board,
@@ -58,7 +79,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             RookType::legals::<NotInCheckType, _>(
                 &board,
@@ -67,7 +88,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             QueenType::legals::<NotInCheckType, _>(
                 &board,
@@ -76,7 +97,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             KingType::legals::<NotInCheckType, _>(
                 &board,
@@ -85,7 +106,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
         } else if checkers.popcnt() == 1 {
             PawnType::legals::<InCheckType, _>(
@@ -95,7 +116,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             KnightType::legals::<InCheckType, _>(
                 &board,
@@ -104,7 +125,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             BishopType::legals::<InCheckType, _>(
                 &board,
@@ -113,7 +134,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             RookType::legals::<InCheckType, _>(
                 &board,
@@ -122,7 +143,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             QueenType::legals::<InCheckType, _>(
                 &board,
@@ -131,7 +152,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
             KingType::legals::<InCheckType, _>(
                 &board,
@@ -140,7 +161,7 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
         } else {
             KingType::legals::<InCheckType, _>(
@@ -150,9 +171,10 @@ macro_rules! enumerate_moves {
                 my_pieces,
                 color,
                 ksq,
-                |x, y, z| $movegen.push(x, y, z),
+                |x, y, z| push(&mut movevec, x, y, z),
             );
         }
+        movevec
     }};
 }
 
@@ -211,8 +233,7 @@ macro_rules! enumerate_moves {
 ///
 /// ```
 pub struct MoveGen {
-    moves: [SquareAndBitBoard; 18],
-    pieces: usize,
+    moves: NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>,
     promotion_index: usize,
     iterator_mask: BitBoard,
     index: usize,
@@ -221,59 +242,42 @@ pub struct MoveGen {
 impl MoveGen {
     /// Create a new `MoveGen` structure, only generating legal moves
     pub fn new_legal(board: &Board) -> MoveGen {
-        let mut result = MoveGen {
-            moves: unsafe { mem::uninitialized() },
-            pieces: 0,
+        let mask = !board.color_combined(board.side_to_move());
+        MoveGen {
+            moves: enumerate_moves!(board, mask, false),
             promotion_index: 0,
             iterator_mask: !EMPTY,
             index: 0,
-        };
-        let mask = !board.color_combined(board.side_to_move());
-        enumerate_moves!(result, board, mask, false);
-        result
+        }
     }
 
     /// Create a new `MoveGen` structure, generating all legal moves, and some pseudo-legal moves.
     ///
-    /// Note the board.legal_quick() function, which checks the legality of pseudo-legal
+    /// Note the MoveGen::legal_quick() function, which checks the legality of pseudo-legal
     /// moves generated specifically by this structure.  That way, if you call
     /// `MoveGen::new_pseudo_legal(&board)`, but you want to check legality later,
-    /// you can call `board.legal_quick(...)` on that chess move, without the full
+    /// you can call `MoveGen::legal_quick(...)` on that chess move, without the full
     /// expense of the `board.legal(...)` function.
     pub fn new_pseudo_legal(board: &Board) -> MoveGen {
-        let mut result = MoveGen {
-            moves: unsafe { mem::uninitialized() },
-            pieces: 0,
+        let mask = !board.color_combined(board.side_to_move());
+        MoveGen {
+            moves: enumerate_moves!(board, mask, true),
             promotion_index: 0,
             iterator_mask: !EMPTY,
             index: 0,
-        };
-        let mask = !board.color_combined(board.side_to_move());
-        enumerate_moves!(result, board, mask, true);
-        result
-    }
-
-    fn push(&mut self, square: Square, bitboard: BitBoard, promotion: bool) {
-        if bitboard != EMPTY {
-            self.moves[self.pieces] = SquareAndBitBoard {
-                square: square,
-                bitboard: bitboard,
-                promotion: promotion,
-            };
-            self.pieces += 1;
         }
     }
 
     /// Never, ever, iterate any moves that land on the following squares
     pub fn remove_mask(&mut self, mask: BitBoard) {
-        for x in 0..self.pieces {
+        for x in 0..self.moves.len() {
             self.moves[x].bitboard &= !mask;
         }
     }
 
     /// Never, ever, iterate this move
     pub fn remove_move(&mut self, chess_move: ChessMove) -> bool {
-        for x in 0..self.pieces {
+        for x in 0..self.moves.len() {
             if self.moves[x].square == chess_move.get_source() {
                 self.moves[x].bitboard &= !BitBoard::from_square(chess_move.get_dest());
                 return true;
@@ -296,18 +300,58 @@ impl MoveGen {
 
         // first, find the first non-used moves index, and store that in i
         let mut i = 0;
-        while i < self.pieces && self.moves[i].bitboard & self.iterator_mask != EMPTY {
+        while i < self.moves.len() && self.moves[i].bitboard & self.iterator_mask != EMPTY {
             i += 1;
         }
 
         // next, find each element past i where the moves are used, and store
         // that in i.  Then, increment i to point to a new unused slot.
-        for j in (i + 1)..self.pieces {
+        for j in (i + 1)..self.moves.len() {
             if self.moves[j].bitboard & self.iterator_mask != EMPTY {
                 let backup = self.moves[i];
                 self.moves[i] = self.moves[j];
                 self.moves[j] = backup;
                 i += 1;
+            }
+        }
+    }
+
+    /// This function checks the legality *only for moves generated by `MoveGen`*.
+    ///
+    /// Calling this function for moves not generated by `MoveGen` will result in possibly
+    /// incorrect results, and making that move on the `Board` will result in undefined behavior.
+    /// This function may panic! if these rules are not followed.
+    ///
+    /// If you are validating a move from a user, you should call the .legal() function.
+    pub fn legal_quick(board: &Board, chess_move: ChessMove) -> bool {
+        let piece = board.piece_on(chess_move.get_source()).unwrap();
+        match piece {
+            Piece::Rook => true,
+            Piece::Bishop => true,
+            Piece::Knight => true,
+            Piece::Queen => true,
+            Piece::Pawn => {
+                if chess_move.get_source().get_file() != chess_move.get_dest().get_file()
+                    && board.piece_on(chess_move.get_dest()).is_none()
+                {
+                    // en-passant
+                    PawnType::legal_ep_move(board, chess_move.get_source(), chess_move.get_dest())
+                } else {
+                    true
+                }
+            }
+            Piece::King => {
+                let bb = between(chess_move.get_source(), chess_move.get_dest());
+                if bb.popcnt() == 1 {
+                    // castles
+                    if !KingType::legal_king_move(board, bb.to_square()) {
+                        false
+                    } else {
+                        KingType::legal_king_move(board, chess_move.get_dest())
+                    }
+                } else {
+                    KingType::legal_king_move(board, chess_move.get_dest())
+                }
             }
         }
     }
@@ -370,7 +414,7 @@ impl MoveGen {
             iterable.filter(|x| board.legal(*x)).count()
         } else {
             for m in iterable {
-                if board.legal_quick(m) {
+                if MoveGen::legal_quick(board, m) {
                     let mut bresult = unsafe { mem::uninitialized() };
                     board.make_move(m, &mut bresult);
                     let cur = MoveGen::movegen_perft_test_legality(&bresult, depth - 1);
@@ -386,7 +430,7 @@ impl ExactSizeIterator for MoveGen {
     /// Give the exact length of this iterator
     fn len(&self) -> usize {
         let mut result = 0;
-        for i in 0..self.pieces {
+        for i in 0..self.moves.len() {
             if self.moves[i].bitboard & self.iterator_mask == EMPTY {
                 break;
             }
@@ -412,38 +456,41 @@ impl Iterator for MoveGen {
 
     /// Find the next chess move.
     fn next(&mut self) -> Option<ChessMove> {
-        if self.index >= self.pieces
+        if self.index >= self.moves.len()
             || self.moves[self.index].bitboard & self.iterator_mask == EMPTY
         {
             // are we done?
             None
         } else if self.moves[self.index].promotion {
-            let bb = &mut self.moves[self.index].bitboard;
-            let src = self.moves[self.index].square;
-            let dest = (*bb & self.iterator_mask).to_square();
+            let moves = &mut self.moves[self.index];
+
+            let dest = (moves.bitboard & self.iterator_mask).to_square();
 
             // deal with potential promotions for this pawn
-            let result = ChessMove::new(src, dest, Some(PROMOTION_PIECES[self.promotion_index]));
+            let result = ChessMove::new(
+                moves.square,
+                dest,
+                Some(PROMOTION_PIECES[self.promotion_index]),
+            );
             self.promotion_index += 1;
             if self.promotion_index >= NUM_PROMOTION_PIECES {
-                *bb ^= BitBoard::from_square(dest);
+                moves.bitboard ^= BitBoard::from_square(dest);
                 self.promotion_index = 0;
-                if *bb == EMPTY {
+                if moves.bitboard == EMPTY {
                     self.index += 1;
                 }
             }
             Some(result)
         } else {
             // not a promotion move, so its a 'normal' move as far as this function is concerned
-            let bb = &mut self.moves[self.index].bitboard;
-            let src = self.moves[self.index].square;
-            let dest = (*bb & self.iterator_mask).to_square();
+            let moves = &mut self.moves[self.index];
+            let dest = (moves.bitboard & self.iterator_mask).to_square();
 
-            *bb ^= BitBoard::from_square(dest);
-            if *bb == EMPTY {
+            moves.bitboard ^= BitBoard::from_square(dest);
+            if moves.bitboard == EMPTY {
                 self.index += 1;
             }
-            Some(ChessMove::new(src, dest, None))
+            Some(ChessMove::new(moves.square, dest, None))
         }
     }
 }

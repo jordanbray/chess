@@ -5,8 +5,9 @@ use crate::piece::Piece;
 use crate::square::Square;
 
 use crate::magic::{
-    between, get_adjacent_files, get_bishop_moves, get_king_moves, get_knight_moves,
-    get_pawn_moves, get_rank, get_rook_moves, line,
+    between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_king_moves,
+    get_knight_moves, get_pawn_attacks, get_pawn_moves, get_rank, get_rook_moves, get_rook_rays,
+    line,
 };
 
 pub trait PieceType {
@@ -73,6 +74,39 @@ impl CheckType for NotInCheckType {
     const IN_CHECK: bool = false;
 }
 
+impl PawnType {
+    /// Is a particular en-passant capture legal?
+    pub fn legal_ep_move(board: &Board, source: Square, dest: Square) -> bool {
+        let combined = board.combined()
+            ^ BitBoard::from_square(board.en_passant().unwrap())
+            ^ BitBoard::from_square(source)
+            ^ BitBoard::from_square(dest);
+
+        let ksq =
+            (board.pieces(Piece::King) & board.color_combined(board.side_to_move())).to_square();
+
+        let rooks = (board.pieces(Piece::Rook) | board.pieces(Piece::Queen))
+            & board.color_combined(!board.side_to_move());
+
+        if (get_rook_rays(ksq) & rooks) != EMPTY {
+            if (get_rook_moves(ksq, combined) & rooks) != EMPTY {
+                return false;
+            }
+        }
+
+        let bishops = (board.pieces(Piece::Bishop) | board.pieces(Piece::Queen))
+            & board.color_combined(!board.side_to_move());
+
+        if (get_bishop_rays(ksq) & bishops) != EMPTY {
+            if (get_bishop_moves(ksq, combined) & bishops) != EMPTY {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
 impl PieceType for PawnType {
     fn is(piece: Piece) -> bool {
         piece == Piece::Pawn
@@ -130,7 +164,7 @@ impl PieceType for PawnType {
             let files = get_adjacent_files(ep_sq.get_file());
             for src in rank & files & pieces {
                 let dest = ep_sq.uforward(color);
-                if board.legal_ep_move(src, dest) {
+                if PawnType::legal_ep_move(board, src, dest) {
                     store_moves(src, BitBoard::from_square(dest), false);
                 }
             }
@@ -227,6 +261,51 @@ impl PieceType for QueenType {
     }
 }
 
+impl KingType {
+    /// Is a particular king move legal?
+    #[inline(always)]
+    pub fn legal_king_move(board: &Board, dest: Square) -> bool {
+        let combined = board.combined()
+            ^ (board.pieces(Piece::King) & board.color_combined(board.side_to_move()))
+            | BitBoard::from_square(dest);
+
+        let mut attackers = EMPTY;
+
+        let rooks = (board.pieces(Piece::Rook) | board.pieces(Piece::Queen))
+            & board.color_combined(!board.side_to_move());
+
+        if (get_rook_rays(dest) & rooks) != EMPTY {
+            attackers |= get_rook_moves(dest, combined) & rooks;
+        }
+
+        let bishops = (board.pieces(Piece::Bishop) | board.pieces(Piece::Queen))
+            & board.color_combined(!board.side_to_move());
+
+        if (get_bishop_rays(dest) & bishops) != EMPTY {
+            attackers |= get_bishop_moves(dest, combined) & bishops;
+        }
+
+        let knight_rays = get_knight_moves(dest);
+        attackers |=
+            knight_rays & board.pieces(Piece::Knight) & board.color_combined(!board.side_to_move());
+
+        let king_rays = get_king_moves(dest);
+        attackers |=
+            king_rays & board.pieces(Piece::King) & board.color_combined(!board.side_to_move());
+
+        if attackers != EMPTY {
+            return false;
+        }
+        attackers |= get_pawn_attacks(
+            dest,
+            board.side_to_move(),
+            board.pieces(Piece::Pawn) & board.color_combined(!board.side_to_move()),
+        );
+
+        return attackers == EMPTY;
+    }
+}
+
 impl PieceType for KingType {
     fn is(piece: Piece) -> bool {
         piece == Piece::King
@@ -258,7 +337,7 @@ impl PieceType for KingType {
 
         let copy = moves;
         for dest in copy {
-            if !board.legal_king_move(dest) {
+            if !KingType::legal_king_move(board, dest) {
                 moves ^= BitBoard::from_square(dest);
             }
         }
@@ -275,8 +354,8 @@ impl PieceType for KingType {
             if board.my_castle_rights().has_kingside()
                 && (combined & board.my_castle_rights().kingside_squares(color)) == EMPTY
             {
-                if board.legal_king_move(ksq.uright())
-                    && board.legal_king_move(ksq.uright().uright())
+                if KingType::legal_king_move(board, ksq.uright())
+                    && KingType::legal_king_move(board, ksq.uright().uright())
                 {
                     moves ^= BitBoard::from_square(ksq.uright().uright());
                 }
@@ -285,7 +364,8 @@ impl PieceType for KingType {
             if board.my_castle_rights().has_queenside()
                 && (combined & board.my_castle_rights().queenside_squares(color)) == EMPTY
             {
-                if board.legal_king_move(ksq.uleft()) && board.legal_king_move(ksq.uleft().uleft())
+                if KingType::legal_king_move(board, ksq.uleft())
+                    && KingType::legal_king_move(board, ksq.uleft().uleft())
                 {
                     moves ^= BitBoard::from_square(ksq.uleft().uleft());
                 }

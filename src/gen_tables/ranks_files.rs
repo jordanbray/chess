@@ -32,7 +32,8 @@ pub fn gen_bitboard_data() {
                     || x.get_rank() == Rank::Eighth
                     || x.get_file() == ChessFile::A
                     || x.get_file() == ChessFile::H
-            }).fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+            })
+            .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
         for i in 0..8 {
             RANKS[i] = ALL_SQUARES
                 .iter()
@@ -47,7 +48,8 @@ pub fn gen_bitboard_data() {
                 .filter(|y| {
                     ((y.get_file().to_index() as i8) == (i as i8) - 1)
                         || ((y.get_file().to_index() as i8) == (i as i8) + 1)
-                }).fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
+                })
+                .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
         }
     }
 }
@@ -75,6 +77,7 @@ pub fn write_bitboard_data(f: &mut File) {
             f,
             "pub const EDGES: BitBoard = BitBoard({});\n",
             EDGES.to_size(0)
-        ).unwrap();
+        )
+        .unwrap();
     }
 }
