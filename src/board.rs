@@ -288,7 +288,7 @@ impl Board {
     ///                          get_rank(Rank::Seventh) |
     ///                          get_rank(Rank::Eighth);
     ///
-    /// assert_eq!(board.combined(), combined_should_be);
+    /// assert_eq!(*board.combined(), combined_should_be);
     /// ```
     pub fn combined(&self) -> &BitBoard {
         &self.combined
@@ -308,8 +308,8 @@ impl Board {
     /// let black_pieces = get_rank(Rank::Seventh) |
     ///                    get_rank(Rank::Eighth);
     ///
-    /// assert_eq!(board.color_combined(Color::White), white_pieces);
-    /// assert_eq!(board.color_combined(Color::Black), black_pieces);
+    /// assert_eq!(*board.color_combined(Color::White), white_pieces);
+    /// assert_eq!(*board.color_combined(Color::Black), black_pieces);
     /// ```
     pub fn color_combined(&self, color: Color) -> &BitBoard {
         unsafe { self.color_combined.get_unchecked(color.to_index()) }
@@ -342,7 +342,7 @@ impl Board {
     ///
     /// let board = Board::default();
     ///
-    /// assert_eq!(board.pieces(Piece::Rook), rooks);
+    /// assert_eq!(*board.pieces(Piece::Rook), rooks);
     /// ```
     pub fn pieces(&self, piece: Piece) -> &BitBoard {
         unsafe { self.pieces.get_unchecked(piece.to_index()) }

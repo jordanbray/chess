@@ -63,7 +63,7 @@ pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; 16]>>;
 ///
 /// // lets iterate over targets.
 /// let targets = board.color_combined(!board.side_to_move());
-/// iterable.set_iterator_mask(targets);
+/// iterable.set_iterator_mask(*targets);
 ///
 /// // count the number of targets
 /// let mut count = 0;
