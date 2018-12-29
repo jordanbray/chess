@@ -11,172 +11,23 @@ use std::iter::ExactSizeIterator;
 use std::mem;
 
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
-struct SquareAndBitBoard {
+pub struct SquareAndBitBoard {
     square: Square,
     bitboard: BitBoard,
     promotion: bool,
 }
 
-fn push(
-    vec: &mut NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>,
-    square: Square,
-    bitboard: BitBoard,
-    promotion: bool,
-) {
-    if bitboard != EMPTY {
-        unsafe {
-            vec.push_unchecked(SquareAndBitBoard {
-                square: square,
-                bitboard: bitboard,
-                promotion: promotion,
-            });
+impl SquareAndBitBoard {
+    pub fn new(sq: Square, bb: BitBoard, promotion: bool) -> SquareAndBitBoard {
+        SquareAndBitBoard {
+            square: sq,
+            bitboard: bb,
+            promotion: promotion,
         }
     }
 }
 
-/// Never Call Directly!
-///
-/// Enumerate all legal moves for a particular board.
-///
-/// You must pass in:
-///  * a `MoveGen`
-///  * a whether or not you want to skip the legality checks.
-///  Note: The pawn moves *must* be generated first due to assumptions made by the `MoveGen`
-///        struct.
-macro_rules! enumerate_moves {
-    ($board:expr, $mask:expr, $skip_legal_check:expr) => {{
-        let checkers = $board.checkers();
-        let combined = $board.combined();
-        let color = $board.side_to_move();
-        let my_pieces = $board.color_combined(color);
-        let ksq = ($board.pieces(Piece::King) & my_pieces).to_square();
-        let board = $board;
-        let mut movevec = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 18]>::new());
-
-        if checkers == EMPTY {
-            PawnType::legals::<NotInCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            KnightType::legals::<NotInCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            BishopType::legals::<NotInCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            RookType::legals::<NotInCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            QueenType::legals::<NotInCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            KingType::legals::<NotInCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-        } else if checkers.popcnt() == 1 {
-            PawnType::legals::<InCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            KnightType::legals::<InCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            BishopType::legals::<InCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            RookType::legals::<InCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            QueenType::legals::<InCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-            KingType::legals::<InCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-        } else {
-            KingType::legals::<InCheckType, _>(
-                &board,
-                $mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-                |x, y, z| push(&mut movevec, x, y, z),
-            );
-        }
-        movevec
-    }};
-}
+pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>;
 
 /// An incremental move generator
 ///
@@ -233,18 +84,173 @@ macro_rules! enumerate_moves {
 ///
 /// ```
 pub struct MoveGen {
-    moves: NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>,
+    moves: MoveList,
     promotion_index: usize,
     iterator_mask: BitBoard,
     index: usize,
 }
 
 impl MoveGen {
+    fn push(vec: &mut MoveList, square: Square, bitboard: BitBoard, promotion: bool) {
+        if bitboard != EMPTY {
+            unsafe {
+                vec.push_unchecked(SquareAndBitBoard {
+                    square: square,
+                    bitboard: bitboard,
+                    promotion: promotion,
+                });
+            }
+        }
+    }
+
+    fn enumerate_moves(board: &Board, skip_legality_check: bool) -> MoveList {
+        let checkers = board.checkers();
+        let combined = board.combined();
+        let color = board.side_to_move();
+        let my_pieces = board.color_combined(color);
+        let ksq = (board.pieces(Piece::King) & my_pieces).to_square();
+        let mask = !board.color_combined(board.side_to_move());
+
+        let mut movelist = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 18]>::new());
+        /*if checkers == EMPTY {
+            for f in [PawnType::legals::<NotInCheckType>,
+                      KnightType::legals::<NotInCheckType>,
+                      BishopType::legals::<NotInCheckType>,
+                      RookType::legals::<NotInCheckType>,
+                      QueenType::legals::<NotInCheckType>,
+                      KingType::legals::<NotInCheckType>].iter() {
+                f(&mut movelist, &board, mask, combined, my_pieces, color, ksq);
+            }
+        }*/
+        if checkers == EMPTY {
+            PawnType::legals::<NotInCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            KnightType::legals::<NotInCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            BishopType::legals::<NotInCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            RookType::legals::<NotInCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            QueenType::legals::<NotInCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            KingType::legals::<NotInCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+        } else if checkers.popcnt() == 1 {
+            PawnType::legals::<InCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            KnightType::legals::<InCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            BishopType::legals::<InCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            RookType::legals::<InCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            QueenType::legals::<InCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+            KingType::legals::<InCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+        } else {
+            KingType::legals::<InCheckType>(
+                &mut movelist,
+                &board,
+                mask,
+                combined,
+                my_pieces,
+                color,
+                ksq,
+            );
+        }
+
+        movelist
+    }
+
     /// Create a new `MoveGen` structure, only generating legal moves
     pub fn new_legal(board: &Board) -> MoveGen {
-        let mask = !board.color_combined(board.side_to_move());
         MoveGen {
-            moves: enumerate_moves!(board, mask, false),
+            moves: MoveGen::enumerate_moves(board, false),
             promotion_index: 0,
             iterator_mask: !EMPTY,
             index: 0,
@@ -259,9 +265,8 @@ impl MoveGen {
     /// you can call `MoveGen::legal_quick(...)` on that chess move, without the full
     /// expense of the `board.legal(...)` function.
     pub fn new_pseudo_legal(board: &Board) -> MoveGen {
-        let mask = !board.color_combined(board.side_to_move());
         MoveGen {
-            moves: enumerate_moves!(board, mask, true),
+            moves: MoveGen::enumerate_moves(board, true),
             promotion_index: 0,
             iterator_mask: !EMPTY,
             index: 0,
