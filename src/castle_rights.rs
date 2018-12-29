@@ -124,7 +124,7 @@ impl CastleRights {
         match square.get_file() {
             File::A => CastleRights::QueenSide,
             File::H => CastleRights::KingSide,
-            _ => unreachable!(),
+            _ => unsafe { unreachable_unchecked() },
         }
     }
 }

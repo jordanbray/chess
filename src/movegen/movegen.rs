@@ -27,7 +27,7 @@ impl SquareAndBitBoard {
     }
 }
 
-pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>;
+pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; 16]>>;
 
 /// An incremental move generator
 ///
@@ -91,182 +91,38 @@ pub struct MoveGen {
 }
 
 impl MoveGen {
-    fn push(vec: &mut MoveList, square: Square, bitboard: BitBoard, promotion: bool) {
-        if bitboard != EMPTY {
-            unsafe {
-                vec.push_unchecked(SquareAndBitBoard {
-                    square: square,
-                    bitboard: bitboard,
-                    promotion: promotion,
-                });
-            }
-        }
-    }
-
-    fn enumerate_moves(board: &Board, skip_legality_check: bool) -> MoveList {
-        let checkers = board.checkers();
-        let combined = board.combined();
-        let color = board.side_to_move();
-        let my_pieces = board.color_combined(color);
-        let ksq = (board.pieces(Piece::King) & my_pieces).to_square();
+    #[inline(always)]
+    fn enumerate_moves(board: &Board) -> MoveList {
+        let checkers = *board.checkers();
         let mask = !board.color_combined(board.side_to_move());
+        let mut movelist = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 16]>::new());
 
-        let mut movelist = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 18]>::new());
-        /*if checkers == EMPTY {
-            for f in [PawnType::legals::<NotInCheckType>,
-                      KnightType::legals::<NotInCheckType>,
-                      BishopType::legals::<NotInCheckType>,
-                      RookType::legals::<NotInCheckType>,
-                      QueenType::legals::<NotInCheckType>,
-                      KingType::legals::<NotInCheckType>].iter() {
-                f(&mut movelist, &board, mask, combined, my_pieces, color, ksq);
-            }
-        }*/
         if checkers == EMPTY {
-            PawnType::legals::<NotInCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            KnightType::legals::<NotInCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            BishopType::legals::<NotInCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            RookType::legals::<NotInCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            QueenType::legals::<NotInCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            KingType::legals::<NotInCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
+            PawnType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+            KnightType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+            BishopType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+            RookType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+            QueenType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+            KingType::legals::<NotInCheckType>(&mut movelist, &board, mask);
         } else if checkers.popcnt() == 1 {
-            PawnType::legals::<InCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            KnightType::legals::<InCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            BishopType::legals::<InCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            RookType::legals::<InCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            QueenType::legals::<InCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
-            KingType::legals::<InCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
+            PawnType::legals::<InCheckType>(&mut movelist, &board, mask);
+            KnightType::legals::<InCheckType>(&mut movelist, &board, mask);
+            BishopType::legals::<InCheckType>(&mut movelist, &board, mask);
+            RookType::legals::<InCheckType>(&mut movelist, &board, mask);
+            QueenType::legals::<InCheckType>(&mut movelist, &board, mask);
+            KingType::legals::<InCheckType>(&mut movelist, &board, mask);
         } else {
-            KingType::legals::<InCheckType>(
-                &mut movelist,
-                &board,
-                mask,
-                combined,
-                my_pieces,
-                color,
-                ksq,
-            );
+            KingType::legals::<InCheckType>(&mut movelist, &board, mask);
         }
 
         movelist
     }
 
     /// Create a new `MoveGen` structure, only generating legal moves
+    #[inline(always)]
     pub fn new_legal(board: &Board) -> MoveGen {
         MoveGen {
-            moves: MoveGen::enumerate_moves(board, false),
-            promotion_index: 0,
-            iterator_mask: !EMPTY,
-            index: 0,
-        }
-    }
-
-    /// Create a new `MoveGen` structure, generating all legal moves, and some pseudo-legal moves.
-    ///
-    /// Note the MoveGen::legal_quick() function, which checks the legality of pseudo-legal
-    /// moves generated specifically by this structure.  That way, if you call
-    /// `MoveGen::new_pseudo_legal(&board)`, but you want to check legality later,
-    /// you can call `MoveGen::legal_quick(...)` on that chess move, without the full
-    /// expense of the `board.legal(...)` function.
-    pub fn new_pseudo_legal(board: &Board) -> MoveGen {
-        MoveGen {
-            moves: MoveGen::enumerate_moves(board, true),
+            moves: MoveGen::enumerate_moves(board),
             promotion_index: 0,
             iterator_mask: !EMPTY,
             index: 0,
@@ -388,13 +244,13 @@ impl MoveGen {
         let mut result: usize = 0;
 
         if depth == 1 {
-            iterable.set_iterator_mask(targets);
+            iterable.set_iterator_mask(*targets);
             result += iterable.len();
             iterable.set_iterator_mask(!targets);
             result += iterable.len();
             result
         } else {
-            iterable.set_iterator_mask(targets);
+            iterable.set_iterator_mask(*targets);
             for x in &mut iterable {
                 let mut bresult = unsafe { mem::uninitialized() };
                 board.make_move(x, &mut bresult);
@@ -405,26 +261,6 @@ impl MoveGen {
                 let mut bresult = unsafe { mem::uninitialized() };
                 board.make_move(x, &mut bresult);
                 result += MoveGen::movegen_perft_test_piecewise(&bresult, depth - 1);
-            }
-            result
-        }
-    }
-
-    #[cfg(test)]
-    pub fn movegen_perft_test_legality(board: &Board, depth: usize) -> usize {
-        let iterable = MoveGen::new_pseudo_legal(board);
-
-        let mut result: usize = 0;
-        if depth == 1 {
-            iterable.filter(|x| board.legal(*x)).count()
-        } else {
-            for m in iterable {
-                if MoveGen::legal_quick(board, m) {
-                    let mut bresult = unsafe { mem::uninitialized() };
-                    board.make_move(m, &mut bresult);
-                    let cur = MoveGen::movegen_perft_test_legality(&bresult, depth - 1);
-                    result += cur;
-                }
             }
             result
         }
@@ -511,7 +347,6 @@ fn movegen_perft_test(board: String, depth: usize, result: usize) {
 
     assert_eq!(MoveGen::movegen_perft_test(&board, depth), result);
     assert_eq!(MoveGen::movegen_perft_test_piecewise(&board, depth), result);
-    assert_eq!(MoveGen::movegen_perft_test_legality(&board, depth), result);
 }
 
 #[test]

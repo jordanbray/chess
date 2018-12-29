@@ -37,6 +37,7 @@ pub struct BitBoard(pub u64);
 /// ```
 pub const EMPTY: BitBoard = BitBoard(0);
 
+// Impl BitAnd
 impl BitAnd for BitBoard {
     type Output = BitBoard;
 
@@ -45,6 +46,28 @@ impl BitAnd for BitBoard {
     }
 }
 
+impl BitAnd for &BitBoard {
+    type Output = BitBoard;
+    fn bitand(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0 & other.0)
+    }
+}
+
+impl BitAnd<&BitBoard> for BitBoard {
+    type Output = BitBoard;
+    fn bitand(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0 & other.0)
+    }
+}
+
+impl BitAnd<BitBoard> for &BitBoard {
+    type Output = BitBoard;
+    fn bitand(self, other: BitBoard) -> BitBoard {
+        BitBoard(self.0 & other.0)
+    }
+}
+
+// Impl BitOr
 impl BitOr for BitBoard {
     type Output = BitBoard;
 
@@ -52,6 +75,31 @@ impl BitOr for BitBoard {
         BitBoard(self.0 | other.0)
     }
 }
+
+impl BitOr for &BitBoard {
+    type Output = BitBoard;
+
+    fn bitor(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0 | other.0)
+    }
+}
+
+impl BitOr<&BitBoard> for BitBoard {
+    type Output = BitBoard;
+
+    fn bitor(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0 | other.0)
+    }
+}
+
+impl BitOr<BitBoard> for &BitBoard {
+    type Output = BitBoard;
+    fn bitor(self, other: BitBoard) -> BitBoard {
+        BitBoard(self.0 | other.0)
+    }
+}
+
+// Impl BitXor
 
 impl BitXor for BitBoard {
     type Output = BitBoard;
@@ -61,24 +109,71 @@ impl BitXor for BitBoard {
     }
 }
 
+impl BitXor for &BitBoard {
+    type Output = BitBoard;
+
+    fn bitxor(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0 ^ other.0)
+    }
+}
+
+impl BitXor<&BitBoard> for BitBoard {
+    type Output = BitBoard;
+
+    fn bitxor(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0 ^ other.0)
+    }
+}
+
+impl BitXor<BitBoard> for &BitBoard {
+    type Output = BitBoard;
+
+    fn bitxor(self, other: BitBoard) -> BitBoard {
+        BitBoard(self.0 ^ other.0)
+    }
+}
+
+// Impl BitAndAssign
+
 impl BitAndAssign for BitBoard {
     fn bitand_assign(&mut self, other: BitBoard) {
         self.0 &= other.0;
     }
 }
 
+impl BitAndAssign<&BitBoard> for BitBoard {
+    fn bitand_assign(&mut self, other: &BitBoard) {
+        self.0 &= other.0;
+    }
+}
+
+// Impl BitOrAssign
 impl BitOrAssign for BitBoard {
     fn bitor_assign(&mut self, other: BitBoard) {
         self.0 |= other.0;
     }
 }
 
+impl BitOrAssign<&BitBoard> for BitBoard {
+    fn bitor_assign(&mut self, other: &BitBoard) {
+        self.0 |= other.0;
+    }
+}
+
+// Impl BitXor Assign
 impl BitXorAssign for BitBoard {
     fn bitxor_assign(&mut self, other: BitBoard) {
         self.0 ^= other.0;
     }
 }
 
+impl BitXorAssign<&BitBoard> for BitBoard {
+    fn bitxor_assign(&mut self, other: &BitBoard) {
+        self.0 ^= other.0;
+    }
+}
+
+// Impl Mul
 impl Mul for BitBoard {
     type Output = BitBoard;
 
@@ -87,7 +182,40 @@ impl Mul for BitBoard {
     }
 }
 
+impl Mul for &BitBoard {
+    type Output = BitBoard;
+
+    fn mul(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0.wrapping_mul(other.0))
+    }
+}
+
+impl Mul<&BitBoard> for BitBoard {
+    type Output = BitBoard;
+
+    fn mul(self, other: &BitBoard) -> BitBoard {
+        BitBoard(self.0.wrapping_mul(other.0))
+    }
+}
+
+impl Mul<BitBoard> for &BitBoard {
+    type Output = BitBoard;
+
+    fn mul(self, other: BitBoard) -> BitBoard {
+        BitBoard(self.0.wrapping_mul(other.0))
+    }
+}
+
+// Impl Not
 impl Not for BitBoard {
+    type Output = BitBoard;
+
+    fn not(self) -> BitBoard {
+        BitBoard(!self.0)
+    }
+}
+
+impl Not for &BitBoard {
     type Output = BitBoard;
 
     fn not(self) -> BitBoard {

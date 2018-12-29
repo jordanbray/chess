@@ -290,8 +290,8 @@ impl Board {
     ///
     /// assert_eq!(board.combined(), combined_should_be);
     /// ```
-    pub fn combined(&self) -> BitBoard {
-        self.combined
+    pub fn combined(&self) -> &BitBoard {
+        &self.combined
     }
 
     /// Grab the "color combined" `BitBoard`.  This is a `BitBoard` with every piece of a particular
@@ -311,8 +311,8 @@ impl Board {
     /// assert_eq!(board.color_combined(Color::White), white_pieces);
     /// assert_eq!(board.color_combined(Color::Black), black_pieces);
     /// ```
-    pub fn color_combined(&self, color: Color) -> BitBoard {
-        unsafe { *self.color_combined.get_unchecked(color.to_index()) }
+    pub fn color_combined(&self, color: Color) -> &BitBoard {
+        unsafe { self.color_combined.get_unchecked(color.to_index()) }
     }
 
     /// Give me the `Square` the `color` king is on.
@@ -344,8 +344,8 @@ impl Board {
     ///
     /// assert_eq!(board.pieces(Piece::Rook), rooks);
     /// ```
-    pub fn pieces(&self, piece: Piece) -> BitBoard {
-        unsafe { *self.pieces.get_unchecked(piece.to_index()) }
+    pub fn pieces(&self, piece: Piece) -> &BitBoard {
+        unsafe { self.pieces.get_unchecked(piece.to_index()) }
     }
 
     /// Grab the `CastleRights` for a particular side.
@@ -660,7 +660,7 @@ impl Board {
             .fold(EMPTY, |cur, next| cur | self.pieces(*next));
 
         // make sure that's equal to the combined bitboard
-        if combined != self.combined() {
+        if combined != *self.combined() {
             return false;
         }
 
@@ -1056,12 +1056,12 @@ impl Board {
     }
 
     /// Give me the `BitBoard` of my pinned pieces.
-    pub fn pinned(&self) -> BitBoard {
-        self.pinned
+    pub fn pinned(&self) -> &BitBoard {
+        &self.pinned
     }
 
     /// Give me the `Bitboard` of the pieces putting me in check.
-    pub fn checkers(&self) -> BitBoard {
-        self.checkers
+    pub fn checkers(&self) -> &BitBoard {
+        &self.checkers
     }
 }
