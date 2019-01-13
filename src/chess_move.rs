@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::fmt;
 
 /// Represent a ChessMove in memory
-#[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug)]
+#[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug, Hash)]
 pub struct ChessMove {
     source: Square,
     dest: Square,

@@ -4,7 +4,7 @@ use crate::rank::Rank;
 use std::fmt;
 
 /// Represent a square on the chess board
-#[derive(PartialEq, Ord, Eq, PartialOrd, Copy, Clone, Debug)]
+#[derive(PartialEq, Ord, Eq, PartialOrd, Copy, Clone, Debug, Hash)]
 pub struct Square(u8);
 
 /// How many squares are there?

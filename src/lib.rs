@@ -62,3 +62,6 @@ mod movegen;
 pub use crate::movegen::MoveGen;
 
 mod zobrist;
+
+mod game;
+pub use crate::game::Game;

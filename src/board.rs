@@ -223,6 +223,17 @@ impl Board {
         }
     }
 
+    #[deprecated(since="3.0.0", note="please use the MoveGen structure instead.  It is faster and more idiomatic.")]
+    pub fn enumerate_moves(&self, moves: &mut [ChessMove; 256]) -> usize {
+        let mut movegen = MoveGen::new_legal(self);
+        let size = 0;
+        for m in movegen {
+            moves[size] = m;
+            size++;
+        }
+        size
+    }
+
     /// Is this game Ongoing, is it Stalemate, or is it Checkmate?
     ///
     /// ```
@@ -799,6 +810,17 @@ impl Board {
                     Some(Piece::King)
                 }
             }
+        }
+    }
+
+    /// What color piece is on a particular square?
+    pub fn color_on(&self, square: Square) -> Option<Color> {
+        if (self.color_combined(Color::White) & BitBoard::from_square(square)) != EMPTY {
+            Some(Color::White)
+        } else if (self.color_combined(Color::Black) & BitBoard::from_square(square)) != EMPTY {
+            Some(Color::Black)
+        } else {
+            None
         }
     }
 

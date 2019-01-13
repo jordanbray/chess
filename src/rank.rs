@@ -1,7 +1,7 @@
 use std::mem::transmute;
 
 /// Describe a rank (row) on a chess board
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Hash)]
 pub enum Rank {
     First,
     Second,

@@ -1,7 +1,7 @@
 use std::mem::transmute;
 
 /// Describe a file (column) on a chess board
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Hash)]
 pub enum File {
     A,
     B,
