@@ -225,11 +225,11 @@ impl Board {
 
     #[deprecated(since="3.0.0", note="please use the MoveGen structure instead.  It is faster and more idiomatic.")]
     pub fn enumerate_moves(&self, moves: &mut [ChessMove; 256]) -> usize {
-        let mut movegen = MoveGen::new_legal(self);
-        let size = 0;
+        let movegen = MoveGen::new_legal(self);
+        let mut size = 0;
         for m in movegen {
             moves[size] = m;
-            size++;
+            size += 1;
         }
         size
     }
