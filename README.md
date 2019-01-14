@@ -15,6 +15,8 @@ This library is follows semver for version numbering in the format MAJOR.MINOR.P
 
 This library requires rust version 1.27 or greater in order to check for the BMI2 instruction-set at compile-time.  Additionally, this build is compatible with rust 2018 which, I believe, requires rust 1.31.
 
+> Note: bmi2 has been disabled due to horrible performance on AMD architectures.  I have instead opted to expose the two relevant functions publicly if on a bmi2 CPU.
+
 ## Examples
 
 ### Simple Move Generation
