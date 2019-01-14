@@ -31,8 +31,6 @@ pub enum GameResult {
 ///
 /// This structure is slow compared to using `Board` directly, so it is
 /// not recommended for engines.
-///
-/// Note: This does not yet support draw by 50-move rule.
 #[derive(Clone, Debug)]
 pub struct Game {
     start_pos: Board,
