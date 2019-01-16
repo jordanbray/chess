@@ -49,7 +49,7 @@ impl Game {
     pub fn new() -> Game {
         Game {
             start_pos: Board::default(),
-            moves: vec!(),
+            moves: vec![],
         }
     }
 
@@ -60,7 +60,7 @@ impl Game {
     ///
     /// let mut game = Game::new();
     /// let mut movegen = MoveGen::new_legal(&game.current_position());
-    /// 
+    ///
     /// game.make_move(movegen.next().expect("At least one valid move"));
     /// game.resign(Color::Black);
     /// assert_eq!(game.actions().len(), 2);
@@ -85,10 +85,8 @@ impl Game {
                 } else {
                     Some(GameResult::WhiteCheckmates)
                 }
-            },
-            BoardStatus::Stalemate => {
-                Some(GameResult::Stalemate)
-            },
+            }
+            BoardStatus::Stalemate => Some(GameResult::Stalemate),
             BoardStatus::Ongoing => {
                 if self.moves.len() == 0 {
                     None
@@ -103,7 +101,7 @@ impl Game {
                 } else {
                     None
                 }
-            },
+            }
         }
     }
 
@@ -122,8 +120,8 @@ impl Game {
             None => None,
             Some(b) => Some(Game {
                 start_pos: b,
-                moves: vec!(),
-            })
+                moves: vec![],
+            }),
         }
     }
 
@@ -140,7 +138,9 @@ impl Game {
 
         for x in self.moves.iter() {
             match *x {
-                Action::MakeMove(m) => { copy = copy.make_move_new(m); }
+                Action::MakeMove(m) => {
+                    copy = copy.make_move_new(m);
+                }
                 _ => {}
             }
         }
@@ -186,7 +186,7 @@ impl Game {
             return false;
         }
 
-        let mut legal_moves_per_move: Vec<Vec<ChessMove>> = vec!();
+        let mut legal_moves_per_move: Vec<Vec<ChessMove>> = vec![];
 
         let mut board = self.start_pos;
         let mut reversible_moves = 0;
@@ -205,12 +205,13 @@ impl Game {
                     }
                     board = board.make_move_new(m);
 
-                    if board.castle_rights(Color::White) != white_castle_rights ||
-                       board.castle_rights(Color::Black) != black_castle_rights {
+                    if board.castle_rights(Color::White) != white_castle_rights
+                        || board.castle_rights(Color::Black) != black_castle_rights
+                    {
                         reversible_moves = 0;
                     }
                     legal_moves_per_move.push(MoveGen::new_legal(&board).collect());
-                },
+                }
                 _ => {}
             }
         }
@@ -307,12 +308,19 @@ impl Game {
     /// assert_eq!(game.side_to_move(), Color::White);
     /// ```
     pub fn side_to_move(&self) -> Color {
-        let move_count = self.moves.iter().filter(
-            |m| match *m {
+        let move_count = self
+            .moves
+            .iter()
+            .filter(|m| match *m {
                 Action::MakeMove(_) => true,
-                _ => false
+                _ => false,
             })
-            .count() + if self.start_pos.side_to_move() == Color::White { 0 } else { 1 };
+            .count()
+            + if self.start_pos.side_to_move() == Color::White {
+                0
+            } else {
+                1
+            };
 
         if move_count % 2 == 0 {
             Color::White
@@ -358,8 +366,9 @@ impl Game {
             return false;
         }
         if self.moves.len() > 0 {
-            if self.moves[self.moves.len() - 1] == Action::OfferDraw(Color::White) ||
-               self.moves[self.moves.len() - 1] == Action::OfferDraw(Color::Black) {
+            if self.moves[self.moves.len() - 1] == Action::OfferDraw(Color::White)
+                || self.moves[self.moves.len() - 1] == Action::OfferDraw(Color::Black)
+            {
                 self.moves.push(Action::AcceptDraw);
                 return true;
             }
@@ -391,4 +400,3 @@ impl Game {
         return true;
     }
 }
-

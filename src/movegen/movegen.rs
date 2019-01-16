@@ -506,7 +506,9 @@ fn movegen_perft_26() {
 
 #[test]
 fn movegen_issue_15() {
-    let board = Board::from_fen("rnbqkbnr/ppp2pp1/4p3/3N4/3PpPp1/8/PPP3PP/R1B1KBNR b KQkq f3 0 1".to_string()).unwrap();
+    let board = Board::from_fen(
+        "rnbqkbnr/ppp2pp1/4p3/3N4/3PpPp1/8/PPP3PP/R1B1KBNR b KQkq f3 0 1".to_string(),
+    )
+    .unwrap();
     let _ = MoveGen::new_legal(&board);
-
 }

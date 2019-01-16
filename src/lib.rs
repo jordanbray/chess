@@ -44,12 +44,12 @@ pub use crate::file::*;
 
 mod magic;
 pub use crate::magic::{
-    between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_file,
-    get_king_moves, get_knight_moves, get_pawn_attacks, get_pawn_moves, get_pawn_quiets, get_rank,
-    get_rook_moves, get_rook_rays, line, EDGES,
+    between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_file, get_king_moves,
+    get_knight_moves, get_pawn_attacks, get_pawn_moves, get_pawn_quiets, get_rank, get_rook_moves,
+    get_rook_rays, line, EDGES,
 };
 
-#[cfg(target_feature="bmi2")]
+#[cfg(target_feature = "bmi2")]
 pub use crate::magic::{get_bishop_moves_bmi, get_rook_moves_bmi};
 
 mod piece;
@@ -67,4 +67,4 @@ pub use crate::movegen::MoveGen;
 mod zobrist;
 
 mod game;
-pub use crate::game::{Game, GameResult, Action};
+pub use crate::game::{Action, Game, GameResult};

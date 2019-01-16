@@ -3,7 +3,7 @@ use crate::color::Color;
 use crate::file::File;
 use crate::rank::Rank;
 use crate::square::Square;
-#[cfg(target_feature="bmi2")]
+#[cfg(target_feature = "bmi2")]
 use std::arch::x86_64::{_pdep_u64, _pext_u64};
 
 // Include the generated lookup tables
@@ -33,7 +33,7 @@ pub fn get_rook_moves(sq: Square, blockers: BitBoard) -> BitBoard {
 }
 
 /// Get the moves for a rook on a particular square, given blockers blocking my movement.
-#[cfg(target_feature="bmi2")]
+#[cfg(target_feature = "bmi2")]
 pub fn get_rook_moves_bmi(sq: Square, blockers: BitBoard) -> BitBoard {
     unsafe {
         let bmi2_magic = *ROOK_BMI_MASK.get_unchecked(sq.to_int() as usize);
@@ -61,7 +61,7 @@ pub fn get_bishop_moves(sq: Square, blockers: BitBoard) -> BitBoard {
 }
 
 /// Get the moves for a bishop on a particular square, given blockers blocking my movement.
-#[cfg(target_feature="bmi2")]
+#[cfg(target_feature = "bmi2")]
 pub fn get_bishop_moves_bmi(sq: Square, blockers: BitBoard) -> BitBoard {
     unsafe {
         let bmi2_magic = *BISHOP_BMI_MASK.get_unchecked(sq.to_int() as usize);

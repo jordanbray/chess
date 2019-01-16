@@ -20,7 +20,7 @@ use crate::gen_tables::ranks_files::*;
 use crate::gen_tables::rays::*;
 use crate::gen_tables::zobrist::*;
 
-#[cfg(target_feature="bmi2")]
+#[cfg(target_feature = "bmi2")]
 use crate::gen_tables::bmis::*;
 use crate::gen_tables::magic::*;
 
@@ -35,7 +35,7 @@ pub fn generate_all_tables() {
     gen_pawn_moves();
     gen_all_magic();
     gen_bitboard_data();
-    #[cfg(target_feature="bmi2")]
+    #[cfg(target_feature = "bmi2")]
     gen_all_bmis();
 
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -50,7 +50,7 @@ pub fn generate_all_tables() {
     write_pawn_attacks(&mut f);
     write_pawn_moves(&mut f);
     write_magic(&mut f);
-    #[cfg(target_feature="bmi2")]
+    #[cfg(target_feature = "bmi2")]
     write_bmis(&mut f);
     write_bitboard_data(&mut f);
 
