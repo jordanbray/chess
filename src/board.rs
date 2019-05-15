@@ -613,6 +613,9 @@ impl Board {
     /// Switch the color of the player without actually making a move.  Returns None if the current
     /// player is in check.
     ///
+    /// Note that this erases the en-passant information, so applying this function twice does not
+    /// always give the same result back.
+    ///
     /// ```
     /// use chess::{Board, Color};
     ///
@@ -631,6 +634,7 @@ impl Board {
             let mut result = *self;
             result.side_to_move = !result.side_to_move;
             result.hash ^= Zobrist::color();
+            result.remove_ep();
             result.update_pin_info();
             Some(result)
         }
@@ -1089,4 +1093,15 @@ impl Board {
     pub fn checkers(&self) -> &BitBoard {
         &self.checkers
     }
+}
+
+#[test]
+fn test_null_move_en_passant() {
+    let start =
+        Board::from_fen("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 0".into())
+            .unwrap();
+    let expected =
+        Board::from_fen("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 0".into())
+            .unwrap();
+    assert_eq!(start.null_move().unwrap(), expected);
 }
