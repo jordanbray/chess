@@ -383,7 +383,583 @@ impl Square {
             File::from_index((ch[0] as usize) - ('a' as usize)),
         ))
     }
+    /// The A1 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::A1, Square::make_square(Rank::First, File::A));
+    /// ```
+    pub const A1: Square = Square(0);
+
+    /// The B1 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::B1, Square::make_square(Rank::First, File::B));
+    /// ```
+    pub const B1: Square = Square(1);
+
+    /// The C1 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::C1, Square::make_square(Rank::First, File::C));
+    /// ```
+    pub const C1: Square = Square(2);
+
+    /// The D1 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::D1, Square::make_square(Rank::First, File::D));
+    /// ```
+    pub const D1: Square = Square(3);
+
+    /// The E1 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::E1, Square::make_square(Rank::First, File::E));
+    /// ```
+    pub const E1: Square = Square(4);
+
+    /// The F1 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::F1, Square::make_square(Rank::First, File::F));
+    /// ```
+    pub const F1: Square = Square(5);
+
+    /// The G1 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::G1, Square::make_square(Rank::First, File::G));
+    /// ```
+    pub const G1: Square = Square(6);
+
+    /// The H1 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::H1, Square::make_square(Rank::First, File::H));
+    /// ```
+    pub const H1: Square = Square(7);
+
+    /// The A2 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::A2, Square::make_square(Rank::Second, File::A));
+    /// ```
+    pub const A2: Square = Square(8);
+
+    /// The B2 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::B2, Square::make_square(Rank::Second, File::B));
+    /// ```
+    pub const B2: Square = Square(9);
+
+    /// The C2 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::C2, Square::make_square(Rank::Second, File::C));
+    /// ```
+    pub const C2: Square = Square(10);
+
+    /// The D2 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::D2, Square::make_square(Rank::Second, File::D));
+    /// ```
+    pub const D2: Square = Square(11);
+
+    /// The E2 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::E2, Square::make_square(Rank::Second, File::E));
+    /// ```
+    pub const E2: Square = Square(12);
+
+    /// The F2 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::F2, Square::make_square(Rank::Second, File::F));
+    /// ```
+    pub const F2: Square = Square(13);
+
+    /// The G2 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::G2, Square::make_square(Rank::Second, File::G));
+    /// ```
+    pub const G2: Square = Square(14);
+
+    /// The H2 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::H2, Square::make_square(Rank::Second, File::H));
+    /// ```
+    pub const H2: Square = Square(15);
+
+    /// The A3 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::A3, Square::make_square(Rank::Third, File::A));
+    /// ```
+    pub const A3: Square = Square(16);
+
+    /// The B3 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::B3, Square::make_square(Rank::Third, File::B));
+    /// ```
+    pub const B3: Square = Square(17);
+
+    /// The C3 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::C3, Square::make_square(Rank::Third, File::C));
+    /// ```
+    pub const C3: Square = Square(18);
+
+    /// The D3 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::D3, Square::make_square(Rank::Third, File::D));
+    /// ```
+    pub const D3: Square = Square(19);
+
+    /// The E3 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::E3, Square::make_square(Rank::Third, File::E));
+    /// ```
+    pub const E3: Square = Square(20);
+
+    /// The F3 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::F3, Square::make_square(Rank::Third, File::F));
+    /// ```
+    pub const F3: Square = Square(21);
+
+    /// The G3 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::G3, Square::make_square(Rank::Third, File::G));
+    /// ```
+    pub const G3: Square = Square(22);
+
+    /// The H3 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::H3, Square::make_square(Rank::Third, File::H));
+    /// ```
+    pub const H3: Square = Square(23);
+
+    /// The A4 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::A4, Square::make_square(Rank::Fourth, File::A));
+    /// ```
+    pub const A4: Square = Square(24);
+
+    /// The B4 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::B4, Square::make_square(Rank::Fourth, File::B));
+    /// ```
+    pub const B4: Square = Square(25);
+
+    /// The C4 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::C4, Square::make_square(Rank::Fourth, File::C));
+    /// ```
+    pub const C4: Square = Square(26);
+
+    /// The D4 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::D4, Square::make_square(Rank::Fourth, File::D));
+    /// ```
+    pub const D4: Square = Square(27);
+
+    /// The E4 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::E4, Square::make_square(Rank::Fourth, File::E));
+    /// ```
+    pub const E4: Square = Square(28);
+
+    /// The F4 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::F4, Square::make_square(Rank::Fourth, File::F));
+    /// ```
+    pub const F4: Square = Square(29);
+
+    /// The G4 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::G4, Square::make_square(Rank::Fourth, File::G));
+    /// ```
+    pub const G4: Square = Square(30);
+
+    /// The H4 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::H4, Square::make_square(Rank::Fourth, File::H));
+    /// ```
+    pub const H4: Square = Square(31);
+
+    /// The A5 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::A5, Square::make_square(Rank::Fifth, File::A));
+    /// ```
+    pub const A5: Square = Square(32);
+
+    /// The B5 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::B5, Square::make_square(Rank::Fifth, File::B));
+    /// ```
+    pub const B5: Square = Square(33);
+
+    /// The C5 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::C5, Square::make_square(Rank::Fifth, File::C));
+    /// ```
+    pub const C5: Square = Square(34);
+
+    /// The D5 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::D5, Square::make_square(Rank::Fifth, File::D));
+    /// ```
+    pub const D5: Square = Square(35);
+
+    /// The E5 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::E5, Square::make_square(Rank::Fifth, File::E));
+    /// ```
+    pub const E5: Square = Square(36);
+
+    /// The F5 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::F5, Square::make_square(Rank::Fifth, File::F));
+    /// ```
+    pub const F5: Square = Square(37);
+
+    /// The G5 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::G5, Square::make_square(Rank::Fifth, File::G));
+    /// ```
+    pub const G5: Square = Square(38);
+
+    /// The H5 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::H5, Square::make_square(Rank::Fifth, File::H));
+    /// ```
+    pub const H5: Square = Square(39);
+
+    /// The A6 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::A6, Square::make_square(Rank::Sixth, File::A));
+    /// ```
+    pub const A6: Square = Square(40);
+
+    /// The B6 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::B6, Square::make_square(Rank::Sixth, File::B));
+    /// ```
+    pub const B6: Square = Square(41);
+
+    /// The C6 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::C6, Square::make_square(Rank::Sixth, File::C));
+    /// ```
+    pub const C6: Square = Square(42);
+
+    /// The D6 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::D6, Square::make_square(Rank::Sixth, File::D));
+    /// ```
+    pub const D6: Square = Square(43);
+
+    /// The E6 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::E6, Square::make_square(Rank::Sixth, File::E));
+    /// ```
+    pub const E6: Square = Square(44);
+
+    /// The F6 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::F6, Square::make_square(Rank::Sixth, File::F));
+    /// ```
+    pub const F6: Square = Square(45);
+
+    /// The G6 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::G6, Square::make_square(Rank::Sixth, File::G));
+    /// ```
+    pub const G6: Square = Square(46);
+
+    /// The H6 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::H6, Square::make_square(Rank::Sixth, File::H));
+    /// ```
+    pub const H6: Square = Square(47);
+
+    /// The A7 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::A7, Square::make_square(Rank::Seventh, File::A));
+    /// ```
+    pub const A7: Square = Square(48);
+
+    /// The B7 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::B7, Square::make_square(Rank::Seventh, File::B));
+    /// ```
+    pub const B7: Square = Square(49);
+
+    /// The C7 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::C7, Square::make_square(Rank::Seventh, File::C));
+    /// ```
+    pub const C7: Square = Square(50);
+
+    /// The D7 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::D7, Square::make_square(Rank::Seventh, File::D));
+    /// ```
+    pub const D7: Square = Square(51);
+
+    /// The E7 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::E7, Square::make_square(Rank::Seventh, File::E));
+    /// ```
+    pub const E7: Square = Square(52);
+
+    /// The F7 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::F7, Square::make_square(Rank::Seventh, File::F));
+    /// ```
+    pub const F7: Square = Square(53);
+
+    /// The G7 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::G7, Square::make_square(Rank::Seventh, File::G));
+    /// ```
+    pub const G7: Square = Square(54);
+
+    /// The H7 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::H7, Square::make_square(Rank::Seventh, File::H));
+    /// ```
+    pub const H7: Square = Square(55);
+
+    /// The A8 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::A8, Square::make_square(Rank::Eighth, File::A));
+    /// ```
+    pub const A8: Square = Square(56);
+
+    /// The B8 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::B8, Square::make_square(Rank::Eighth, File::B));
+    /// ```
+    pub const B8: Square = Square(57);
+
+    /// The C8 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::C8, Square::make_square(Rank::Eighth, File::C));
+    /// ```
+    pub const C8: Square = Square(58);
+
+    /// The D8 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::D8, Square::make_square(Rank::Eighth, File::D));
+    /// ```
+    pub const D8: Square = Square(59);
+
+    /// The E8 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::E8, Square::make_square(Rank::Eighth, File::E));
+    /// ```
+    pub const E8: Square = Square(60);
+
+    /// The F8 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::F8, Square::make_square(Rank::Eighth, File::F));
+    /// ```
+    pub const F8: Square = Square(61);
+
+    /// The G8 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::G8, Square::make_square(Rank::Eighth, File::G));
+    /// ```
+    pub const G8: Square = Square(62);
+
+    /// The H8 square on the chess board
+    ///
+    /// ```
+    /// use chess::{Square, Rank, File};
+    ///
+    /// assert_eq!(Square::H8, Square::make_square(Rank::Eighth, File::H));
+    /// ```
+    pub const H8: Square = Square(63);
 }
+
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
