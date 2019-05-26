@@ -151,19 +151,13 @@ impl Game {
     /// Determine if a player can legally declare a draw by 3-fold repetition or 50-move rule.
     ///
     /// ```
-    /// use chess::{Game, Square, Rank, File, ChessMove};
+    /// use chess::{Game, Square, ChessMove};
     ///
-    /// let b1 = Square::make_square(Rank::First, File::B);
-    /// let c3 = Square::make_square(Rank::Third, File::C);
+    /// let b1c3 = ChessMove::new(Square::B1, Square::C3, None);
+    /// let c3b1 = ChessMove::new(Square::C3, Square::B1, None);
     ///
-    /// let b8 = Square::make_square(Rank::Eighth, File::B);
-    /// let c6 = Square::make_square(Rank::Sixth, File::C);
-    ///
-    /// let b1c3 = ChessMove::new(b1, c3, None);
-    /// let c3b1 = ChessMove::new(c3, b1, None);
-    ///
-    /// let b8c6 = ChessMove::new(b8, c6, None);
-    /// let c6b8 = ChessMove::new(c6, b8, None);
+    /// let b8c6 = ChessMove::new(Square::B8, Square::C6, None);
+    /// let c6b8 = ChessMove::new(Squrre::C6, Square::B8, None);
     ///
     /// let mut game = Game::new();
     /// assert_eq!(game.can_declare_draw(), false);
@@ -236,19 +230,13 @@ impl Game {
     /// Declare a draw by 3-fold repitition or 50-move rule.
     ///
     /// ```
-    /// use chess::{Game, Square, Rank, File, ChessMove};
+    /// use chess::{Game, Square, ChessMove};
     ///
-    /// let b1 = Square::make_square(Rank::First, File::B);
-    /// let c3 = Square::make_square(Rank::Third, File::C);
+    /// let b1c3 = ChessMove::new(Square::B1, Square::C3, None);
+    /// let c3b1 = ChessMove::new(Square::C3, Square::B1, None);
     ///
-    /// let b8 = Square::make_square(Rank::Eighth, File::B);
-    /// let c6 = Square::make_square(Rank::Sixth, File::C);
-    ///
-    /// let b1c3 = ChessMove::new(b1, c3, None);
-    /// let c3b1 = ChessMove::new(c3, b1, None);
-    ///
-    /// let b8c6 = ChessMove::new(b8, c6, None);
-    /// let c6b8 = ChessMove::new(c6, b8, None);
+    /// let b8c6 = ChessMove::new(Square::B8, Square::C6, None);
+    /// let c6b8 = ChessMove::new(Square::C6, Square::B8, None);
     ///
     /// let mut game = Game::new();
     /// assert_eq!(game.can_declare_draw(), false);

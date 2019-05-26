@@ -4,7 +4,6 @@ use std::io::Write;
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::color::ALL_COLORS;
 use crate::file::File as ChessFile;
-use crate::rank::Rank;
 use crate::square::{Square, ALL_SQUARES};
 
 // Given a square, what are the valid king moves?
@@ -58,19 +57,12 @@ fn gen_queenside_castle_squares() {
 }
 
 fn gen_castle_moves() -> BitBoard {
-    let c1 = Square::make_square(Rank::First, ChessFile::C);
-    let c8 = Square::make_square(Rank::Eighth, ChessFile::C);
-    let e1 = Square::make_square(Rank::First, ChessFile::E);
-    let e8 = Square::make_square(Rank::Eighth, ChessFile::E);
-    let g1 = Square::make_square(Rank::First, ChessFile::G);
-    let g8 = Square::make_square(Rank::Eighth, ChessFile::G);
-
-    BitBoard::from_square(c1)
-        ^ BitBoard::from_square(c8)
-        ^ BitBoard::from_square(e1)
-        ^ BitBoard::from_square(e8)
-        ^ BitBoard::from_square(g1)
-        ^ BitBoard::from_square(g8)
+    BitBoard::from_square(Square::C1)
+        ^ BitBoard::from_square(Square::C8)
+        ^ BitBoard::from_square(Square::E1)
+        ^ BitBoard::from_square(Square::E8)
+        ^ BitBoard::from_square(Square::G1)
+        ^ BitBoard::from_square(Square::G8)
 }
 
 // Write the KING_MOVES array to the specified file.

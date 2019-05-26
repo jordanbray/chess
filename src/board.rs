@@ -240,38 +240,38 @@ impl Board {
     /// Is this game Ongoing, is it Stalemate, or is it Checkmate?
     ///
     /// ```
-    /// use chess::{Board, BoardStatus, Square, Rank, File, ChessMove};
+    /// use chess::{Board, BoardStatus, Square, ChessMove};
     ///
     /// let mut board = Board::default();
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::Second, File::E),
-    ///                                            Square::make_square(Rank::Fourth, File::E),
+    /// board = board.make_move_new(ChessMove::new(Square::E2,
+    ///                                            Square::E4,
     ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::Seventh, File::F),
-    ///                                            Square::make_square(Rank::Sixth, File::F),
+    /// board = board.make_move_new(ChessMove::new(Square::F7,
+    ///                                            Square::F6,
     ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::Second, File::D),
-    ///                                            Square::make_square(Rank::Fourth, File::D),
+    /// board = board.make_move_new(ChessMove::new(Square::D2,
+    ///                                            Square::D4,
     ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::Seventh, File::G),
-    ///                                            Square::make_square(Rank::Fifth, File::G),
+    /// board = board.make_move_new(ChessMove::new(Square::G7,
+    ///                                            Square::G5,
     ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Ongoing);
     ///
-    /// board = board.make_move_new(ChessMove::new(Square::make_square(Rank::First, File::D),
-    ///                                            Square::make_square(Rank::Fifth, File::H),
+    /// board = board.make_move_new(ChessMove::new(Square::D1,
+    ///                                            Square::H5,
     ///                                            None));
     ///
     /// assert_eq!(board.status(), BoardStatus::Checkmate);
@@ -332,12 +332,12 @@ impl Board {
     /// Give me the `Square` the `color` king is on.
     ///
     /// ```
-    /// use chess::{Board, Square, Color, Rank, File};
+    /// use chess::{Board, Square, Color};
     ///
     /// let board = Board::default();
     ///
-    /// assert_eq!(board.king_square(Color::White), Square::make_square(Rank::First, File::E));
-    /// assert_eq!(board.king_square(Color::Black), Square::make_square(Rank::Eighth, File::E));
+    /// assert_eq!(board.king_square(Color::White), Square::E1);
+    /// assert_eq!(board.king_square(Color::Black), Square::E8);
     /// ```
     pub fn king_square(&self, color: Color) -> Square {
         (self.pieces(Piece::King) & self.color_combined(color)).to_square()
@@ -346,13 +346,13 @@ impl Board {
     /// Grab the "pieces" `BitBoard`.  This is a `BitBoard` with every piece of a particular type.
     ///
     /// ```
-    /// use chess::{Board, BitBoard, Piece, Square, Rank, File};
+    /// use chess::{Board, BitBoard, Piece, Square};
     ///
     /// // The rooks should be in each corner of the board
-    /// let rooks = BitBoard::from_square(Square::make_square(Rank::First, File::A)) |
-    ///             BitBoard::from_square(Square::make_square(Rank::First, File::H)) |
-    ///             BitBoard::from_square(Square::make_square(Rank::Eighth, File::A)) |
-    ///             BitBoard::from_square(Square::make_square(Rank::Eighth, File::H));
+    /// let rooks = BitBoard::from_square(Square::A1) |
+    ///             BitBoard::from_square(Square::H1) |
+    ///             BitBoard::from_square(Square::A8) |
+    ///             BitBoard::from_square(Square::H8);
     ///
     /// let board = Board::default();
     ///
@@ -365,22 +365,22 @@ impl Board {
     /// Grab the `CastleRights` for a particular side.
     ///
     /// ```
-    /// use chess::{Board, Square, Rank, File, CastleRights, Color, ChessMove};
+    /// use chess::{Board, Square, CastleRights, Color, ChessMove};
     ///
-    /// let move1 = ChessMove::new(Square::make_square(Rank::Second, File::A),
-    ///                            Square::make_square(Rank::Fourth, File::A),
+    /// let move1 = ChessMove::new(Square::A2,
+    ///                            Square::A4,
     ///                            None);
     ///
-    /// let move2 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
-    ///                            Square::make_square(Rank::Fifth, File::E),
+    /// let move2 = ChessMove::new(Square::E7,
+    ///                            Square::E5,
     ///                            None);
     ///
-    /// let move3 = ChessMove::new(Square::make_square(Rank::First, File::A),
-    ///                            Square::make_square(Rank::Second, File::A),
+    /// let move3 = ChessMove::new(Square::A1,
+    ///                            Square::A2,
     ///                            None);
     ///
-    /// let move4 = ChessMove::new(Square::make_square(Rank::Eighth, File::E),
-    ///                            Square::make_square(Rank::Seventh, File::E),
+    /// let move4 = ChessMove::new(Square::E8,
+    ///                            Square::E7,
     ///                            None);
     ///
     /// let mut board = Board::default();
@@ -525,13 +525,13 @@ impl Board {
     /// For a chess UI: set a piece on a particular square.
     ///
     /// ```
-    /// use chess::{Board, Piece, Color, Square, Rank, File};
+    /// use chess::{Board, Piece, Color, Square};
     ///
     /// let board = Board::default();
     ///
     /// let new_board = board.set_piece(Piece::Queen,
     ///                                 Color::White,
-    ///                                 Square::make_square(Rank::Fourth, File::E))
+    ///                                 Square::E4)
     ///                      .expect("Valid Position");
     ///
     /// assert_eq!(new_board.pieces(Piece::Queen).count(), 3);
@@ -571,11 +571,11 @@ impl Board {
     /// For a chess UI: clear a particular square.
     ///
     /// ```
-    /// use chess::{Board, Square, Rank, File, Piece};
+    /// use chess::{Board, Square, Piece};
     ///
     /// let board = Board::default();
     ///
-    /// let new_board = board.clear_square(Square::make_square(Rank::First, File::A))
+    /// let new_board = board.clear_square(Square::A1)
     ///                      .expect("Valid Position");
     ///
     /// assert_eq!(new_board.pieces(Piece::Rook).count(), 3);
@@ -652,7 +652,7 @@ impl Board {
     /// assert_eq!(board.is_sane(), true);
     ///
     /// // Remove the king
-    /// let bad_board = board.clear_square(Square::make_square(Rank::First, File::E)).expect("Valid Position");
+    /// let bad_board = board.clear_square(Square::E1).expect("Valid Position");
     /// assert_eq!(bad_board.is_sane(), false);
     /// ```
     pub fn is_sane(&self) -> bool {
@@ -775,15 +775,12 @@ impl Board {
     /// What piece is on a particular `Square`?  Is there even one?
     ///
     /// ```
-    /// use chess::{Board, Piece, Square, Rank, File};
+    /// use chess::{Board, Piece, Square};
     ///
     /// let board = Board::default();
     ///
-    /// let sq1 = Square::make_square(Rank::First, File::A);
-    /// let sq2 = Square::make_square(Rank::Fourth, File::D);
-    ///
-    /// assert_eq!(board.piece_on(sq1), Some(Piece::Rook));
-    /// assert_eq!(board.piece_on(sq2), None);
+    /// assert_eq!(board.piece_on(Square::A1), Some(Piece::Rook));
+    /// assert_eq!(board.piece_on(Square::D4), None);
     /// ```
     pub fn piece_on(&self, square: Square) -> Option<Piece> {
         let opp = BitBoard::from_square(square);
@@ -839,22 +836,22 @@ impl Board {
     /// Give me the en_passant square, if it exists.
     ///
     /// ```
-    /// use chess::{Board, ChessMove, Square, Rank, File};
+    /// use chess::{Board, ChessMove, Square};
     ///
-    /// let move1 = ChessMove::new(Square::make_square(Rank::Second, File::D),
-    ///                            Square::make_square(Rank::Fourth, File::D),
+    /// let move1 = ChessMove::new(Square::D2,
+    ///                            Square::D4,
     ///                            None);
     ///
-    /// let move2 = ChessMove::new(Square::make_square(Rank::Seventh, File::H),
-    ///                            Square::make_square(Rank::Fifth, File::H),
+    /// let move2 = ChessMove::new(Square::H7,
+    ///                            Square::H5,
     ///                            None);
     ///
-    /// let move3 = ChessMove::new(Square::make_square(Rank::Fourth, File::D),
-    ///                            Square::make_square(Rank::Fifth, File::D),
+    /// let move3 = ChessMove::new(Square::D4,
+    ///                            Square::D5,
     ///                            None);
     ///
-    /// let move4 = ChessMove::new(Square::make_square(Rank::Seventh, File::E),
-    ///                            Square::make_square(Rank::Fifth, File::E),
+    /// let move4 = ChessMove::new(Square::E7,
+    ///                            Square::E5,
     ///                            None);
     ///
     /// let board = Board::default().make_move_new(move1)
@@ -862,7 +859,7 @@ impl Board {
     ///                             .make_move_new(move3)
     ///                             .make_move_new(move4);
     ///
-    /// assert_eq!(board.en_passant(), Some(Square::make_square(Rank::Fifth, File::E)));
+    /// assert_eq!(board.en_passant(), Some(Square::E5));
     /// ```
     pub fn en_passant(self) -> Option<Square> {
         self.en_passant
@@ -886,20 +883,21 @@ impl Board {
     /// input.
     ///
     /// ```
-    /// use chess::{Board, ChessMove, Square, Rank, File};
+    /// use chess::{Board, ChessMove, Square};
     ///
-    /// let move1 = ChessMove::new(Square::make_square(Rank::Second, File::E),
-    ///                            Square::make_square(Rank::Fourth, File::E),
+    /// let move1 = ChessMove::new(Square::E2,
+    ///                            Square::E4,
     ///                            None);
     ///
-    /// let move2 = ChessMove::new(Square::make_square(Rank::Second, File::E),
-    ///                            Square::make_square(Rank::Fifth, File::E),
+    /// let move2 = ChessMove::new(Square::E2,
+    ///                            Square::E5,
     ///                            None);
     ///
     /// let board = Board::default();
     ///
     /// assert_eq!(board.legal(move1), true);
     /// assert_eq!(board.legal(move2), false);
+    /// ```
     pub fn legal(&self, m: ChessMove) -> bool {
         MoveGen::new_legal(&self).find(|x| *x == m).is_some()
     }
@@ -909,10 +907,10 @@ impl Board {
     /// panic!() if king is captured.
     ///
     /// ```
-    /// use chess::{Board, ChessMove, Square, Rank, File, Color};
+    /// use chess::{Board, ChessMove, Square, Color};
     ///
-    /// let m = ChessMove::new(Square::make_square(Rank::Second, File::D),
-    ///                        Square::make_square(Rank::Fourth, File::D),
+    /// let m = ChessMove::new(Square::D2,
+    ///                        Square::D4,
     ///                        None);
     ///
     /// let board = Board::default();
@@ -929,10 +927,10 @@ impl Board {
     /// panic!() if king is captured.
     ///
     /// ```
-    /// use chess::{Board, ChessMove, Square, Rank, File, Color};
+    /// use chess::{Board, ChessMove, Square, Color};
     ///
-    /// let m = ChessMove::new(Square::make_square(Rank::Second, File::D),
-    ///                        Square::make_square(Rank::Fourth, File::D),
+    /// let m = ChessMove::new(Square::D2,
+    ///                        Square::D4,
     ///                        None);
     ///
     /// let board = Board::default();
