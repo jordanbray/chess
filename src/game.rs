@@ -1,10 +1,9 @@
 use crate::board::{Board, BoardStatus};
-use crate::board_builder::BoardBuilder;
 use crate::chess_move::ChessMove;
 use crate::color::Color;
+use crate::error::Error;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;
-use std::convert::TryInto;
 use std::str::FromStr;
 
 /// Contains all actions supported within the game
@@ -52,6 +51,21 @@ impl Game {
     pub fn new() -> Game {
         Game {
             start_pos: Board::default(),
+            moves: vec![],
+        }
+    }
+
+    /// Create a new `Game` with a specific starting position.
+    ///
+    /// ```
+    /// use chess::{Game, Board};
+    ///
+    /// let game = Game::new_with_board(Board::default());
+    /// assert_eq!(game.current_position(), Board::default());
+    /// ```
+    pub fn new_with_board(board: Board) -> Game {
+        Game {
+            start_pos: board,
             moves: vec![],
         }
     }
@@ -119,18 +133,7 @@ impl Game {
     /// assert!(game2.is_none());
     /// ```
     pub fn new_from_fen(fen: &str) -> Option<Game> {
-        if let Ok(fen) = BoardBuilder::from_str(fen) {
-            if let Ok(board) = fen.try_into() {
-                Some(Game {
-                    start_pos: board,
-                    moves: vec![],
-                })
-            } else {
-                None
-            }
-        } else {
-            None
-        }
+        Game::from_str(fen).ok()
     }
 
     /// Get the current position on the board from the `Game` object.
@@ -394,5 +397,13 @@ impl Game {
         }
         self.moves.push(Action::Resign(color));
         return true;
+    }
+}
+
+impl FromStr for Game {
+    type Err = Error;
+
+    fn from_str(fen: &str) -> Result<Self, Self::Err> {
+        Ok(Game::new_with_board(Board::from_str(fen)?))
     }
 }

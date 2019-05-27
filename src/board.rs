@@ -44,9 +44,7 @@ pub enum BoardStatus {
 /// Construct the initial position.
 impl Default for Board {
     fn default() -> Board {
-        BoardBuilder::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-            .expect("Valid FEN Format")
-            .try_into()
+        Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             .expect("Valid Position")
     }
 }
@@ -71,9 +69,8 @@ impl Board {
     /// Construct a board from a FEN string.
     ///
     /// ```
-    /// use chess::{Board, BoardBuilder};
+    /// use chess::Board;
     /// use std::str::FromStr;
-    /// use std::convert::TryInto;
     /// # use chess::Error;
     ///
     /// # fn main() -> Result<(), Error> {
@@ -83,21 +80,14 @@ impl Board {
     /// assert_eq!(init_position, Board::default());
     ///
     /// // This is the new way
-    /// let init_position_2: Board = BoardBuilder::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")?.try_into()?;
+    /// let init_position_2 = Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")?;
     /// assert_eq!(init_position_2, Board::default());
     /// # Ok(())
     /// # }
     /// ```
-    #[deprecated(
-        since = "3.0.3",
-        note = "please use Board::From<BoardBuilder> instead.  `Use BoardBuilder::from_str(\"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\")?.try_into()?` instead"
-    )]
+    #[deprecated(since = "3.1.0", note = "please use `Board::from_str(fen)?` instead")]
     pub fn from_fen(fen: String) -> Option<Board> {
-        if let Ok(f) = BoardBuilder::from_str(&fen) {
-            f.try_into().ok()
-        } else {
-            None
-        }
+        Board::from_str(&fen).ok()
     }
 
     #[deprecated(
@@ -1069,17 +1059,19 @@ impl TryFrom<BoardBuilder> for Board {
     }
 }
 
+impl FromStr for Board {
+    type Err = Error;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Ok(BoardBuilder::from_str(value)?.try_into()?)
+    }
+}
+
 #[test]
 fn test_null_move_en_passant() {
-    let start: Board =
-        BoardBuilder::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 0")
-            .unwrap()
-            .try_into()
-            .unwrap();
-    let expected: Board =
-        BoardBuilder::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 0")
-            .unwrap()
-            .try_into()
-            .unwrap();
+    let start =
+        Board::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 0").unwrap();
+    let expected =
+        Board::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 0").unwrap();
     assert_eq!(start.null_move().unwrap(), expected);
 }
