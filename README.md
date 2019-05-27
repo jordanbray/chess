@@ -59,19 +59,80 @@ Here we iterate over all moves with incremental move generation.  The iterator b
   assert_eq!(count, 20);
 ```
 
+### Setting up a position
+
+The `Board` structure trys to keep the position legal at all times.  This can be annoying when setting up a board, for example via user input.
+
+To deal with this, the `BoardBuilder` structure was introduced in 3.1.0. `BoardBuilder` structure follows a non-consuming builder pattern and can be converted to a `Result<Board, Error>` via `Board::try_from(...)` or `board_builder.try_into()`.
+
+```rust
+  use chess::{Board, BoardBuilder, Piece, Square, Color};
+  use std::convert::TryInto;
+
+  let mut board_builder = BoardBuilder::new();
+  board_builder.piece(Square::A1, Piece::King, Color::White)
+               .piece(Square::A8, Piece::Rook, Color::Black)
+	       .piece(Square::D1, Piece::King, Color::Black);
+  
+  let board: Board = board_builder.try_into()?;
+```
+
 ### Making a Move
 
-Here we make a move on the chess board.  The board is a copy-on-make structure, meaning every time you make a move, you create a new chess board.  The board structure is optimized for size to reduce copy-time.
+Here we make a move on the chess board.  The board is a copy-on-make structure, meaning every time you make a move, you create a new chess board.  You can use `board.make_move()` to update the current position, but you cannot unmake the move.  The board structure is optimized for size to reduce copy-time.
 
 ```rust
   use chess::{Board, ChessMove, Square, Color};
 
-  let m = ChessMove::new(Square::D2,
-                         Square::D4,
-                         None);
+  let m = ChessMove::new(Square::D2, Square::D4, None);
 
   let board = Board::default();
   assert_eq!(board.make_move_new(m).side_to_move(), Color::Black);
+```
+
+### Representing a Full Game
+
+There is more to chess than just what is on the board.  The `Game` object keeps track of the history of the game to allow draw offers, resignations, draw by 50 move rule, draw by repetition, and in general anything that needs the history of the game.
+
+```rust
+  use chess::{Game, Square, ChessMove};
+
+  let b1c3 = ChessMove::new(Square::B1, Square::C3, None);
+  let c3b1 = ChessMove::new(Square::C3, Square::B1, None);
+  
+  let b8c6 = ChessMove::new(Square::B8, Square::C6, None);
+  let c6b8 = ChessMove::new(Square::C6, Square::B8, None);
+  
+  let mut game = Game::new();
+  assert_eq!(game.can_declare_draw(), false);
+  
+  game.make_move(b1c3);
+  game.make_move(b8c6);
+  game.make_move(c3b1);
+  game.make_move(c6b8);
+  
+  assert_eq!(game.can_declare_draw(), false); // position has shown up twice
+  
+  game.make_move(b1c3);
+  game.make_move(b8c6);
+  game.make_move(c3b1);
+  game.make_move(c6b8);
+  assert_eq!(game.can_declare_draw(), true); // position has shown up three times
+```
+
+### FEN Strings
+
+`BoardBuilder`, `Board`, and `Game` all implement `FromStr` to allow you to convert an FEN string into the object.  Additionally, `BoardBuilder` and `Board` implement `std::fmt::Display` to convert them into an FEN string.
+
+```rust
+  use chess::Board;
+  use std::str::FromStr;
+  
+  assert_eq!(
+  	Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+              .expect("Valid Position"),
+	Board::default()
+  );
 ```
 
 ## Compile-time Options
