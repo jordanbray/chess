@@ -11,20 +11,12 @@ use std::fmt;
 use std::ops::{Index, IndexMut};
 use std::str::FromStr;
 
-#[derive(Copy, Clone)]
-pub struct BoardBuilder {
-    pieces: [Option<(Piece, Color)>; 64],
-    side_to_move: Color,
-    castle_rights: [CastleRights; 2],
-    en_passant: Option<File>,
-}
-
 /// Represents a chess position that has *not* been validated for legality.
 ///
 /// This structure is useful in the following cases:
 /// * You are trying to build a chess board manually in code.
-/// ** The `Board` structure will try to keep the position fully legal, which will prevent you from
-///    placing pieces arbitrarily.  This structure will not.
+/// * The `Board` structure will try to keep the position fully legal, which will prevent you from
+///   placing pieces arbitrarily.  This structure will not.
 /// * You want to display the chess position in a UI.
 /// * You want to convert between formats like FEN.
 ///
@@ -55,12 +47,20 @@ pub struct BoardBuilder {
 ///                        .try_into();
 /// assert!(res.is_ok());
 /// ```
+#[derive(Copy, Clone)]
+pub struct BoardBuilder {
+    pieces: [Option<(Piece, Color)>; 64],
+    side_to_move: Color,
+    castle_rights: [CastleRights; 2],
+    en_passant: Option<File>,
+}
+
 impl BoardBuilder {
     /// Construct a new, empty, BoardBuilder.
     ///
     /// * No pieces are on the board
-    /// * `CastleRights` are empty for both sides,
-    /// * `en_passant` is not set.
+    /// * `CastleRights` are empty for both sides
+    /// * `en_passant` is not set
     /// * `side_to_move` is Color::White
     /// ```
     /// use chess::{BoardBuilder, Board, Square, Color, Piece};
