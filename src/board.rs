@@ -2,6 +2,8 @@ use crate::bitboard::{BitBoard, EMPTY};
 use crate::castle_rights::CastleRights;
 use crate::chess_move::ChessMove;
 use crate::color::{Color, ALL_COLORS, NUM_COLORS};
+use crate::error::Error;
+use crate::fen::Fen;
 use crate::file::File;
 use crate::magic::{
     between, get_adjacent_files, get_bishop_rays, get_castle_moves, get_file, get_king_moves,
@@ -10,10 +12,11 @@ use crate::magic::{
 };
 use crate::movegen::*;
 use crate::piece::{Piece, ALL_PIECES, NUM_PIECES};
-use crate::rank::Rank;
-use crate::square::Square;
+use crate::square::{Square, ALL_SQUARES};
 use crate::zobrist::Zobrist;
+use std::convert::{TryFrom, TryInto};
 use std::mem;
+use std::str::FromStr;
 
 /// A representation of a chess board.  That's why you're here, right?
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -40,8 +43,10 @@ pub enum BoardStatus {
 /// Construct the initial position.
 impl Default for Board {
     fn default() -> Board {
-        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned())
-            .expect("Valid FEN")
+        Fen::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .expect("Valid FEN Format")
+            .try_into()
+            .expect("Valid Position")
     }
 }
 
@@ -65,159 +70,30 @@ impl Board {
     /// Construct a board from a FEN string.
     ///
     /// ```
-    /// use chess::Board;
+    /// use chess::{Board, Fen};
+    /// use std::str::FromStr;
+    /// use std::convert::TryInto;
+    /// # use chess::Error;
     ///
+    /// # fn main() -> Result<(), Error> {
+    ///
+    /// // This is no longer supported
     /// let init_position = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned()).expect("Valid FEN");
     /// assert_eq!(init_position, Board::default());
+    ///
+    /// // This is the new way
+    /// let init_position_2: Board = Fen::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")?.try_into()?;
+    /// assert_eq!(init_position_2, Board::default());
+    /// # Ok(())
+    /// # }
     /// ```
+    #[deprecated(
+        since = "3.0.3",
+        note = "please use Board::From<Fen> instead.  `Use Fen::from_str(\"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\")?.try_into()?` instead"
+    )]
     pub fn from_fen(fen: String) -> Option<Board> {
-        let mut cur_rank = Rank::Eighth;
-        let mut cur_file = File::A;
-        let mut board: Board = Board::new();
-
-        let tokens: Vec<&str> = fen.split(' ').collect();
-        if tokens.len() != 6 {
-            return None;
-        }
-
-        let pieces = tokens[0];
-        let side = tokens[1];
-        let castles = tokens[2];
-        let ep = tokens[3];
-        //let irreversable_moves = tokens[4];
-        //let total_moves = tokens[5];
-
-        for x in pieces.chars() {
-            match x {
-                '/' => {
-                    cur_rank = cur_rank.down();
-                    cur_file = File::A;
-                }
-                '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {
-                    cur_file =
-                        File::from_index(cur_file.to_index() + (x as usize) - ('0' as usize));
-                }
-                'r' => {
-                    board.xor(Piece::Rook, BitBoard::set(cur_rank, cur_file), Color::Black);
-                    cur_file = cur_file.right();
-                }
-                'R' => {
-                    board.xor(Piece::Rook, BitBoard::set(cur_rank, cur_file), Color::White);
-                    cur_file = cur_file.right();
-                }
-                'n' => {
-                    board.xor(
-                        Piece::Knight,
-                        BitBoard::set(cur_rank, cur_file),
-                        Color::Black,
-                    );
-                    cur_file = cur_file.right();
-                }
-                'N' => {
-                    board.xor(
-                        Piece::Knight,
-                        BitBoard::set(cur_rank, cur_file),
-                        Color::White,
-                    );
-                    cur_file = cur_file.right();
-                }
-                'b' => {
-                    board.xor(
-                        Piece::Bishop,
-                        BitBoard::set(cur_rank, cur_file),
-                        Color::Black,
-                    );
-                    cur_file = cur_file.right();
-                }
-                'B' => {
-                    board.xor(
-                        Piece::Bishop,
-                        BitBoard::set(cur_rank, cur_file),
-                        Color::White,
-                    );
-                    cur_file = cur_file.right();
-                }
-                'p' => {
-                    board.xor(Piece::Pawn, BitBoard::set(cur_rank, cur_file), Color::Black);
-                    cur_file = cur_file.right();
-                }
-                'P' => {
-                    board.xor(Piece::Pawn, BitBoard::set(cur_rank, cur_file), Color::White);
-                    cur_file = cur_file.right();
-                }
-                'q' => {
-                    board.xor(
-                        Piece::Queen,
-                        BitBoard::set(cur_rank, cur_file),
-                        Color::Black,
-                    );
-                    cur_file = cur_file.right();
-                }
-                'Q' => {
-                    board.xor(
-                        Piece::Queen,
-                        BitBoard::set(cur_rank, cur_file),
-                        Color::White,
-                    );
-                    cur_file = cur_file.right();
-                }
-                'k' => {
-                    board.xor(Piece::King, BitBoard::set(cur_rank, cur_file), Color::Black);
-                    cur_file = cur_file.right();
-                }
-                'K' => {
-                    board.xor(Piece::King, BitBoard::set(cur_rank, cur_file), Color::White);
-                    cur_file = cur_file.right();
-                }
-                _ => {
-                    panic!();
-                }
-            }
-        }
-        match side {
-            "w" | "W" => board.side_to_move = Color::White,
-            "b" | "B" => {
-                board.side_to_move = Color::Black;
-                board.hash ^= Zobrist::color();
-            }
-            _ => panic!(),
-        }
-
-        if castles.contains("K") && castles.contains("Q") {
-            board.castle_rights[Color::White.to_index()] = CastleRights::Both;
-        } else if castles.contains("K") {
-            board.castle_rights[Color::White.to_index()] = CastleRights::KingSide;
-        } else if castles.contains("Q") {
-            board.castle_rights[Color::White.to_index()] = CastleRights::QueenSide;
-        } else {
-            board.castle_rights[Color::White.to_index()] = CastleRights::NoRights;
-        }
-
-        if castles.contains("k") && castles.contains("q") {
-            board.castle_rights[Color::Black.to_index()] = CastleRights::Both;
-        } else if castles.contains("k") {
-            board.castle_rights[Color::Black.to_index()] = CastleRights::KingSide;
-        } else if castles.contains("q") {
-            board.castle_rights[Color::Black.to_index()] = CastleRights::QueenSide;
-        } else {
-            board.castle_rights[Color::Black.to_index()] = CastleRights::NoRights;
-        }
-
-        let color = board.side_to_move;
-
-        match Square::from_string(ep.to_owned()) {
-            None => {}
-            Some(sq) => {
-                board.side_to_move = !board.side_to_move;
-                board.set_ep(sq.ubackward(color));
-                board.side_to_move = !board.side_to_move;
-            }
-        };
-
-        board.update_pin_info();
-
-        if board.is_sane() {
-            Some(board)
+        if let Ok(f) = Fen::from_str(&fen) {
+            f.try_into().ok()
         } else {
             None
         }
@@ -401,6 +277,10 @@ impl Board {
     }
 
     /// Add castle rights for a particular side.  Note: this can create an invalid position.
+    #[deprecated(
+        since = "3.0.3",
+        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+    )]
     pub fn add_castle_rights(&mut self, color: Color, add: CastleRights) {
         unsafe {
             *self.castle_rights.get_unchecked_mut(color.to_index()) =
@@ -419,6 +299,10 @@ impl Board {
     /// board.remove_castle_rights(Color::White, CastleRights::KingSide);
     /// assert_eq!(board.castle_rights(Color::White), CastleRights::QueenSide);
     /// ```
+    #[deprecated(
+        since = "3.0.3",
+        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+    )]
     pub fn remove_castle_rights(&mut self, color: Color, remove: CastleRights) {
         unsafe {
             *self.castle_rights.get_unchecked_mut(color.to_index()) =
@@ -454,8 +338,13 @@ impl Board {
     }
 
     /// Add to my `CastleRights`.  Note: This can make the position invalid.
+    #[deprecated(
+        since = "3.0.3",
+        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+    )]
     pub fn add_my_castle_rights(&mut self, add: CastleRights) {
         let color = self.side_to_move();
+        #[allow(deprecated)]
         self.add_castle_rights(color, add);
     }
 
@@ -470,8 +359,13 @@ impl Board {
     /// board.remove_my_castle_rights(CastleRights::KingSide);
     /// assert_eq!(board.my_castle_rights(), CastleRights::QueenSide);
     /// ```
+    #[deprecated(
+        since = "3.0.3",
+        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+    )]
     pub fn remove_my_castle_rights(&mut self, remove: CastleRights) {
         let color = self.side_to_move();
+        #[allow(deprecated)]
         self.remove_castle_rights(color, remove);
     }
 
@@ -491,8 +385,13 @@ impl Board {
     }
 
     /// Add to my opponents `CastleRights`. Note: This can make the position invalid.
+    #[deprecated(
+        since = "3.0.3",
+        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+    )]
     pub fn add_their_castle_rights(&mut self, add: CastleRights) {
         let color = !self.side_to_move();
+        #[allow(deprecated)]
         self.add_castle_rights(color, add)
     }
 
@@ -507,8 +406,13 @@ impl Board {
     /// board.remove_their_castle_rights(CastleRights::KingSide);
     /// assert_eq!(board.their_castle_rights(), CastleRights::QueenSide);
     /// ```
+    #[deprecated(
+        since = "3.0.3",
+        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+    )]
     pub fn remove_their_castle_rights(&mut self, remove: CastleRights) {
         let color = !self.side_to_move();
+        #[allow(deprecated)]
         self.remove_castle_rights(color, remove);
     }
 
@@ -536,6 +440,10 @@ impl Board {
     ///
     /// assert_eq!(new_board.pieces(Piece::Queen).count(), 3);
     /// ```
+    #[deprecated(
+        since = "3.0.3",
+        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+    )]
     pub fn set_piece(&self, piece: Piece, color: Color, square: Square) -> Option<Board> {
         let mut result = *self;
         let square_bb = BitBoard::from_square(square);
@@ -580,6 +488,10 @@ impl Board {
     ///
     /// assert_eq!(new_board.pieces(Piece::Rook).count(), 3);
     /// ```
+    #[deprecated(
+        since = "3.0.3",
+        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+    )]
     pub fn clear_square(&self, square: Square) -> Option<Board> {
         let mut result = *self;
         let square_bb = BitBoard::from_square(square);
@@ -633,7 +545,6 @@ impl Board {
         } else {
             let mut result = *self;
             result.side_to_move = !result.side_to_move;
-            result.hash ^= Zobrist::color();
             result.remove_ep();
             result.update_pin_info();
             Some(result)
@@ -645,7 +556,7 @@ impl Board {
     /// This is for sanity checking.
     ///
     /// ```
-    /// use chess::{Board, Color, Piece, Square, Rank, File};
+    /// use chess::{Board, Color, Piece, Square};
     ///
     /// let board = Board::default();
     ///
@@ -765,9 +676,16 @@ impl Board {
                 self.castle_rights[(!self.side_to_move).to_index()],
                 !self.side_to_move,
             )
+            ^ if self.side_to_move == Color::Black {
+                Zobrist::color()
+            } else {
+                0
+            }
     }
 
     /// Get a pawn hash of the board (a hash that only changes on color change and pawn moves).
+    ///
+    /// Currently not implemented...
     pub fn get_pawn_hash(&self) -> u64 {
         0
     }
@@ -883,7 +801,7 @@ impl Board {
     /// input.
     ///
     /// ```
-    /// use chess::{Board, ChessMove, Square};
+    /// use chess::{Board, ChessMove, Square, MoveGen};
     ///
     /// let move1 = ChessMove::new(Square::E2,
     ///                            Square::E4,
@@ -957,11 +875,13 @@ impl Board {
             result.xor(captured, dest_bb, !self.side_to_move);
         }
 
+        #[allow(deprecated)]
         result.remove_their_castle_rights(CastleRights::square_to_castle_rights(
             !self.side_to_move,
             dest,
         ));
 
+        #[allow(deprecated)]
         result.remove_my_castle_rights(CastleRights::square_to_castle_rights(
             self.side_to_move,
             source,
@@ -1048,7 +968,6 @@ impl Board {
         }
 
         result.side_to_move = !result.side_to_move;
-        result.hash ^= Zobrist::color();
     }
 
     /// Update the pin information.
@@ -1093,13 +1012,49 @@ impl Board {
     }
 }
 
+impl TryFrom<Fen> for Board {
+    type Error = Error;
+
+    fn try_from(fen: Fen) -> Result<Self, Self::Error> {
+        let mut board = Board::new();
+
+        for sq in ALL_SQUARES.iter() {
+            if let Some((piece, color)) = fen[*sq] {
+                board.xor(piece, BitBoard::from_square(*sq), color);
+            }
+        }
+
+        board.side_to_move = fen.side_to_move();
+
+        if let Some(ep) = fen.en_passant() {
+            board.side_to_move = !board.side_to_move;
+            board.set_ep(ep);
+            board.side_to_move = !board.side_to_move;
+        }
+
+        #[allow(deprecated)]
+        board.add_castle_rights(Color::White, fen.castle_rights(Color::White));
+        #[allow(deprecated)]
+        board.add_castle_rights(Color::Black, fen.castle_rights(Color::Black));
+
+        if board.is_sane() {
+            Ok(board)
+        } else {
+            Err(Error::InvalidBoard)
+        }
+    }
+}
+
 #[test]
 fn test_null_move_en_passant() {
-    let start =
-        Board::from_fen("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 0".into())
-            .unwrap();
-    let expected =
-        Board::from_fen("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 0".into())
+    let start: Board = Fen::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 0")
+        .unwrap()
+        .try_into()
+        .unwrap();
+    let expected: Board =
+        Fen::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 0")
+            .unwrap()
+            .try_into()
             .unwrap();
     assert_eq!(start.null_move().unwrap(), expected);
 }

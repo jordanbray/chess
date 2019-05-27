@@ -68,3 +68,9 @@ mod zobrist;
 
 mod game;
 pub use crate::game::{Action, Game, GameResult};
+
+mod fen;
+pub use crate::fen::Fen;
+
+mod error;
+pub use crate::error::Error;

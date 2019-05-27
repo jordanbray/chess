@@ -1,8 +1,12 @@
 use crate::board::{Board, BoardStatus};
 use crate::chess_move::ChessMove;
 use crate::color::Color;
+use crate::error::Error;
+use crate::fen::Fen;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;
+use std::convert::TryInto;
+use std::str::FromStr;
 
 /// Contains all actions supported within the game
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Eq)]
@@ -105,7 +109,8 @@ impl Game {
         }
     }
 
-    /// Create a new `Game` object from an FEN string.
+    /// Create a new `Game` object from an FEN string.  Note: this function will be changed to
+    /// return Result<Game, Error> in 4.0.0.
     ///
     /// ```
     /// use chess::{Game, Board};
@@ -115,13 +120,17 @@ impl Game {
     /// assert!(game2.is_none());
     /// ```
     pub fn new_from_fen(fen: &str) -> Option<Game> {
-        let board = Board::from_fen(fen.to_string());
-        match board {
-            None => None,
-            Some(b) => Some(Game {
-                start_pos: b,
-                moves: vec![],
-            }),
+        if let Ok(fen) = Fen::from_str(fen) {
+            if let Ok(board) = fen.try_into() {
+                Some(Game {
+                    start_pos: board,
+                    moves: vec![],
+                })
+            } else {
+                None
+            }
+        } else {
+            None
         }
     }
 
@@ -157,7 +166,7 @@ impl Game {
     /// let c3b1 = ChessMove::new(Square::C3, Square::B1, None);
     ///
     /// let b8c6 = ChessMove::new(Square::B8, Square::C6, None);
-    /// let c6b8 = ChessMove::new(Squrre::C6, Square::B8, None);
+    /// let c6b8 = ChessMove::new(Square::C6, Square::B8, None);
     ///
     /// let mut game = Game::new();
     /// assert_eq!(game.can_declare_draw(), false);

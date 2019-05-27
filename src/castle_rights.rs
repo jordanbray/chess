@@ -118,6 +118,31 @@ impl CastleRights {
         }
     }
 
+    /// Convert the castle rights to an FEN compatible string.
+    ///
+    /// ```
+    /// use chess::{CastleRights, Color};
+    ///
+    /// assert_eq!(CastleRights::NoRights.to_string(Color::White), "");
+    /// assert_eq!(CastleRights::Both.to_string(Color::Black), "kq");
+    /// assert_eq!(CastleRights::KingSide.to_string(Color::White), "K");
+    /// assert_eq!(CastleRights::QueenSide.to_string(Color::Black), "q");
+    /// ```
+    pub fn to_string(&self, color: Color) -> String {
+        let result = match *self {
+            CastleRights::NoRights => "",
+            CastleRights::KingSide => "k",
+            CastleRights::QueenSide => "q",
+            CastleRights::Both => "kq",
+        };
+
+        if color == Color::White {
+            result.to_uppercase()
+        } else {
+            result.to_string()
+        }
+    }
+
     /// Given a square of a rook, which side is it on?
     /// Note: It is invalid to pass in a non-rook square.  The code may panic.
     pub fn rook_square_to_castle_rights(square: Square) -> CastleRights {
