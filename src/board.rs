@@ -269,7 +269,7 @@ impl Board {
 
     /// Add castle rights for a particular side.  Note: this can create an invalid position.
     #[deprecated(
-        since = "3.0.3",
+        since = "3.1.0",
         note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn add_castle_rights(&mut self, color: Color, add: CastleRights) {
@@ -291,7 +291,7 @@ impl Board {
     /// assert_eq!(board.castle_rights(Color::White), CastleRights::QueenSide);
     /// ```
     #[deprecated(
-        since = "3.0.3",
+        since = "3.1.0",
         note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn remove_castle_rights(&mut self, color: Color, remove: CastleRights) {
@@ -330,7 +330,7 @@ impl Board {
 
     /// Add to my `CastleRights`.  Note: This can make the position invalid.
     #[deprecated(
-        since = "3.0.3",
+        since = "3.1.0",
         note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn add_my_castle_rights(&mut self, add: CastleRights) {
@@ -351,7 +351,7 @@ impl Board {
     /// assert_eq!(board.my_castle_rights(), CastleRights::QueenSide);
     /// ```
     #[deprecated(
-        since = "3.0.3",
+        since = "3.1.0",
         note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn remove_my_castle_rights(&mut self, remove: CastleRights) {
@@ -377,7 +377,7 @@ impl Board {
 
     /// Add to my opponents `CastleRights`. Note: This can make the position invalid.
     #[deprecated(
-        since = "3.0.3",
+        since = "3.1.0",
         note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn add_their_castle_rights(&mut self, add: CastleRights) {
@@ -398,7 +398,7 @@ impl Board {
     /// assert_eq!(board.their_castle_rights(), CastleRights::QueenSide);
     /// ```
     #[deprecated(
-        since = "3.0.3",
+        since = "3.1.0",
         note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn remove_their_castle_rights(&mut self, remove: CastleRights) {
@@ -432,7 +432,7 @@ impl Board {
     /// assert_eq!(new_board.pieces(Piece::Queen).count(), 3);
     /// ```
     #[deprecated(
-        since = "3.0.3",
+        since = "3.1.0",
         note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn set_piece(&self, piece: Piece, color: Color, square: Square) -> Option<Board> {
@@ -480,7 +480,7 @@ impl Board {
     /// assert_eq!(new_board.pieces(Piece::Rook).count(), 3);
     /// ```
     #[deprecated(
-        since = "3.0.3",
+        since = "3.1.0",
         note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn clear_square(&self, square: Square) -> Option<Board> {
@@ -1034,6 +1034,8 @@ impl TryFrom<&BoardBuilder> for Board {
         board.add_castle_rights(Color::White, fen.get_castle_rights(Color::White));
         #[allow(deprecated)]
         board.add_castle_rights(Color::Black, fen.get_castle_rights(Color::Black));
+
+        board.update_pin_info();
 
         if board.is_sane() {
             Ok(board)

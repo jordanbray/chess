@@ -339,17 +339,6 @@ impl fmt::Display for BoardBuilder {
     }
 }
 
-#[test]
-fn check_initial_position() {
-    let initial_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    let fen: BoardBuilder = Board::default().into();
-    let computed_initial_fen = format!("{}", fen);
-    assert_eq!(computed_initial_fen, initial_fen);
-
-    let pass_through = format!("{}", BoardBuilder::default());
-    assert_eq!(pass_through, initial_fen);
-}
-
 impl Default for BoardBuilder {
     fn default() -> BoardBuilder {
         BoardBuilder::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap()
@@ -515,4 +504,54 @@ impl From<Board> for BoardBuilder {
     fn from(board: Board) -> Self {
         (&board).into()
     }
+}
+
+#[cfg(test)]
+use crate::bitboard::BitBoard;
+#[cfg(test)]
+use std::convert::TryInto;
+
+#[test]
+fn check_initial_position() {
+    let initial_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let fen: BoardBuilder = Board::default().into();
+    let computed_initial_fen = format!("{}", fen);
+    assert_eq!(computed_initial_fen, initial_fen);
+
+    let pass_through = format!("{}", BoardBuilder::default());
+    assert_eq!(pass_through, initial_fen);
+}
+
+#[test]
+fn invalid_castle_rights() {
+    let res: Result<Board, _> = BoardBuilder::new()
+        .piece(Square::A1, Piece::King, Color::White)
+        .piece(Square::A8, Piece::King, Color::Black)
+        .castle_rights(Color::White, CastleRights::Both)
+        .try_into();
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_kissing_kings() {
+    let res: Result<Board, _> = BoardBuilder::new()
+        .piece(Square::A1, Piece::King, Color::White)
+        .piece(Square::A2, Piece::King, Color::Black)
+        .try_into();
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_in_check() {
+    let mut bb: BoardBuilder = BoardBuilder::new();
+    bb.piece(Square::A1, Piece::King, Color::White)
+        .piece(Square::A8, Piece::King, Color::Black)
+        .piece(Square::H1, Piece::Rook, Color::Black);
+
+    let board: Board = (&bb).try_into().unwrap();
+    assert_eq!(*board.checkers(), BitBoard::from_square(Square::H1));
+
+    bb.side_to_move(Color::Black);
+    let res: Result<Board, _> = bb.try_into();
+    assert!(res.is_err()); // My opponent cannot be in check when it's my move.
 }
