@@ -72,7 +72,7 @@ To deal with this, the `BoardBuilder` structure was introduced in 3.1.0. `BoardB
   let mut board_builder = BoardBuilder::new();
   board_builder.piece(Square::A1, Piece::King, Color::White)
                .piece(Square::A8, Piece::Rook, Color::Black)
-	       .piece(Square::D1, Piece::King, Color::Black);
+               .piece(Square::D1, Piece::King, Color::Black);
   
   let board: Board = board_builder.try_into()?;
 ```
@@ -129,9 +129,9 @@ There is more to chess than just what is on the board.  The `Game` object keeps 
   use std::str::FromStr;
   
   assert_eq!(
-  	Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+      Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
               .expect("Valid Position"),
-	Board::default()
+    Board::default()
   );
 ```
 
