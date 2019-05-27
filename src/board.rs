@@ -270,7 +270,7 @@ impl Board {
     /// Add castle rights for a particular side.  Note: this can create an invalid position.
     #[deprecated(
         since = "3.1.0",
-        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn add_castle_rights(&mut self, color: Color, add: CastleRights) {
         unsafe {
@@ -292,7 +292,7 @@ impl Board {
     /// ```
     #[deprecated(
         since = "3.1.0",
-        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn remove_castle_rights(&mut self, color: Color, remove: CastleRights) {
         unsafe {
@@ -331,7 +331,7 @@ impl Board {
     /// Add to my `CastleRights`.  Note: This can make the position invalid.
     #[deprecated(
         since = "3.1.0",
-        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn add_my_castle_rights(&mut self, add: CastleRights) {
         let color = self.side_to_move();
@@ -352,7 +352,7 @@ impl Board {
     /// ```
     #[deprecated(
         since = "3.1.0",
-        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn remove_my_castle_rights(&mut self, remove: CastleRights) {
         let color = self.side_to_move();
@@ -378,7 +378,7 @@ impl Board {
     /// Add to my opponents `CastleRights`. Note: This can make the position invalid.
     #[deprecated(
         since = "3.1.0",
-        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn add_their_castle_rights(&mut self, add: CastleRights) {
         let color = !self.side_to_move();
@@ -399,7 +399,7 @@ impl Board {
     /// ```
     #[deprecated(
         since = "3.1.0",
-        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn remove_their_castle_rights(&mut self, remove: CastleRights) {
         let color = !self.side_to_move();
@@ -433,7 +433,7 @@ impl Board {
     /// ```
     #[deprecated(
         since = "3.1.0",
-        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn set_piece(&self, piece: Piece, color: Color, square: Square) -> Option<Board> {
         let mut result = *self;
@@ -481,7 +481,7 @@ impl Board {
     /// ```
     #[deprecated(
         since = "3.1.0",
-        note = "When doing board setup, use the FEN structure.  It ensures you don't end up with an invalid position."
+        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     pub fn clear_square(&self, square: Square) -> Option<Board> {
         let mut result = *self;
