@@ -19,19 +19,6 @@ This library requires rust version 1.27 or greater in order to check for the BMI
 
 ## Examples
 
-### Simple Move Generation
-
-This puts all moves into a static array.  An array is used instead of a Vec to keep the moves on the stack, and to allow reuse of the array (which has a big impact on performance).
-
-```rust
-  use chess::{Board, ChessMove};
-
-  let board = Board::default();
-  let mut moves = [ChessMove::default(); 256];
-  let count = board.enumerate_moves(&mut moves);
-  assert_eq!(count, 20);
-```
-
 ### Incremental Move Generation With Capture/Non-Capture Sorting
 
 Here we iterate over all moves with incremental move generation.  The iterator below will generate moves as you are going through the list, which is ideal for situations where not all moves will be looked at (such as in an engine search function).
@@ -45,7 +32,7 @@ Here we iterate over all moves with incremental move generation.  The iterator b
   let board = Board::default();
 
   // create an iterable
-  let mut iterable = MoveGen::new(board, true);
+  let mut iterable = MoveGen::new_legal(board, true);
 
   // make sure .len() works.
   assert_eq!(iterable.len(), 20); // the .len() function does *not* consume the iterator
@@ -77,10 +64,10 @@ Here we iterate over all moves with incremental move generation.  The iterator b
 Here we make a move on the chess board.  The board is a copy-on-make structure, meaning every time you make a move, you create a new chess board.  The board structure is optimized for size to reduce copy-time.
 
 ```rust
-  use chess::{Board, ChessMove, Square, Rank, File, Color};
+  use chess::{Board, ChessMove, Square, Color};
 
-  let m = ChessMove::new(Square::make_square(Rank::Second, File::D),
-                         Square::make_square(Rank::Fourth, File::D),
+  let m = ChessMove::new(Square::D2,
+                         Square::D4,
                          None);
 
   let board = Board::default();
