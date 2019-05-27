@@ -1,7 +1,7 @@
 use crate::board::{Board, BoardStatus};
+use crate::board_builder::BoardBuilder;
 use crate::chess_move::ChessMove;
 use crate::color::Color;
-use crate::fen::Fen;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;
 use std::convert::TryInto;
@@ -119,7 +119,7 @@ impl Game {
     /// assert!(game2.is_none());
     /// ```
     pub fn new_from_fen(fen: &str) -> Option<Game> {
-        if let Ok(fen) = Fen::from_str(fen) {
+        if let Ok(fen) = BoardBuilder::from_str(fen) {
             if let Ok(board) = fen.try_into() {
                 Some(Game {
                     start_pos: board,

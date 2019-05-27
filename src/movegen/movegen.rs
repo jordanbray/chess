@@ -337,7 +337,7 @@ impl Iterator for MoveGen {
 }
 
 #[cfg(test)]
-use crate::fen::Fen;
+use crate::board_builder::BoardBuilder;
 #[cfg(test)]
 use std::convert::TryInto;
 #[cfg(test)]
@@ -345,7 +345,7 @@ use std::str::FromStr;
 
 #[cfg(test)]
 fn movegen_perft_test(fen: String, depth: usize, result: usize) {
-    let board: Board = Fen::from_str(&fen).unwrap().try_into().unwrap();
+    let board: Board = BoardBuilder::from_str(&fen).unwrap().try_into().unwrap();
 
     assert_eq!(MoveGen::movegen_perft_test(&board, depth), result);
     assert_eq!(MoveGen::movegen_perft_test_piecewise(&board, depth), result);
@@ -508,9 +508,10 @@ fn movegen_perft_26() {
 
 #[test]
 fn movegen_issue_15() {
-    let board = Fen::from_str("rnbqkbnr/ppp2pp1/4p3/3N4/3PpPp1/8/PPP3PP/R1B1KBNR b KQkq f3 0 1")
-        .unwrap()
-        .try_into()
-        .unwrap();
+    let board =
+        BoardBuilder::from_str("rnbqkbnr/ppp2pp1/4p3/3N4/3PpPp1/8/PPP3PP/R1B1KBNR b KQkq f3 0 1")
+            .unwrap()
+            .try_into()
+            .unwrap();
     let _ = MoveGen::new_legal(&board);
 }

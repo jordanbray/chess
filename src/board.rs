@@ -1,9 +1,9 @@
 use crate::bitboard::{BitBoard, EMPTY};
+use crate::board_builder::BoardBuilder;
 use crate::castle_rights::CastleRights;
 use crate::chess_move::ChessMove;
 use crate::color::{Color, ALL_COLORS, NUM_COLORS};
 use crate::error::Error;
-use crate::fen::Fen;
 use crate::file::File;
 use crate::magic::{
     between, get_adjacent_files, get_bishop_rays, get_castle_moves, get_file, get_king_moves,
@@ -44,7 +44,7 @@ pub enum BoardStatus {
 /// Construct the initial position.
 impl Default for Board {
     fn default() -> Board {
-        Fen::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+        BoardBuilder::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             .expect("Valid FEN Format")
             .try_into()
             .expect("Valid Position")
@@ -71,7 +71,7 @@ impl Board {
     /// Construct a board from a FEN string.
     ///
     /// ```
-    /// use chess::{Board, Fen};
+    /// use chess::{Board, BoardBuilder};
     /// use std::str::FromStr;
     /// use std::convert::TryInto;
     /// # use chess::Error;
@@ -83,17 +83,17 @@ impl Board {
     /// assert_eq!(init_position, Board::default());
     ///
     /// // This is the new way
-    /// let init_position_2: Board = Fen::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")?.try_into()?;
+    /// let init_position_2: Board = BoardBuilder::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")?.try_into()?;
     /// assert_eq!(init_position_2, Board::default());
     /// # Ok(())
     /// # }
     /// ```
     #[deprecated(
         since = "3.0.3",
-        note = "please use Board::From<Fen> instead.  `Use Fen::from_str(\"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\")?.try_into()?` instead"
+        note = "please use Board::From<BoardBuilder> instead.  `Use BoardBuilder::from_str(\"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\")?.try_into()?` instead"
     )]
     pub fn from_fen(fen: String) -> Option<Board> {
-        if let Ok(f) = Fen::from_str(&fen) {
+        if let Ok(f) = BoardBuilder::from_str(&fen) {
             f.try_into().ok()
         } else {
             None
@@ -1015,15 +1015,15 @@ impl Board {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let fen: Fen = self.into();
+        let fen: BoardBuilder = self.into();
         write!(f, "{}", fen)
     }
 }
 
-impl TryFrom<Fen> for Board {
+impl TryFrom<&BoardBuilder> for Board {
     type Error = Error;
 
-    fn try_from(fen: Fen) -> Result<Self, Self::Error> {
+    fn try_from(fen: &BoardBuilder) -> Result<Self, Self::Error> {
         let mut board = Board::new();
 
         for sq in ALL_SQUARES.iter() {
@@ -1032,18 +1032,18 @@ impl TryFrom<Fen> for Board {
             }
         }
 
-        board.side_to_move = fen.side_to_move();
+        board.side_to_move = fen.get_side_to_move();
 
-        if let Some(ep) = fen.en_passant() {
+        if let Some(ep) = fen.get_en_passant() {
             board.side_to_move = !board.side_to_move;
             board.set_ep(ep);
             board.side_to_move = !board.side_to_move;
         }
 
         #[allow(deprecated)]
-        board.add_castle_rights(Color::White, fen.castle_rights(Color::White));
+        board.add_castle_rights(Color::White, fen.get_castle_rights(Color::White));
         #[allow(deprecated)]
-        board.add_castle_rights(Color::Black, fen.castle_rights(Color::Black));
+        board.add_castle_rights(Color::Black, fen.get_castle_rights(Color::Black));
 
         if board.is_sane() {
             Ok(board)
@@ -1053,14 +1053,31 @@ impl TryFrom<Fen> for Board {
     }
 }
 
+impl TryFrom<&mut BoardBuilder> for Board {
+    type Error = Error;
+
+    fn try_from(fen: &mut BoardBuilder) -> Result<Self, Self::Error> {
+        (&*fen).try_into()
+    }
+}
+
+impl TryFrom<BoardBuilder> for Board {
+    type Error = Error;
+
+    fn try_from(fen: BoardBuilder) -> Result<Self, Self::Error> {
+        (&fen).try_into()
+    }
+}
+
 #[test]
 fn test_null_move_en_passant() {
-    let start: Board = Fen::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 0")
-        .unwrap()
-        .try_into()
-        .unwrap();
+    let start: Board =
+        BoardBuilder::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 0")
+            .unwrap()
+            .try_into()
+            .unwrap();
     let expected: Board =
-        Fen::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 0")
+        BoardBuilder::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 0")
             .unwrap()
             .try_into()
             .unwrap();
