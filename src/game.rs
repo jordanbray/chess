@@ -122,16 +122,27 @@ impl Game {
         }
     }
 
-    /// Create a new `Game` object from an FEN string.  Note: this function will be changed to
-    /// return Result<Game, Error> in 4.0.0.
+    /// Create a new `Game` object from an FEN string.
     ///
     /// ```
     /// use chess::{Game, Board};
     ///
+    /// // This is the better way:
+    /// # {
+    /// use std::str::FromStr;
+    /// let game: Game = Game::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").expect("Valid FEN");
+    /// let game2: Result<Game, _> = Game::from_str("Invalid FEN");
+    /// assert!(game2.is_err());
+    /// # }
+    ///
+    /// // This still works
+    /// # {
     /// let game = Game::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").expect("Valid FEN");
     /// let game2 = Game::new_from_fen("Invalid FEN");
     /// assert!(game2.is_none());
+    /// # }
     /// ```
+    #[deprecated(since = "3.1.0", note = "Please use Game::from_str(fen)? instead.")]
     pub fn new_from_fen(fen: &str) -> Option<Game> {
         Game::from_str(fen).ok()
     }
