@@ -306,8 +306,8 @@ impl FromStr for Fen {
     }
 }
 
-impl From<Board> for Fen {
-    fn from(board: Board) -> Self {
+impl From<&Board> for Fen {
+    fn from(board: &Board) -> Self {
         let mut pieces = vec![];
         for sq in ALL_SQUARES.iter() {
             if let Some(piece) = board.piece_on(*sq) {
@@ -323,5 +323,11 @@ impl From<Board> for Fen {
             board.castle_rights(Color::Black),
             board.en_passant().map(|sq| sq.get_file()),
         )
+    }
+}
+
+impl From<Board> for Fen {
+    fn from(board: Board) -> Self {
+        (&board).into()
     }
 }

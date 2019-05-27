@@ -1,7 +1,6 @@
 use crate::board::{Board, BoardStatus};
 use crate::chess_move::ChessMove;
 use crate::color::Color;
-use crate::error::Error;
 use crate::fen::Fen;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;

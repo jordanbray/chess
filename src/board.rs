@@ -15,6 +15,7 @@ use crate::piece::{Piece, ALL_PIECES, NUM_PIECES};
 use crate::square::{Square, ALL_SQUARES};
 use crate::zobrist::Zobrist;
 use std::convert::{TryFrom, TryInto};
+use std::fmt;
 use std::mem;
 use std::str::FromStr;
 
@@ -1009,6 +1010,13 @@ impl Board {
     /// Give me the `Bitboard` of the pieces putting me in check.
     pub fn checkers(&self) -> &BitBoard {
         &self.checkers
+    }
+}
+
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let fen: Fen = self.into();
+        write!(f, "{}", fen)
     }
 }
 
