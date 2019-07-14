@@ -30,21 +30,25 @@ pub const ALL_FILES: [File; NUM_FILES] = [
 
 impl File {
     /// Convert a `usize` into a `File` (the inverse of to_index).  If i > 7, wrap around.
+    #[inline]
     pub fn from_index(i: usize) -> File {
         unsafe { transmute((i as u8) & 7) }
     }
 
     /// Go one file to the left.  If impossible, wrap around.
+    #[inline]
     pub fn left(&self) -> File {
         File::from_index(self.to_index().wrapping_sub(1))
     }
 
     /// Go one file to the right.  If impossible, wrap around.
+    #[inline]
     pub fn right(&self) -> File {
         File::from_index(self.to_index() + 1)
     }
 
     /// Convert this `File` into a `usize` from 0 to 7 inclusive.
+    #[inline]
     pub fn to_index(&self) -> usize {
         *self as usize
     }

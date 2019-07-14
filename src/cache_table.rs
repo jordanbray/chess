@@ -15,6 +15,7 @@ impl<T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
     /// Note: You must pass in a size where only 1 bit is set. (AKA: 2, 4, 8, 16, 1024, 65536,
     /// etc.)
     /// Panics when size is invalid.
+    #[inline]
     pub fn new(size: usize, default: T) -> CacheTable<T> {
         if size.count_ones() != 1 {
             panic!("You cannot create a CacheTable with a non-binary number.");
@@ -33,6 +34,7 @@ impl<T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
     }
 
     /// Get a particular entry with the hash specified
+    #[inline]
     pub fn get(&self, hash: u64) -> Option<T> {
         let entry = unsafe { *self.table.get_unchecked((hash as usize) & self.mask) };
         if entry.hash == hash {
@@ -43,6 +45,7 @@ impl<T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
     }
 
     /// Add (or overwrite) an entry with the associated hash
+    #[inline]
     pub fn add(&mut self, hash: u64, entry: T) {
         let e = unsafe { self.table.get_unchecked_mut((hash as usize) & self.mask) };
         *e = CacheTableEntry {

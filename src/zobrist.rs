@@ -13,6 +13,7 @@ include!(concat!(env!("OUT_DIR"), "/zobrist_gen.rs"));
 
 impl Zobrist {
     /// Get the value for a particular piece
+    #[inline]
     pub fn piece(piece: Piece, square: Square, color: Color) -> u64 {
         unsafe {
             *ZOBRIST_PIECES
@@ -22,6 +23,7 @@ impl Zobrist {
         }
     }
 
+    #[inline]
     pub fn castles(castle_rights: CastleRights, color: Color) -> u64 {
         unsafe {
             *ZOBRIST_CASTLES
@@ -30,6 +32,7 @@ impl Zobrist {
         }
     }
 
+    #[inline]
     pub fn en_passant(file: File, color: Color) -> u64 {
         unsafe {
             *ZOBRIST_EP
@@ -38,6 +41,7 @@ impl Zobrist {
         }
     }
 
+    #[inline]
     pub fn color() -> u64 {
         SIDE_TO_MOVE
     }

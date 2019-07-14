@@ -43,6 +43,7 @@ impl Square {
     ///     assert_ne!(bad_sq, sq);
     /// }
     /// ```
+    #[inline]
     pub unsafe fn new(sq: u8) -> Square {
         Square(sq)
     }
@@ -64,6 +65,7 @@ impl Square {
     ///     assert_eq!(sq, x);
     /// }
     /// ```
+    #[inline]
     pub fn make_square(rank: Rank, file: File) -> Square {
         Square((rank.to_index() as u8) << 3 ^ (file.to_index() as u8))
     }
@@ -77,6 +79,7 @@ impl Square {
     ///
     /// assert_eq!(sq.get_rank(), Rank::Seventh);
     /// ```
+    #[inline]
     pub fn get_rank(&self) -> Rank {
         Rank::from_index((self.0 >> 3) as usize)
     }
@@ -90,6 +93,7 @@ impl Square {
     ///
     /// assert_eq!(sq.get_file(), File::D);
     /// ```
+    #[inline]
     pub fn get_file(&self) -> File {
         File::from_index((self.0 & 7) as usize)
     }
@@ -105,6 +109,7 @@ impl Square {
     ///
     /// assert_eq!(sq.up().expect("Valid Square").up(), None);
     /// ```
+    #[inline]
     pub fn up(&self) -> Option<Square> {
         if self.get_rank() == Rank::Eighth {
             None
@@ -124,6 +129,7 @@ impl Square {
     ///
     /// assert_eq!(sq.down().expect("Valid Square").down(), None);
     /// ```
+    #[inline]
     pub fn down(&self) -> Option<Square> {
         if self.get_rank() == Rank::First {
             None
@@ -143,6 +149,7 @@ impl Square {
     ///
     /// assert_eq!(sq.left().expect("Valid Square").left(), None);
     /// ```
+    #[inline]
     pub fn left(&self) -> Option<Square> {
         if self.get_file() == File::A {
             None
@@ -162,6 +169,7 @@ impl Square {
     ///
     /// assert_eq!(sq.right().expect("Valid Square").right(), None);
     /// ```
+    #[inline]
     pub fn right(&self) -> Option<Square> {
         if self.get_file() == File::H {
             None
@@ -188,6 +196,7 @@ impl Square {
     /// assert_eq!(sq.forward(Color::Black).expect("Valid Square"), Square::make_square(Rank::First, File::D));
     /// assert_eq!(sq.forward(Color::Black).expect("Valid Square").forward(Color::Black), None);
     /// ```
+    #[inline]
     pub fn forward(&self, color: Color) -> Option<Square> {
         match color {
             Color::White => self.up(),
@@ -210,6 +219,7 @@ impl Square {
     /// assert_eq!(sq.backward(Color::White).expect("Valid Square"), Square::make_square(Rank::First, File::D));
     /// assert_eq!(sq.backward(Color::White).expect("Valid Square").backward(Color::White), None);
     /// ```
+    #[inline]
     pub fn backward(&self, color: Color) -> Option<Square> {
         match color {
             Color::White => self.down(),
@@ -228,6 +238,7 @@ impl Square {
     ///
     /// assert_eq!(sq.uup().uup(), Square::make_square(Rank::First, File::D));
     /// ```
+    #[inline]
     pub fn uup(&self) -> Square {
         Square::make_square(self.get_rank().up(), self.get_file())
     }
@@ -243,6 +254,7 @@ impl Square {
     ///
     /// assert_eq!(sq.udown().udown(), Square::make_square(Rank::Eighth, File::D));
     /// ```
+    #[inline]
     pub fn udown(&self) -> Square {
         Square::make_square(self.get_rank().down(), self.get_file())
     }
@@ -258,6 +270,7 @@ impl Square {
     ///
     /// assert_eq!(sq.uleft().uleft(), Square::make_square(Rank::Seventh, File::H));
     /// ```
+    #[inline]
     pub fn uleft(&self) -> Square {
         Square::make_square(self.get_rank(), self.get_file().left())
     }
@@ -274,6 +287,7 @@ impl Square {
     ///
     /// assert_eq!(sq.uright().uright(), Square::make_square(Rank::Seventh, File::A));
     /// ```
+    #[inline]
     pub fn uright(&self) -> Square {
         Square::make_square(self.get_rank(), self.get_file().right())
     }
@@ -294,6 +308,7 @@ impl Square {
     /// assert_eq!(sq.uforward(Color::Black), Square::make_square(Rank::First, File::D));
     /// assert_eq!(sq.uforward(Color::Black).uforward(Color::Black), Square::make_square(Rank::Eighth, File::D));
     /// ```
+    #[inline]
     pub fn uforward(&self, color: Color) -> Square {
         match color {
             Color::White => self.uup(),
@@ -317,6 +332,7 @@ impl Square {
     /// assert_eq!(sq.ubackward(Color::White), Square::make_square(Rank::First, File::D));
     /// assert_eq!(sq.ubackward(Color::White).ubackward(Color::White), Square::make_square(Rank::Eighth, File::D));
     /// ```
+    #[inline]
     pub fn ubackward(&self, color: Color) -> Square {
         match color {
             Color::White => self.udown(),
@@ -334,6 +350,7 @@ impl Square {
     /// assert_eq!(Square::make_square(Rank::First, File::B).to_int(), 1);
     /// assert_eq!(Square::make_square(Rank::Eighth, File::H).to_int(), 63);
     /// ```
+    #[inline]
     pub fn to_int(&self) -> u8 {
         self.0
     }
@@ -348,6 +365,7 @@ impl Square {
     /// assert_eq!(Square::make_square(Rank::First, File::B).to_index(), 1);
     /// assert_eq!(Square::make_square(Rank::Eighth, File::H).to_index(), 63);
     /// ```
+    #[inline]
     pub fn to_index(&self) -> usize {
         self.0 as usize
     }
