@@ -339,11 +339,11 @@ impl Iterator for MoveGen {
 #[cfg(test)]
 use crate::board_builder::BoardBuilder;
 #[cfg(test)]
+use std::collections::HashSet;
+#[cfg(test)]
 use std::convert::TryInto;
 #[cfg(test)]
 use std::str::FromStr;
-#[cfg(test)]
-use std::collections::HashSet;
 
 #[cfg(test)]
 fn movegen_perft_test(fen: String, depth: usize, result: usize) {
@@ -519,31 +519,47 @@ fn movegen_issue_15() {
 }
 
 #[cfg(test)]
-fn move_of(m :&str) -> ChessMove{
+fn move_of(m: &str) -> ChessMove {
     let promo = if m.len() > 4 {
         Some(match m.as_bytes()[4] {
             b'q' => Piece::Queen,
             b'r' => Piece::Rook,
             b'b' => Piece::Bishop,
             b'n' => Piece::Knight,
-            _ => panic!("unrecognized uci move: {}", m)
+            _ => panic!("unrecognized uci move: {}", m),
         })
-    }else {None};
-    ChessMove::new(Square::from_string(m[..2].to_string()).unwrap(), Square::from_string(m[2..4].to_string()).unwrap(), promo)
+    } else {
+        None
+    };
+    ChessMove::new(
+        Square::from_string(m[..2].to_string()).unwrap(),
+        Square::from_string(m[2..4].to_string()).unwrap(),
+        promo,
+    )
 }
 
 #[test]
 fn test_masked_move_gen() {
-    let board = Board::from_str("r1bqkb1r/pp3ppp/5n2/2ppn1N1/4pP2/1BN1P3/PPPP2PP/R1BQ1RK1 w kq - 0 9").unwrap();
+    let board =
+        Board::from_str("r1bqkb1r/pp3ppp/5n2/2ppn1N1/4pP2/1BN1P3/PPPP2PP/R1BQ1RK1 w kq - 0 9")
+            .unwrap();
 
     let mut capture_moves = MoveGen::new_legal(&board);
     let targets = *board.color_combined(!board.side_to_move());
     capture_moves.set_iterator_mask(targets);
 
-    let expected = vec![move_of("f4e5"), 
-                        move_of("b3d5"), 
-                        move_of("g5e4"), move_of("g5f7"), move_of("g5h7"), 
-                        move_of("c3e4"), move_of("c3d5")];
+    let expected = vec![
+        move_of("f4e5"),
+        move_of("b3d5"),
+        move_of("g5e4"),
+        move_of("g5f7"),
+        move_of("g5h7"),
+        move_of("c3e4"),
+        move_of("c3d5"),
+    ];
 
-    assert_eq!(capture_moves.collect::<HashSet<_>>(), expected.into_iter().collect());
+    assert_eq!(
+        capture_moves.collect::<HashSet<_>>(),
+        expected.into_iter().collect()
+    );
 }
