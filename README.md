@@ -32,7 +32,7 @@ Here we iterate over all moves with incremental move generation.  The iterator b
   let board = Board::default();
 
   // create an iterable
-  let mut iterable = MoveGen::new_legal(board, true);
+  let mut iterable = MoveGen::new_legal(&board);
 
   // make sure .len() works.
   assert_eq!(iterable.len(), 20); // the .len() function does *not* consume the iterator
