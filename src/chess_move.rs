@@ -40,6 +40,37 @@ impl ChessMove {
     pub fn get_promotion(&self) -> Option<Piece> {
         self.promotion
     }
+
+    /// Convert a UCI `String` to a move. If invalid, return `None`
+    /// ```
+    /// use chess::{ChessMove, Square, Piece};
+    ///
+    /// let mv = ChessMove::new(Square::E7, Square::E8, Some(Piece::Queen));
+    ///
+    /// assert_eq!(ChessMove::from_string("e7e8q".to_owned()).expect("Valid Move"), mv);
+    /// ```
+    #[inline]
+    pub fn from_string(s: String) -> Option<ChessMove> {
+        if s.len() != 4 && s.len() != 5 {
+            return None;
+        }
+
+        let source = Square::from_string(s[0..2].to_string())?;
+        let dest = Square::from_string(s[2..4].to_string())?;
+
+        let mut promo = None;
+        if s.len() == 5 {
+            promo = Some(match s.chars().last()? {
+                'q' => Piece::Queen,
+                'r' => Piece::Rook,
+                'n' => Piece::Knight,
+                'b' => Piece::Bishop,
+                _ => return None,
+            });
+        }
+
+        Some(ChessMove::new(source, dest, promo))
+    }
 }
 
 impl fmt::Display for ChessMove {
@@ -68,5 +99,38 @@ impl Ord for ChessMove {
         } else {
             Ordering::Equal
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invalid_uci_moves() {
+        assert_eq!(ChessMove::from_string("e2e-".to_owned()), None);
+        assert_eq!(ChessMove::from_string("".to_owned()), None);
+        assert_eq!(ChessMove::from_string("e7e8p".to_owned()), None);
+        assert_eq!(ChessMove::from_string("e7e8z".to_owned()), None);
+    }
+
+    #[test]
+    fn valid_uci_moves() {
+        assert_eq!(
+            ChessMove::from_string("e2e4".to_owned()),
+            Some(ChessMove::new(Square::E2, Square::E4, None))
+        );
+        assert_eq!(
+            ChessMove::from_string("g1f3".to_owned()),
+            Some(ChessMove::new(Square::G1, Square::F3, None))
+        );
+        assert_eq!(
+            ChessMove::from_string("a2a4".to_owned()),
+            Some(ChessMove::new(Square::A2, Square::A4, None))
+        );
+        assert_eq!(
+            ChessMove::from_string("h2h4".to_owned()),
+            Some(ChessMove::new(Square::H2, Square::H4, None))
+        );
     }
 }
