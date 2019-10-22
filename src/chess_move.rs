@@ -51,12 +51,8 @@ impl ChessMove {
     /// ```
     #[inline]
     pub fn from_string(s: String) -> Option<ChessMove> {
-        if s.len() != 4 && s.len() != 5 {
-            return None;
-        }
-
-        let source = Square::from_string(s[0..2].to_string())?;
-        let dest = Square::from_string(s[2..4].to_string())?;
+        let source = Square::from_string(s.get(0..2)?.to_string())?;
+        let dest = Square::from_string(s.get(2..4)?.to_string())?;
 
         let mut promo = None;
         if s.len() == 5 {
