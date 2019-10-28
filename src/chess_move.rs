@@ -47,7 +47,17 @@ impl ChessMove {
     pub fn get_promotion(&self) -> Option<Piece> {
         self.promotion
     }
-
+    /// Convert a SAN (Standard Algebraic Notation) move into a `ChessMove`
+    ///
+    /// ```
+    /// use chess::{Board, ChessMove, Square};
+    ///
+    /// let board = Board::default();
+    /// assert_eq!(
+    ///     ChessMove::from_san(&board, "e4").expect("e4 is valid in the initial position"),
+    ///     ChessMove::new(Square::E2, Square::E4, None)
+    /// );
+    /// ```
     pub fn from_san(board: &Board, move_text: &str) -> Result<ChessMove, Error> {
         // Castles first...
         if move_text == "O-O" || move_text == "O-O-O" {
@@ -303,9 +313,9 @@ impl ChessMove {
             false
         };
 
-        if ep {
-            cur_index += 5;
-        }
+        //if ep {
+        //    cur_index += 5;
+        //}
 
         // Ok, now we have all the data from the SAN move, in the following structures
         // moveing_piece, source_rank, source_file, taks, dest, promotion, maybe_check_or_mate, and

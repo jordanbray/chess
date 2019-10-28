@@ -1,4 +1,5 @@
-use rand::thread_rng;
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
 use std::fs::File;
 use std::io::Write;
 
@@ -80,7 +81,7 @@ fn generate_magic(sq: Square, piece: Piece, cur_offset: usize) -> usize {
     };
 
     let mut done = false;
-    let mut rng = thread_rng();
+    let mut rng = SmallRng::seed_from_u64(0xDEADBEEF12345678);
 
     while !done {
         let magic_bitboard = random_bitboard(&mut rng);

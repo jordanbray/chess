@@ -5,13 +5,13 @@ use crate::color::NUM_COLORS;
 use crate::file::NUM_FILES;
 use crate::piece::NUM_PIECES;
 use crate::square::NUM_SQUARES;
-use rand::{weak_rng, Rng, SeedableRng};
+use rand::rngs::SmallRng;
+use rand::{RngCore, SeedableRng};
 
 // write the ZOBRIEST_* arrays to a file.  I don't generate it, because its just
 // a bunch of random u64s
 pub fn write_zobrist(f: &mut File) {
-    let mut rng = weak_rng();
-    rng.reseed([0xDEADBEEF, 0xBEEFDEAD, 0xABCDEFAB, 0x12345678]);
+    let mut rng = SmallRng::seed_from_u64(0xDEADBEEF12345678);
 
     write!(f, "const SIDE_TO_MOVE: u64 = {};\n\n", rng.next_u64()).unwrap();
 
