@@ -1,4 +1,6 @@
 use std::mem::transmute;
+use std::str::FromStr;
+use crate::error::Error;
 
 /// Describe a rank (row) on a chess board
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Hash)]
@@ -52,5 +54,26 @@ impl Rank {
     #[inline]
     pub fn to_index(&self) -> usize {
         *self as usize
+    }
+}
+
+impl FromStr for Rank {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() < 1 {
+            return Err(Error::InvalidRank);
+        }
+        match s.chars().next().unwrap() {
+            '1' => Ok(Rank::First),
+            '2' => Ok(Rank::Second),
+            '3' => Ok(Rank::Third),
+            '4' => Ok(Rank::Fourth),
+            '5' => Ok(Rank::Fifth),
+            '6' => Ok(Rank::Sixth),
+            '7' => Ok(Rank::Seventh),
+            '8' => Ok(Rank::Eighth),
+            _ => Err(Error::InvalidRank)
+        }
     }
 }

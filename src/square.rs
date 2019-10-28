@@ -2,6 +2,8 @@ use crate::color::Color;
 use crate::file::File;
 use crate::rank::Rank;
 use std::fmt;
+use std::str::FromStr;
+use crate::error::Error;
 
 /// Represent a square on the chess board
 #[derive(PartialEq, Ord, Eq, PartialOrd, Copy, Clone, Debug, Hash)]
@@ -379,28 +381,11 @@ impl Square {
     ///
     /// assert_eq!(Square::from_string("a1".to_owned()).expect("Valid Square"), sq);
     /// ```
+    #[deprecated(since = "3.1.0", note = "please use `Square::from_str(square)?` instead")]
     pub fn from_string(s: String) -> Option<Square> {
-        if s.len() != 2 {
-            return None;
-        }
-        let ch: Vec<char> = s.chars().collect();
-        match ch[0] {
-            'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' => {}
-            _ => {
-                return None;
-            }
-        }
-        match ch[1] {
-            '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {}
-            _ => {
-                return None;
-            }
-        }
-        Some(Square::make_square(
-            Rank::from_index((ch[1] as usize) - ('1' as usize)),
-            File::from_index((ch[0] as usize) - ('a' as usize)),
-        ))
+        Square::from_str(&s).ok()
     }
+
     /// The A1 square on the chess board
     ///
     /// ```
@@ -986,6 +971,34 @@ impl fmt::Display for Square {
             (('a' as u8) + ((self.0 & 7) as u8)) as char,
             (('1' as u8) + ((self.0 >> 3) as u8)) as char
         )
+    }
+}
+
+impl FromStr for Square {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() < 2 {
+            return Err(Error::InvalidSquare);
+        }
+        let ch: Vec<char> = s.chars().collect();
+        match ch[0] {
+            'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' => {}
+            _ => {
+                return Err(Error::InvalidSquare);
+            }
+        }
+        match ch[1] {
+            '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {}
+            _ => {
+                return Err(Error::InvalidSquare);
+            }
+        }
+        Ok(Square::make_square(
+            Rank::from_index((ch[1] as usize) - ('1' as usize)),
+            File::from_index((ch[0] as usize) - ('a' as usize)),
+        ))
+ 
     }
 }
 

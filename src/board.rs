@@ -854,9 +854,11 @@ impl Board {
     /// ```
     #[inline]
     pub fn make_move_new(&self, m: ChessMove) -> Board {
-        let mut result = unsafe { mem::uninitialized() };
-        self.make_move(m, &mut result);
-        result
+        let mut result = mem::MaybeUninit::<Board>::uninit();
+        unsafe {
+            self.make_move(m, &mut *result.as_mut_ptr());
+            result.assume_init()
+        }
     }
 
     /// Make a chess move onto an already allocated `Board`.

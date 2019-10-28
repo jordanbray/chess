@@ -13,6 +13,7 @@ mod gen_tables;
 mod piece;
 mod rank;
 mod square;
+mod error;
 
 use crate::gen_tables::generate_all_tables;
 // Generate everything.

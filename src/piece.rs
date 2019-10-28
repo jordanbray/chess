@@ -58,6 +58,8 @@ impl Piece {
     }
 }
 
+
+
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(

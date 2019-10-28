@@ -226,10 +226,11 @@ impl MoveGen {
             iterable.len()
         } else {
             for m in iterable {
-                let mut bresult = unsafe { mem::uninitialized() };
-                board.make_move(m, &mut bresult);
-                let cur = MoveGen::movegen_perft_test(&bresult, depth - 1);
-                result += cur;
+                let mut bresult = mem::MaybeUninit::<Board>::uninit();
+                unsafe {
+                    board.make_move(m, &mut *bresult.as_mut_ptr());
+                    result += MoveGen::movegen_perft_test(&*bresult.as_ptr(), depth - 1);
+                }
             }
             result
         }
@@ -252,15 +253,19 @@ impl MoveGen {
         } else {
             iterable.set_iterator_mask(*targets);
             for x in &mut iterable {
-                let mut bresult = unsafe { mem::uninitialized() };
-                board.make_move(x, &mut bresult);
-                result += MoveGen::movegen_perft_test_piecewise(&bresult, depth - 1);
+                let mut bresult = mem::MaybeUninit::<Board>::uninit();
+                unsafe {
+                    board.make_move(x, &mut *bresult.as_mut_ptr());
+                    result += MoveGen::movegen_perft_test(&*bresult.as_ptr(), depth - 1);
+                }
             }
             iterable.set_iterator_mask(!EMPTY);
             for x in &mut iterable {
-                let mut bresult = unsafe { mem::uninitialized() };
-                board.make_move(x, &mut bresult);
-                result += MoveGen::movegen_perft_test_piecewise(&bresult, depth - 1);
+                let mut bresult = mem::MaybeUninit::<Board>::uninit();
+                unsafe {
+                    board.make_move(x, &mut *bresult.as_mut_ptr());
+                    result += MoveGen::movegen_perft_test(&*bresult.as_ptr(), depth - 1);
+                }
             }
             result
         }
@@ -532,8 +537,8 @@ fn move_of(m: &str) -> ChessMove {
         None
     };
     ChessMove::new(
-        Square::from_string(m[..2].to_string()).unwrap(),
-        Square::from_string(m[2..4].to_string()).unwrap(),
+        Square::from_str(&m[..2]).unwrap(),
+        Square::from_str(&m[2..4]).unwrap(),
         promo,
     )
 }
