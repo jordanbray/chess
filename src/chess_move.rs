@@ -146,8 +146,6 @@ impl ChessMove {
             _ => Piece::Pawn,
         };
 
-        println!("Piece: {}", moving_piece);
-
         let mut source_file = match move_text
             .get(cur_index..(cur_index + 1))
             .ok_or(error.clone())?
@@ -261,8 +259,6 @@ impl ChessMove {
             sq
         };
 
-        println!("Destination: {}", dest);
-
         let promotion = if let Some(s) = move_text.get(cur_index..(cur_index + 1)) {
             match s {
                 "N" => {
@@ -287,8 +283,6 @@ impl ChessMove {
             None
         };
 
-        println!("Promotion: {:?}", promotion);
-
         if let Some(s) = move_text.get(cur_index..(cur_index + 1)) {
             let _maybe_check_or_mate = match s {
                 "+" => {
@@ -308,8 +302,6 @@ impl ChessMove {
         } else {
             false
         };
-
-        println!("EP: {}", ep);
 
         if ep {
             cur_index += 5;
@@ -366,7 +358,6 @@ impl ChessMove {
             found_move = Some(m);
         }
 
-        println!("Must have not found the move...");
         found_move.ok_or(error.clone())
     }
 }
