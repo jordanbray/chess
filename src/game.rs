@@ -232,7 +232,8 @@ impl Game {
                         reversible_moves = 0;
                         legal_moves_per_turn.clear();
                     }
-                    legal_moves_per_turn.push((board.get_hash(), MoveGen::new_legal(&board).collect()));
+                    legal_moves_per_turn
+                        .push((board.get_hash(), MoveGen::new_legal(&board).collect()));
                 }
                 _ => {}
             }
@@ -428,19 +429,25 @@ impl FromStr for Game {
 
 #[cfg(test)]
 pub fn fake_pgn_parser(moves: &str) -> Game {
-    moves.split_whitespace()
+    moves
+        .split_whitespace()
         .filter(|s| !s.ends_with("."))
-        .fold(Game::new(), |mut g, m| {g.make_move(ChessMove::from_san(&g.current_position(), m).expect("Valid SAN Move")); g})
+        .fold(Game::new(), |mut g, m| {
+            g.make_move(ChessMove::from_san(&g.current_position(), m).expect("Valid SAN Move"));
+            g
+        })
 }
 
 #[test]
-pub fn test_can_declare_draw(){
-    let game = fake_pgn_parser("1. Nc3 d5 2. e3 Nc6 3. Nf3 Nf6 4. Bb5 a6 5. Bxc6+ bxc6 6. Ne5 Qd6 7. d4 Nd7
+pub fn test_can_declare_draw() {
+    let game = fake_pgn_parser(
+        "1. Nc3 d5 2. e3 Nc6 3. Nf3 Nf6 4. Bb5 a6 5. Bxc6+ bxc6 6. Ne5 Qd6 7. d4 Nd7
                 8. f4 Nxe5 9. dxe5 Qg6 10. O-O Bf5 11. e4 Bxe4 12. Nxe4 Qxe4 13. Re1 Qb4
                 14. e6 f6 15. Be3 g6 16. Qd4 Qxd4 17. Bxd4 Bh6 18. g3 g5 19. f5 g4 20. Rad1
                 Rg8 21. b3 Rb8 22. c4 dxc4 23. bxc4 Rd8 24. Kg2 Rc8 25. Bc5 Rg5 26. Rd7 Bf8
                 27. Rf1 a5 28. Kg1 a4 29. Bb4 Rh5 30. Rf4 Rg5 31. Rf1 Rh5 32. Rf4 Rg5 33.
-                Ba5");
+                Ba5",
+    );
     assert!(!game.can_declare_draw());
 
     // three fold
@@ -452,11 +459,13 @@ pub fn test_can_declare_draw(){
     assert!(game.can_declare_draw());
 
     // three fold, but with a move at the end that breaks the draw cycle
-    let game = fake_pgn_parser("1. Nc3 Nf6 2. Nb1 Ng8 3. Nc3 Nf6 4. Nb1 Ng8 5. Nc3 Nf6 6. Nb1 Ng8 7. e4");
+    let game =
+        fake_pgn_parser("1. Nc3 Nf6 2. Nb1 Ng8 3. Nc3 Nf6 4. Nb1 Ng8 5. Nc3 Nf6 6. Nb1 Ng8 7. e4");
     assert!(!game.can_declare_draw());
 
     // three fold, but with a move at the end that breaks the draw cycle
-    let game = fake_pgn_parser("1. Nc3 Nf6 2. Nb1 Ng8 3. Nc3 Nf6 4. Nb1 Ng8 5. Nc3 Nf6 6. Nb1 Ng8 7. e4");
+    let game =
+        fake_pgn_parser("1. Nc3 Nf6 2. Nb1 Ng8 3. Nc3 Nf6 4. Nb1 Ng8 5. Nc3 Nf6 6. Nb1 Ng8 7. e4");
     assert!(!game.can_declare_draw());
 
     // fifty move rule

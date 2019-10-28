@@ -1,10 +1,10 @@
-use crate::piece::Piece;
-use crate::square::Square;
 use crate::board::Board;
 use crate::error::Error;
-use crate::rank::Rank;
 use crate::file::File;
 use crate::movegen::MoveGen;
+use crate::piece::Piece;
+use crate::rank::Rank;
+use crate::square::Square;
 
 use std::cmp::Ordering;
 use std::fmt;
@@ -55,7 +55,11 @@ impl ChessMove {
             let source_file = File::E;
             let dest_file = if move_text == "O-O" { File::G } else { File::C };
 
-            let m = ChessMove::new(Square::make_square(rank, source_file), Square::make_square(rank, dest_file), None);
+            let m = ChessMove::new(
+                Square::make_square(rank, source_file),
+                Square::make_square(rank, dest_file),
+                None,
+            );
             if MoveGen::new_legal(&board).any(|l| l == m) {
                 return Ok(m);
             } else {
@@ -115,44 +119,119 @@ impl ChessMove {
 
         let error = Error::InvalidSanMove;
         let mut cur_index: usize = 0;
-        let moving_piece = match move_text.get(cur_index..(cur_index+1)).ok_or(error.clone())? {
-            "N" => { cur_index += 1; Piece::Knight },
-            "B" => { cur_index += 1; Piece::Bishop },
-            "Q" => { cur_index += 1; Piece::Queen },
-            "R" => { cur_index += 1; Piece::Rook },
-            "K" => { cur_index += 1; Piece::King },
-            _ => Piece::Pawn
+        let moving_piece = match move_text
+            .get(cur_index..(cur_index + 1))
+            .ok_or(error.clone())?
+        {
+            "N" => {
+                cur_index += 1;
+                Piece::Knight
+            }
+            "B" => {
+                cur_index += 1;
+                Piece::Bishop
+            }
+            "Q" => {
+                cur_index += 1;
+                Piece::Queen
+            }
+            "R" => {
+                cur_index += 1;
+                Piece::Rook
+            }
+            "K" => {
+                cur_index += 1;
+                Piece::King
+            }
+            _ => Piece::Pawn,
         };
 
         println!("Piece: {}", moving_piece);
 
-        let mut source_file = match move_text.get(cur_index..(cur_index+1)).ok_or(error.clone())? {
-            "a" => { cur_index += 1; Some(File::A) },
-            "b" => { cur_index += 1; Some(File::B) },
-            "c" => { cur_index += 1; Some(File::C) },
-            "d" => { cur_index += 1; Some(File::D) },
-            "e" => { cur_index += 1; Some(File::E) },
-            "f" => { cur_index += 1; Some(File::F) },
-            "g" => { cur_index += 1; Some(File::G) },
-            "h" => { cur_index += 1; Some(File::H) },
+        let mut source_file = match move_text
+            .get(cur_index..(cur_index + 1))
+            .ok_or(error.clone())?
+        {
+            "a" => {
+                cur_index += 1;
+                Some(File::A)
+            }
+            "b" => {
+                cur_index += 1;
+                Some(File::B)
+            }
+            "c" => {
+                cur_index += 1;
+                Some(File::C)
+            }
+            "d" => {
+                cur_index += 1;
+                Some(File::D)
+            }
+            "e" => {
+                cur_index += 1;
+                Some(File::E)
+            }
+            "f" => {
+                cur_index += 1;
+                Some(File::F)
+            }
+            "g" => {
+                cur_index += 1;
+                Some(File::G)
+            }
+            "h" => {
+                cur_index += 1;
+                Some(File::H)
+            }
             _ => None,
         };
 
-        let mut source_rank = match move_text.get(cur_index..(cur_index+1)).ok_or(error.clone())? {
-            "1" => { cur_index += 1; Some(Rank::First) },
-            "2" => { cur_index += 1; Some(Rank::Second) },
-            "3" => { cur_index += 1; Some(Rank::Third) },
-            "4" => { cur_index += 1; Some(Rank::Fourth) },
-            "5" => { cur_index += 1; Some(Rank::Fifth) },
-            "6" => { cur_index += 1; Some(Rank::Sixth) },
-            "7" => { cur_index += 1; Some(Rank::Seventh) },
-            "8" => { cur_index += 1; Some(Rank::Eighth) },
+        let mut source_rank = match move_text
+            .get(cur_index..(cur_index + 1))
+            .ok_or(error.clone())?
+        {
+            "1" => {
+                cur_index += 1;
+                Some(Rank::First)
+            }
+            "2" => {
+                cur_index += 1;
+                Some(Rank::Second)
+            }
+            "3" => {
+                cur_index += 1;
+                Some(Rank::Third)
+            }
+            "4" => {
+                cur_index += 1;
+                Some(Rank::Fourth)
+            }
+            "5" => {
+                cur_index += 1;
+                Some(Rank::Fifth)
+            }
+            "6" => {
+                cur_index += 1;
+                Some(Rank::Sixth)
+            }
+            "7" => {
+                cur_index += 1;
+                Some(Rank::Seventh)
+            }
+            "8" => {
+                cur_index += 1;
+                Some(Rank::Eighth)
+            }
             _ => None,
         };
 
         let takes = if let Some(s) = move_text.get(cur_index..(cur_index + 1)) {
             match s {
-                "x" => { cur_index += 1; true },
+                "x" => {
+                    cur_index += 1;
+                    true
+                }
                 _ => false,
             }
         } else {
@@ -164,13 +243,19 @@ impl ChessMove {
                 cur_index += 2;
                 q
             } else {
-                let sq = Square::make_square(source_rank.ok_or(error.clone())?, source_file.ok_or(error.clone())?);
+                let sq = Square::make_square(
+                    source_rank.ok_or(error.clone())?,
+                    source_file.ok_or(error.clone())?,
+                );
                 source_rank = None;
                 source_file = None;
                 sq
             }
         } else {
-            let sq = Square::make_square(source_rank.ok_or(error.clone())?, source_file.ok_or(error.clone())?);
+            let sq = Square::make_square(
+                source_rank.ok_or(error.clone())?,
+                source_file.ok_or(error.clone())?,
+            );
             source_rank = None;
             source_file = None;
             sq
@@ -180,25 +265,44 @@ impl ChessMove {
 
         let promotion = if let Some(s) = move_text.get(cur_index..(cur_index + 1)) {
             match s {
-                "N" => { cur_index += 1; Some(Piece::Knight) },
-                "B" => { cur_index += 1; Some(Piece::Bishop) },
-                "R" => { cur_index += 1; Some(Piece::Rook) },
-                "Q" => { cur_index += 1; Some(Piece::Queen) },
+                "N" => {
+                    cur_index += 1;
+                    Some(Piece::Knight)
+                }
+                "B" => {
+                    cur_index += 1;
+                    Some(Piece::Bishop)
+                }
+                "R" => {
+                    cur_index += 1;
+                    Some(Piece::Rook)
+                }
+                "Q" => {
+                    cur_index += 1;
+                    Some(Piece::Queen)
+                }
                 _ => None,
             }
-        } else { None };
-        
+        } else {
+            None
+        };
+
         println!("Promotion: {:?}", promotion);
 
         if let Some(s) = move_text.get(cur_index..(cur_index + 1)) {
             let _maybe_check_or_mate = match s {
-                "+" => { cur_index += 1; Some(false) },
-                "#" => { cur_index += 1; Some(true) },
+                "+" => {
+                    cur_index += 1;
+                    Some(false)
+                }
+                "#" => {
+                    cur_index += 1;
+                    Some(true)
+                }
                 _ => None,
             };
         }
 
-    
         let ep = if let Some(s) = move_text.get(cur_index..) {
             s == " e.p."
         } else {
@@ -210,7 +314,7 @@ impl ChessMove {
         if ep {
             cur_index += 5;
         }
-        
+
         // Ok, now we have all the data from the SAN move, in the following structures
         // moveing_piece, source_rank, source_file, taks, dest, promotion, maybe_check_or_mate, and
         // ep
@@ -221,7 +325,7 @@ impl ChessMove {
             if board.piece_on(m.get_source()) != Some(moving_piece) {
                 continue;
             }
-            
+
             if let Some(rank) = source_rank {
                 if m.get_source().get_rank() != rank {
                     continue;
@@ -233,7 +337,7 @@ impl ChessMove {
                     continue;
                 }
             }
-            
+
             if m.get_dest() != dest {
                 continue;
             }
@@ -299,6 +403,8 @@ impl Ord for ChessMove {
 #[test]
 fn test_basic_moves() {
     let board = Board::default();
-    assert_eq!(ChessMove::from_san(&board, "e4").expect("e4 is valid in the initial position"), ChessMove::new(Square::E2, Square::E4, None));
+    assert_eq!(
+        ChessMove::from_san(&board, "e4").expect("e4 is valid in the initial position"),
+        ChessMove::new(Square::E2, Square::E4, None)
+    );
 }
-

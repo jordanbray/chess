@@ -369,12 +369,14 @@ fn movegen_perft_kiwipete() {
 
 #[test]
 fn movegen_perft_1() {
-    movegen_perft_test("8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1".to_owned(), 6, 824064); // Invalid FEN
+    movegen_perft_test("8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1".to_owned(), 6, 824064);
+    // Invalid FEN
 }
 
 #[test]
 fn movegen_perft_2() {
-    movegen_perft_test("8/8/1k6/8/2pP4/8/5BK1/8 b - d3 0 1".to_owned(), 6, 824064); // Invalid FEN
+    movegen_perft_test("8/8/1k6/8/2pP4/8/5BK1/8 b - d3 0 1".to_owned(), 6, 824064);
+    // Invalid FEN
 }
 
 #[test]

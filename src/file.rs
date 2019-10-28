@@ -1,6 +1,6 @@
+use crate::error::Error;
 use std::mem::transmute;
 use std::str::FromStr;
-use crate::error::Error;
 
 /// Describe a file (column) on a chess board
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Hash)]
@@ -72,7 +72,7 @@ impl FromStr for File {
             'f' => Ok(File::F),
             'g' => Ok(File::G),
             'h' => Ok(File::H),
-            _ => Err(Error::InvalidFile)
+            _ => Err(Error::InvalidFile),
         }
     }
 }

@@ -14,24 +14,16 @@ pub enum Error {
     InvalidBoard,
 
     /// An attempt was made to create a square from an invalid string
-    #[fail(
-        display = "The string specified does not contain a valid algebraic notation square"
-    )]
+    #[fail(display = "The string specified does not contain a valid algebraic notation square")]
     InvalidSquare,
 
     /// An attempt was made to create a move from an invalid SAN string
-    #[fail(
-        display = "The string specified does not contain a valid SAN notation move"
-    )]
+    #[fail(display = "The string specified does not contain a valid SAN notation move")]
     InvalidSanMove,
 
-    #[fail(
-        display = "The string specified does not contain a valid rank"
-    )]
+    #[fail(display = "The string specified does not contain a valid rank")]
     InvalidRank,
 
-    #[fail(
-        display = "The string specified does not contain a valid file"
-    )]
-    InvalidFile
+    #[fail(display = "The string specified does not contain a valid file")]
+    InvalidFile,
 }

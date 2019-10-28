@@ -1,9 +1,9 @@
 use crate::color::Color;
+use crate::error::Error;
 use crate::file::File;
 use crate::rank::Rank;
 use std::fmt;
 use std::str::FromStr;
-use crate::error::Error;
 
 /// Represent a square on the chess board
 #[derive(PartialEq, Ord, Eq, PartialOrd, Copy, Clone, Debug, Hash)]
@@ -381,7 +381,10 @@ impl Square {
     ///
     /// assert_eq!(Square::from_string("a1".to_owned()).expect("Valid Square"), sq);
     /// ```
-    #[deprecated(since = "3.1.0", note = "please use `Square::from_str(square)?` instead")]
+    #[deprecated(
+        since = "3.1.0",
+        note = "please use `Square::from_str(square)?` instead"
+    )]
     pub fn from_string(s: String) -> Option<Square> {
         Square::from_str(&s).ok()
     }
@@ -998,7 +1001,6 @@ impl FromStr for Square {
             Rank::from_index((ch[1] as usize) - ('1' as usize)),
             File::from_index((ch[0] as usize) - ('a' as usize)),
         ))
- 
     }
 }
 
