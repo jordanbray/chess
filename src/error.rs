@@ -21,9 +21,15 @@ pub enum Error {
     #[fail(display = "The string specified does not contain a valid SAN notation move")]
     InvalidSanMove,
 
+    /// An atempt was made to create a move from an invalid UCI string
+    #[fail(display = "The string specified does not contain a valid UCI notation move")]
+    InvalidUciMove,
+
+    /// An attempt was made to convert a string not equal to "1"-"8" to a rank
     #[fail(display = "The string specified does not contain a valid rank")]
     InvalidRank,
 
+    /// An attempt was made to convert a string not equal to "a"-"h" to a file
     #[fail(display = "The string specified does not contain a valid file")]
     InvalidFile,
 }

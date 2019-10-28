@@ -400,6 +400,37 @@ impl Ord for ChessMove {
     }
 }
 
+/// Convert a UCI `String` to a move. If invalid, return `None`
+/// ```
+/// use chess::{ChessMove, Square, Piece};
+/// use std::str::FromStr;
+///
+/// let mv = ChessMove::new(Square::E7, Square::E8, Some(Piece::Queen));
+///
+/// assert_eq!(ChessMove::from_str("e7e8q").expect("Valid Move"), mv);
+/// ```
+impl FromStr for ChessMove {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let source = Square::from_str(s.get(0..2).ok_or(Error::InvalidUciMove)?)?;
+        let dest = Square::from_str(s.get(2..4).ok_or(Error::InvalidUciMove)?)?;
+
+        let mut promo = None;
+        if s.len() == 5 {
+            promo = Some(match s.chars().last().ok_or(Error::InvalidUciMove)? {
+                'q' => Piece::Queen,
+                'r' => Piece::Rook,
+                'n' => Piece::Knight,
+                'b' => Piece::Bishop,
+                _ => return Err(Error::InvalidUciMove),
+            });
+        }
+
+        Ok(ChessMove::new(source, dest, promo))
+    }
+}
+
 #[test]
 fn test_basic_moves() {
     let board = Board::default();
