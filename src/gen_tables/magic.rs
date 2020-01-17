@@ -77,7 +77,7 @@ fn generate_magic(sq: Square, piece: Piece, cur_offset: usize) -> usize {
         magic_number: EMPTY,
         mask: mask,
         offset: new_offset as u32,
-        rightshift: (questions.len().leading_zeros() + 1) as u8,
+        rightshift: ((questions.len() as u64).leading_zeros() + 1) as u8,
     };
 
     let mut done = false;
@@ -120,8 +120,8 @@ fn generate_magic(sq: Square, piece: Piece, cur_offset: usize) -> usize {
             new_offset += questions.len();
         }
         GENERATED_NUM_MOVES = new_offset;
-        new_offset
     }
+    new_offset
 }
 
 // Generate the magic each square for both rooks and bishops.
@@ -149,8 +149,8 @@ pub fn write_magic(f: &mut File) {
         for j in 0..64 {
             unsafe {
                 write!(f, "    Magic {{ magic_number: BitBoard({}), mask: BitBoard({}), offset: {}, rightshift: {} }},\n",
-                    MAGIC_NUMBERS[i][j].magic_number.to_size(0),
-                    MAGIC_NUMBERS[i][j].mask.to_size(0),
+                    MAGIC_NUMBERS[i][j].magic_number.0,
+                    MAGIC_NUMBERS[i][j].mask.0,
                     MAGIC_NUMBERS[i][j].offset,
                     MAGIC_NUMBERS[i][j].rightshift).unwrap();
             }
@@ -164,7 +164,7 @@ pub fn write_magic(f: &mut File) {
     unsafe {
         write!(f, "const MOVES: [BitBoard; {}] = [\n", GENERATED_NUM_MOVES).unwrap();
         for i in 0..GENERATED_NUM_MOVES {
-            write!(f, "    BitBoard({}),\n", MOVES[i].to_size(0)).unwrap();
+            write!(f, "    BitBoard({}),\n", MOVES[i].0).unwrap();
         }
     }
     write!(f, "];\n").unwrap();
