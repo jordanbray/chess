@@ -5,7 +5,7 @@
 
 This library handles the process of move generation within a chess engine or chess UI.
 
-This library is follows semver for version numbering in the format MAJOR.MINOR.PATCH.  That means:
+This library follows semver for version numbering in the format MAJOR.MINOR.PATCH.  That means:
 
 * Any change to the API that breaks existing code will involve a MAJOR version number change.
 * Any added functionality or features that do not break existing applications will involve a MINOR version number change.
@@ -61,7 +61,7 @@ Here we iterate over all moves with incremental move generation.  The iterator b
 
 ### Setting up a position
 
-The `Board` structure trys to keep the position legal at all times.  This can be annoying when setting up a board, for example via user input.
+The `Board` structure tries to keep the position legal at all times.  This can be annoying when setting up a board, for example via user input.
 
 To deal with this, the `BoardBuilder` structure was introduced in 3.1.0. `BoardBuilder` structure follows a non-consuming builder pattern and can be converted to a `Result<Board, Error>` via `Board::try_from(...)` or `board_builder.try_into()`.
 
