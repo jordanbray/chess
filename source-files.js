@@ -1,0 +1,17 @@
+var N = null;var sourcesIndex = {};
+sourcesIndex["arrayvec"] = {"name":"","files":["array.rs","array_string.rs","char.rs","errors.rs","lib.rs","maybe_uninit.rs"]};
+sourcesIndex["backtrace"] = {"name":"","dirs":[{"name":"backtrace","files":["libunwind.rs","mod.rs"]},{"name":"symbolize","files":["dladdr.rs","libbacktrace.rs","mod.rs"]}],"files":["capture.rs","lib.rs","print.rs","types.rs"]};
+sourcesIndex["backtrace_sys"] = {"name":"","files":["lib.rs"]};
+sourcesIndex["cfg_if"] = {"name":"","files":["lib.rs"]};
+sourcesIndex["chess"] = {"name":"","dirs":[{"name":"movegen","files":["mod.rs","movegen.rs","piece_type.rs"]}],"files":["bitboard.rs","board.rs","board_builder.rs","cache_table.rs","castle_rights.rs","chess_move.rs","color.rs","construct.rs","error.rs","file.rs","game.rs","lib.rs","magic.rs","piece.rs","rank.rs","square.rs","zobrist.rs"]};
+sourcesIndex["failure"] = {"name":"","dirs":[{"name":"backtrace","files":["internal.rs","mod.rs"]},{"name":"error","files":["error_impl.rs","mod.rs"]}],"files":["as_fail.rs","box_std.rs","compat.rs","context.rs","error_message.rs","lib.rs","macros.rs","result_ext.rs","sync_failure.rs"]};
+sourcesIndex["failure_derive"] = {"name":"","files":["lib.rs"]};
+sourcesIndex["libc"] = {"name":"","dirs":[{"name":"unix","dirs":[{"name":"linux_like","dirs":[{"name":"linux","dirs":[{"name":"gnu","dirs":[{"name":"b64","dirs":[{"name":"x86_64","files":["align.rs","mod.rs","not_x32.rs"]}],"files":["mod.rs"]}],"files":["align.rs","mod.rs"]}],"files":["align.rs","mod.rs"]}],"files":["mod.rs"]}],"files":["align.rs","mod.rs"]}],"files":["fixed_width_ints.rs","lib.rs","macros.rs"]};
+sourcesIndex["nodrop"] = {"name":"","files":["lib.rs"]};
+sourcesIndex["proc_macro2"] = {"name":"","files":["fallback.rs","lib.rs","strnom.rs","wrapper.rs"]};
+sourcesIndex["quote"] = {"name":"","files":["ext.rs","format.rs","ident_fragment.rs","lib.rs","runtime.rs","spanned.rs","to_tokens.rs"]};
+sourcesIndex["rustc_demangle"] = {"name":"","files":["legacy.rs","lib.rs","v0.rs"]};
+sourcesIndex["syn"] = {"name":"","dirs":[{"name":"gen","files":["gen_helper.rs","visit.rs"]}],"files":["attr.rs","bigint.rs","buffer.rs","custom_keyword.rs","custom_punctuation.rs","data.rs","derive.rs","discouraged.rs","error.rs","export.rs","expr.rs","ext.rs","generics.rs","group.rs","ident.rs","lib.rs","lifetime.rs","lit.rs","lookahead.rs","mac.rs","macros.rs","op.rs","parse.rs","parse_macro_input.rs","parse_quote.rs","path.rs","print.rs","punctuated.rs","sealed.rs","span.rs","spanned.rs","thread.rs","token.rs","tt.rs","ty.rs"]};
+sourcesIndex["synstructure"] = {"name":"","files":["lib.rs","macros.rs"]};
+sourcesIndex["unicode_xid"] = {"name":"","files":["lib.rs","tables.rs"]};
+createSourceSidebar();

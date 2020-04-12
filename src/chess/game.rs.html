@@ -1,0 +1,957 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `src/game.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>game.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../chess/index.html'><div class='logo-container'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<span id="2">  2</span>
+<span id="3">  3</span>
+<span id="4">  4</span>
+<span id="5">  5</span>
+<span id="6">  6</span>
+<span id="7">  7</span>
+<span id="8">  8</span>
+<span id="9">  9</span>
+<span id="10"> 10</span>
+<span id="11"> 11</span>
+<span id="12"> 12</span>
+<span id="13"> 13</span>
+<span id="14"> 14</span>
+<span id="15"> 15</span>
+<span id="16"> 16</span>
+<span id="17"> 17</span>
+<span id="18"> 18</span>
+<span id="19"> 19</span>
+<span id="20"> 20</span>
+<span id="21"> 21</span>
+<span id="22"> 22</span>
+<span id="23"> 23</span>
+<span id="24"> 24</span>
+<span id="25"> 25</span>
+<span id="26"> 26</span>
+<span id="27"> 27</span>
+<span id="28"> 28</span>
+<span id="29"> 29</span>
+<span id="30"> 30</span>
+<span id="31"> 31</span>
+<span id="32"> 32</span>
+<span id="33"> 33</span>
+<span id="34"> 34</span>
+<span id="35"> 35</span>
+<span id="36"> 36</span>
+<span id="37"> 37</span>
+<span id="38"> 38</span>
+<span id="39"> 39</span>
+<span id="40"> 40</span>
+<span id="41"> 41</span>
+<span id="42"> 42</span>
+<span id="43"> 43</span>
+<span id="44"> 44</span>
+<span id="45"> 45</span>
+<span id="46"> 46</span>
+<span id="47"> 47</span>
+<span id="48"> 48</span>
+<span id="49"> 49</span>
+<span id="50"> 50</span>
+<span id="51"> 51</span>
+<span id="52"> 52</span>
+<span id="53"> 53</span>
+<span id="54"> 54</span>
+<span id="55"> 55</span>
+<span id="56"> 56</span>
+<span id="57"> 57</span>
+<span id="58"> 58</span>
+<span id="59"> 59</span>
+<span id="60"> 60</span>
+<span id="61"> 61</span>
+<span id="62"> 62</span>
+<span id="63"> 63</span>
+<span id="64"> 64</span>
+<span id="65"> 65</span>
+<span id="66"> 66</span>
+<span id="67"> 67</span>
+<span id="68"> 68</span>
+<span id="69"> 69</span>
+<span id="70"> 70</span>
+<span id="71"> 71</span>
+<span id="72"> 72</span>
+<span id="73"> 73</span>
+<span id="74"> 74</span>
+<span id="75"> 75</span>
+<span id="76"> 76</span>
+<span id="77"> 77</span>
+<span id="78"> 78</span>
+<span id="79"> 79</span>
+<span id="80"> 80</span>
+<span id="81"> 81</span>
+<span id="82"> 82</span>
+<span id="83"> 83</span>
+<span id="84"> 84</span>
+<span id="85"> 85</span>
+<span id="86"> 86</span>
+<span id="87"> 87</span>
+<span id="88"> 88</span>
+<span id="89"> 89</span>
+<span id="90"> 90</span>
+<span id="91"> 91</span>
+<span id="92"> 92</span>
+<span id="93"> 93</span>
+<span id="94"> 94</span>
+<span id="95"> 95</span>
+<span id="96"> 96</span>
+<span id="97"> 97</span>
+<span id="98"> 98</span>
+<span id="99"> 99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+</pre><div class="example-wrap"><pre class="rust ">
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">board</span>::{<span class="ident">Board</span>, <span class="ident">BoardStatus</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">chess_move</span>::<span class="ident">ChessMove</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">color</span>::<span class="ident">Color</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>::<span class="ident">Error</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">movegen</span>::<span class="ident">MoveGen</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">piece</span>::<span class="ident">Piece</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">FromStr</span>;
+
+<span class="doccomment">/// Contains all actions supported within the game</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Action</span> {
+    <span class="ident">MakeMove</span>(<span class="ident">ChessMove</span>),
+    <span class="ident">OfferDraw</span>(<span class="ident">Color</span>),
+    <span class="ident">AcceptDraw</span>,
+    <span class="ident">DeclareDraw</span>,
+    <span class="ident">Resign</span>(<span class="ident">Color</span>),
+}
+
+<span class="doccomment">/// What was the result of this game?</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Eq</span>, <span class="ident">Ord</span>, <span class="ident">Debug</span>, <span class="ident">Hash</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">GameResult</span> {
+    <span class="ident">WhiteCheckmates</span>,
+    <span class="ident">WhiteResigns</span>,
+    <span class="ident">BlackCheckmates</span>,
+    <span class="ident">BlackResigns</span>,
+    <span class="ident">Stalemate</span>,
+    <span class="ident">DrawAccepted</span>,
+    <span class="ident">DrawDeclared</span>,
+}
+
+<span class="doccomment">/// For UI/UCI Servers, store a game object which allows you to determine</span>
+<span class="doccomment">/// draw by 3 fold repitition, draw offers, resignations, and moves.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// This structure is slow compared to using `Board` directly, so it is</span>
+<span class="doccomment">/// not recommended for engines.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Game</span> {
+    <span class="ident">start_pos</span>: <span class="ident">Board</span>,
+    <span class="ident">moves</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Action</span><span class="op">&gt;</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">Game</span> {
+    <span class="doccomment">/// Create a new `Game` with the initial position.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, Board};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let game = Game::new();</span>
+    <span class="doccomment">/// assert_eq!(game.current_position(), Board::default());</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Game</span> {
+        <span class="ident">Game</span> {
+            <span class="ident">start_pos</span>: <span class="ident">Board</span>::<span class="ident">default</span>(),
+            <span class="ident">moves</span>: <span class="macro">vec</span><span class="macro">!</span>[],
+        }
+    }
+
+    <span class="doccomment">/// Create a new `Game` with a specific starting position.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, Board};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let game = Game::new_with_board(Board::default());</span>
+    <span class="doccomment">/// assert_eq!(game.current_position(), Board::default());</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_with_board</span>(<span class="ident">board</span>: <span class="ident">Board</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Game</span> {
+        <span class="ident">Game</span> {
+            <span class="ident">start_pos</span>: <span class="ident">board</span>,
+            <span class="ident">moves</span>: <span class="macro">vec</span><span class="macro">!</span>[],
+        }
+    }
+
+    <span class="doccomment">/// Get all actions made in this game (moves, draw offers, resignations, etc.)</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, MoveGen, Color};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mut game = Game::new();</span>
+    <span class="doccomment">/// let mut movegen = MoveGen::new_legal(&amp;game.current_position());</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// game.make_move(movegen.next().expect(&quot;At least one valid move&quot;));</span>
+    <span class="doccomment">/// game.resign(Color::Black);</span>
+    <span class="doccomment">/// assert_eq!(game.actions().len(), 2);</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">actions</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Action</span><span class="op">&gt;</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">moves</span>
+    }
+
+    <span class="doccomment">/// What is the status of this game?</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::Game;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let game = Game::new();</span>
+    <span class="doccomment">/// assert!(game.result().is_none());</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">result</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">GameResult</span><span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">current_position</span>().<span class="ident">status</span>() {
+            <span class="ident">BoardStatus</span>::<span class="ident">Checkmate</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">side_to_move</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">Color</span>::<span class="ident">White</span> {
+                    <span class="prelude-val">Some</span>(<span class="ident">GameResult</span>::<span class="ident">BlackCheckmates</span>)
+                } <span class="kw">else</span> {
+                    <span class="prelude-val">Some</span>(<span class="ident">GameResult</span>::<span class="ident">WhiteCheckmates</span>)
+                }
+            }
+            <span class="ident">BoardStatus</span>::<span class="ident">Stalemate</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Some</span>(<span class="ident">GameResult</span>::<span class="ident">Stalemate</span>),
+            <span class="ident">BoardStatus</span>::<span class="ident">Ongoing</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
+                    <span class="prelude-val">None</span>
+                } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">moves</span>[<span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">Action</span>::<span class="ident">AcceptDraw</span> {
+                    <span class="prelude-val">Some</span>(<span class="ident">GameResult</span>::<span class="ident">DrawAccepted</span>)
+                } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">moves</span>[<span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">Action</span>::<span class="ident">DeclareDraw</span> {
+                    <span class="prelude-val">Some</span>(<span class="ident">GameResult</span>::<span class="ident">DrawDeclared</span>)
+                } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">moves</span>[<span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">Action</span>::<span class="ident">Resign</span>(<span class="ident">Color</span>::<span class="ident">White</span>) {
+                    <span class="prelude-val">Some</span>(<span class="ident">GameResult</span>::<span class="ident">WhiteResigns</span>)
+                } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">moves</span>[<span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">Action</span>::<span class="ident">Resign</span>(<span class="ident">Color</span>::<span class="ident">Black</span>) {
+                    <span class="prelude-val">Some</span>(<span class="ident">GameResult</span>::<span class="ident">BlackResigns</span>)
+                } <span class="kw">else</span> {
+                    <span class="prelude-val">None</span>
+                }
+            }
+        }
+    }
+
+    <span class="doccomment">/// Create a new `Game` object from an FEN string.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, Board};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// // This is the better way:</span>
+    <span class="doccomment">/// # {</span>
+    <span class="doccomment">/// use std::str::FromStr;</span>
+    <span class="doccomment">/// let game: Game = Game::from_str(&quot;rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1&quot;).expect(&quot;Valid FEN&quot;);</span>
+    <span class="doccomment">/// let game2: Result&lt;Game, _&gt; = Game::from_str(&quot;Invalid FEN&quot;);</span>
+    <span class="doccomment">/// assert!(game2.is_err());</span>
+    <span class="doccomment">/// # }</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// // This still works</span>
+    <span class="doccomment">/// # {</span>
+    <span class="doccomment">/// let game = Game::new_from_fen(&quot;rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1&quot;).expect(&quot;Valid FEN&quot;);</span>
+    <span class="doccomment">/// let game2 = Game::new_from_fen(&quot;Invalid FEN&quot;);</span>
+    <span class="doccomment">/// assert!(game2.is_none());</span>
+    <span class="doccomment">/// # }</span>
+    <span class="doccomment">/// ```</span>
+    <span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;3.1.0&quot;</span>, <span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;Please use Game::from_str(fen)? instead.&quot;</span>)]</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_from_fen</span>(<span class="ident">fen</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Game</span><span class="op">&gt;</span> {
+        <span class="ident">Game</span>::<span class="ident">from_str</span>(<span class="ident">fen</span>).<span class="ident">ok</span>()
+    }
+
+    <span class="doccomment">/// Get the current position on the board from the `Game` object.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, Board};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let game = Game::new();</span>
+    <span class="doccomment">/// assert_eq!(game.current_position(), Board::default());</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current_position</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Board</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">copy</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">start_pos</span>;
+
+        <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">iter</span>() {
+            <span class="kw">match</span> <span class="kw-2">*</span><span class="ident">x</span> {
+                <span class="ident">Action</span>::<span class="ident">MakeMove</span>(<span class="ident">m</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">copy</span> <span class="op">=</span> <span class="ident">copy</span>.<span class="ident">make_move_new</span>(<span class="ident">m</span>);
+                }
+                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {}
+            }
+        }
+
+        <span class="ident">copy</span>
+    }
+
+    <span class="doccomment">/// Determine if a player can legally declare a draw by 3-fold repetition or 50-move rule.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, Square, ChessMove};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let b1c3 = ChessMove::new(Square::B1, Square::C3, None);</span>
+    <span class="doccomment">/// let c3b1 = ChessMove::new(Square::C3, Square::B1, None);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let b8c6 = ChessMove::new(Square::B8, Square::C6, None);</span>
+    <span class="doccomment">/// let c6b8 = ChessMove::new(Square::C6, Square::B8, None);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mut game = Game::new();</span>
+    <span class="doccomment">/// assert_eq!(game.can_declare_draw(), false);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// game.make_move(b1c3);</span>
+    <span class="doccomment">/// game.make_move(b8c6);</span>
+    <span class="doccomment">/// game.make_move(c3b1);</span>
+    <span class="doccomment">/// game.make_move(c6b8);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// assert_eq!(game.can_declare_draw(), false); // position has shown up twice</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// game.make_move(b1c3);</span>
+    <span class="doccomment">/// game.make_move(b8c6);</span>
+    <span class="doccomment">/// game.make_move(c3b1);</span>
+    <span class="doccomment">/// game.make_move(c6b8);</span>
+    <span class="doccomment">/// assert_eq!(game.can_declare_draw(), true); // position has shown up three times</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">can_declare_draw</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">result</span>().<span class="ident">is_some</span>() {
+            <span class="kw">return</span> <span class="bool-val">false</span>;
+        }
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">legal_moves_per_turn</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">u64</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ChessMove</span><span class="op">&gt;</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[];
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">board</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">start_pos</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reversible_moves</span> <span class="op">=</span> <span class="number">0</span>;
+
+        <span class="comment">// Loop over each move, counting the reversible_moves for draw by 50 move rule,</span>
+        <span class="comment">// and filling a list of legal_moves_per_turn list for 3-fold repitition</span>
+        <span class="ident">legal_moves_per_turn</span>.<span class="ident">push</span>((<span class="ident">board</span>.<span class="ident">get_hash</span>(), <span class="ident">MoveGen</span>::<span class="ident">new_legal</span>(<span class="kw-2">&amp;</span><span class="ident">board</span>).<span class="ident">collect</span>()));
+        <span class="kw">for</span> <span class="ident">x</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">iter</span>() {
+            <span class="kw">match</span> <span class="kw-2">*</span><span class="ident">x</span> {
+                <span class="ident">Action</span>::<span class="ident">MakeMove</span>(<span class="ident">m</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="kw">let</span> <span class="ident">white_castle_rights</span> <span class="op">=</span> <span class="ident">board</span>.<span class="ident">castle_rights</span>(<span class="ident">Color</span>::<span class="ident">White</span>);
+                    <span class="kw">let</span> <span class="ident">black_castle_rights</span> <span class="op">=</span> <span class="ident">board</span>.<span class="ident">castle_rights</span>(<span class="ident">Color</span>::<span class="ident">Black</span>);
+                    <span class="kw">if</span> <span class="ident">board</span>.<span class="ident">piece_on</span>(<span class="ident">m</span>.<span class="ident">get_source</span>()) <span class="op">=</span><span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">Piece</span>::<span class="ident">Pawn</span>) {
+                        <span class="ident">reversible_moves</span> <span class="op">=</span> <span class="number">0</span>;
+                        <span class="ident">legal_moves_per_turn</span>.<span class="ident">clear</span>();
+                    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">board</span>.<span class="ident">piece_on</span>(<span class="ident">m</span>.<span class="ident">get_dest</span>()).<span class="ident">is_some</span>() {
+                        <span class="ident">reversible_moves</span> <span class="op">=</span> <span class="number">0</span>;
+                        <span class="ident">legal_moves_per_turn</span>.<span class="ident">clear</span>();
+                    } <span class="kw">else</span> {
+                        <span class="ident">reversible_moves</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                    }
+                    <span class="ident">board</span> <span class="op">=</span> <span class="ident">board</span>.<span class="ident">make_move_new</span>(<span class="ident">m</span>);
+
+                    <span class="kw">if</span> <span class="ident">board</span>.<span class="ident">castle_rights</span>(<span class="ident">Color</span>::<span class="ident">White</span>) <span class="op">!</span><span class="op">=</span> <span class="ident">white_castle_rights</span>
+                        <span class="op">|</span><span class="op">|</span> <span class="ident">board</span>.<span class="ident">castle_rights</span>(<span class="ident">Color</span>::<span class="ident">Black</span>) <span class="op">!</span><span class="op">=</span> <span class="ident">black_castle_rights</span>
+                    {
+                        <span class="ident">reversible_moves</span> <span class="op">=</span> <span class="number">0</span>;
+                        <span class="ident">legal_moves_per_turn</span>.<span class="ident">clear</span>();
+                    }
+                    <span class="ident">legal_moves_per_turn</span>
+                        .<span class="ident">push</span>((<span class="ident">board</span>.<span class="ident">get_hash</span>(), <span class="ident">MoveGen</span>::<span class="ident">new_legal</span>(<span class="kw-2">&amp;</span><span class="ident">board</span>).<span class="ident">collect</span>()));
+                }
+                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {}
+            }
+        }
+
+        <span class="kw">if</span> <span class="ident">reversible_moves</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">100</span> {
+            <span class="kw">return</span> <span class="bool-val">true</span>;
+        }
+
+        <span class="comment">// Detect possible draw by 3 fold repitition</span>
+        <span class="kw">let</span> <span class="ident">last_moves</span> <span class="op">=</span> <span class="ident">legal_moves_per_turn</span>[<span class="ident">legal_moves_per_turn</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>].<span class="ident">clone</span>();
+
+        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">1</span>..(<span class="ident">legal_moves_per_turn</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>) {
+            <span class="kw">for</span> <span class="ident">j</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">i</span> {
+                <span class="kw">if</span> <span class="ident">legal_moves_per_turn</span>[<span class="ident">i</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">last_moves</span> <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="ident">legal_moves_per_turn</span>[<span class="ident">j</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">last_moves</span> {
+                    <span class="kw">return</span> <span class="bool-val">true</span>;
+                }
+            }
+        }
+
+        <span class="kw">return</span> <span class="bool-val">false</span>;
+    }
+
+    <span class="doccomment">/// Declare a draw by 3-fold repitition or 50-move rule.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, Square, ChessMove};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let b1c3 = ChessMove::new(Square::B1, Square::C3, None);</span>
+    <span class="doccomment">/// let c3b1 = ChessMove::new(Square::C3, Square::B1, None);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let b8c6 = ChessMove::new(Square::B8, Square::C6, None);</span>
+    <span class="doccomment">/// let c6b8 = ChessMove::new(Square::C6, Square::B8, None);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mut game = Game::new();</span>
+    <span class="doccomment">/// assert_eq!(game.can_declare_draw(), false);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// game.make_move(b1c3);</span>
+    <span class="doccomment">/// game.make_move(b8c6);</span>
+    <span class="doccomment">/// game.make_move(c3b1);</span>
+    <span class="doccomment">/// game.make_move(c6b8);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// assert_eq!(game.can_declare_draw(), false); // position has shown up twice</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// game.make_move(b1c3);</span>
+    <span class="doccomment">/// game.make_move(b8c6);</span>
+    <span class="doccomment">/// game.make_move(c3b1);</span>
+    <span class="doccomment">/// game.make_move(c6b8);</span>
+    <span class="doccomment">/// assert_eq!(game.can_declare_draw(), true); // position has shown up three times</span>
+    <span class="doccomment">/// game.declare_draw();</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">declare_draw</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">can_declare_draw</span>() {
+            <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">push</span>(<span class="ident">Action</span>::<span class="ident">DeclareDraw</span>);
+            <span class="bool-val">true</span>
+        } <span class="kw">else</span> {
+            <span class="bool-val">false</span>
+        }
+    }
+
+    <span class="doccomment">/// Make a chess move on the board</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, MoveGen};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mut game = Game::new();</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mut movegen = MoveGen::new_legal(&amp;game.current_position());</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// game.make_move(movegen.next().expect(&quot;At least one legal move&quot;));</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">make_move</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">chess_move</span>: <span class="ident">ChessMove</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">result</span>().<span class="ident">is_some</span>() {
+            <span class="kw">return</span> <span class="bool-val">false</span>;
+        }
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">current_position</span>().<span class="ident">legal</span>(<span class="ident">chess_move</span>) {
+            <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">push</span>(<span class="ident">Action</span>::<span class="ident">MakeMove</span>(<span class="ident">chess_move</span>));
+            <span class="bool-val">true</span>
+        } <span class="kw">else</span> {
+            <span class="bool-val">false</span>
+        }
+    }
+
+    <span class="doccomment">/// Who&#39;s turn is it to move?</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, Color};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let game = Game::new();</span>
+    <span class="doccomment">/// assert_eq!(game.side_to_move(), Color::White);</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">side_to_move</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Color</span> {
+        <span class="kw">let</span> <span class="ident">move_count</span> <span class="op">=</span> <span class="self">self</span>
+            .<span class="ident">moves</span>
+            .<span class="ident">iter</span>()
+            .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">m</span><span class="op">|</span> <span class="kw">match</span> <span class="kw-2">*</span><span class="ident">m</span> {
+                <span class="ident">Action</span>::<span class="ident">MakeMove</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="bool-val">true</span>,
+                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="bool-val">false</span>,
+            })
+            .<span class="ident">count</span>()
+            <span class="op">+</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">start_pos</span>.<span class="ident">side_to_move</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">Color</span>::<span class="ident">White</span> {
+                <span class="number">0</span>
+            } <span class="kw">else</span> {
+                <span class="number">1</span>
+            };
+
+        <span class="kw">if</span> <span class="ident">move_count</span> <span class="op">%</span> <span class="number">2</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
+            <span class="ident">Color</span>::<span class="ident">White</span>
+        } <span class="kw">else</span> {
+            <span class="ident">Color</span>::<span class="ident">Black</span>
+        }
+    }
+
+    <span class="doccomment">/// Offer a draw to my opponent.  `color` is the player who offered the draw.  The draw must be</span>
+    <span class="doccomment">/// accepted before my opponent moves.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, Color};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mut game = Game::new();</span>
+    <span class="doccomment">/// game.offer_draw(Color::White);</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">offer_draw</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">color</span>: <span class="ident">Color</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">result</span>().<span class="ident">is_some</span>() {
+            <span class="kw">return</span> <span class="bool-val">false</span>;
+        }
+        <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">push</span>(<span class="ident">Action</span>::<span class="ident">OfferDraw</span>(<span class="ident">color</span>));
+        <span class="kw">return</span> <span class="bool-val">true</span>;
+    }
+
+    <span class="doccomment">/// Accept a draw offer from my opponent.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, MoveGen, Color};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mut game = Game::new();</span>
+    <span class="doccomment">/// game.offer_draw(Color::Black);</span>
+    <span class="doccomment">/// assert_eq!(game.accept_draw(), true);</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mut game2 = Game::new();</span>
+    <span class="doccomment">/// let mut movegen = MoveGen::new_legal(&amp;game2.current_position());</span>
+    <span class="doccomment">/// game2.offer_draw(Color::Black);</span>
+    <span class="doccomment">/// game2.make_move(movegen.next().expect(&quot;At least one legal move&quot;));</span>
+    <span class="doccomment">/// assert_eq!(game2.accept_draw(), false);</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">accept_draw</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">result</span>().<span class="ident">is_some</span>() {
+            <span class="kw">return</span> <span class="bool-val">false</span>;
+        }
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">0</span> {
+            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">moves</span>[<span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">Action</span>::<span class="ident">OfferDraw</span>(<span class="ident">Color</span>::<span class="ident">White</span>)
+                <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">moves</span>[<span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">Action</span>::<span class="ident">OfferDraw</span>(<span class="ident">Color</span>::<span class="ident">Black</span>)
+            {
+                <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">push</span>(<span class="ident">Action</span>::<span class="ident">AcceptDraw</span>);
+                <span class="kw">return</span> <span class="bool-val">true</span>;
+            }
+        }
+
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">1</span> {
+            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">moves</span>[<span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">2</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">Action</span>::<span class="ident">OfferDraw</span>(<span class="op">!</span><span class="self">self</span>.<span class="ident">side_to_move</span>()) {
+                <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">push</span>(<span class="ident">Action</span>::<span class="ident">AcceptDraw</span>);
+                <span class="kw">return</span> <span class="bool-val">true</span>;
+            }
+        }
+
+        <span class="bool-val">false</span>
+    }
+
+    <span class="doccomment">/// `color` resigns the game</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use chess::{Game, Color};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mut game = Game::new();</span>
+    <span class="doccomment">/// game.resign(Color::White);</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resign</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">color</span>: <span class="ident">Color</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">result</span>().<span class="ident">is_some</span>() {
+            <span class="kw">return</span> <span class="bool-val">false</span>;
+        }
+        <span class="self">self</span>.<span class="ident">moves</span>.<span class="ident">push</span>(<span class="ident">Action</span>::<span class="ident">Resign</span>(<span class="ident">color</span>));
+        <span class="kw">return</span> <span class="bool-val">true</span>;
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">FromStr</span> <span class="kw">for</span> <span class="ident">Game</span> {
+    <span class="kw">type</span> <span class="prelude-val">Err</span> <span class="op">=</span> <span class="ident">Error</span>;
+
+    <span class="kw">fn</span> <span class="ident">from_str</span>(<span class="ident">fen</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="self">Self</span>::<span class="prelude-val">Err</span><span class="op">&gt;</span> {
+        <span class="prelude-val">Ok</span>(<span class="ident">Game</span>::<span class="ident">new_with_board</span>(<span class="ident">Board</span>::<span class="ident">from_str</span>(<span class="ident">fen</span>)<span class="question-mark">?</span>))
+    }
+}
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fake_pgn_parser</span>(<span class="ident">moves</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Game</span> {
+    <span class="ident">moves</span>
+        .<span class="ident">split_whitespace</span>()
+        .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="op">!</span><span class="ident">s</span>.<span class="ident">ends_with</span>(<span class="string">&quot;.&quot;</span>))
+        .<span class="ident">fold</span>(<span class="ident">Game</span>::<span class="ident">new</span>(), <span class="op">|</span><span class="kw-2">mut</span> <span class="ident">g</span>, <span class="ident">m</span><span class="op">|</span> {
+            <span class="ident">g</span>.<span class="ident">make_move</span>(<span class="ident">ChessMove</span>::<span class="ident">from_san</span>(<span class="kw-2">&amp;</span><span class="ident">g</span>.<span class="ident">current_position</span>(), <span class="ident">m</span>).<span class="ident">expect</span>(<span class="string">&quot;Valid SAN Move&quot;</span>));
+            <span class="ident">g</span>
+        })
+}
+
+<span class="attribute">#[<span class="ident">test</span>]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_can_declare_draw</span>() {
+    <span class="kw">let</span> <span class="ident">game</span> <span class="op">=</span> <span class="ident">fake_pgn_parser</span>(
+        <span class="string">&quot;1. Nc3 d5 2. e3 Nc6 3. Nf3 Nf6 4. Bb5 a6 5. Bxc6+ bxc6 6. Ne5 Qd6 7. d4 Nd7
+                8. f4 Nxe5 9. dxe5 Qg6 10. O-O Bf5 11. e4 Bxe4 12. Nxe4 Qxe4 13. Re1 Qb4
+                14. e6 f6 15. Be3 g6 16. Qd4 Qxd4 17. Bxd4 Bh6 18. g3 g5 19. f5 g4 20. Rad1
+                Rg8 21. b3 Rb8 22. c4 dxc4 23. bxc4 Rd8 24. Kg2 Rc8 25. Bc5 Rg5 26. Rd7 Bf8
+                27. Rf1 a5 28. Kg1 a4 29. Bb4 Rh5 30. Rf4 Rg5 31. Rf1 Rh5 32. Rf4 Rg5 33.
+                Ba5&quot;</span>,
+    );
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="op">!</span><span class="ident">game</span>.<span class="ident">can_declare_draw</span>());
+
+    <span class="comment">// three fold</span>
+    <span class="kw">let</span> <span class="ident">game</span> <span class="op">=</span> <span class="ident">fake_pgn_parser</span>(<span class="string">&quot;1. Nc3 Nf6 2. Nb1 Ng8 3. Nc3 Nf6 4. Nb1 Ng8 5. Nc3 Nf6 6. Nb1 Ng8&quot;</span>);
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">game</span>.<span class="ident">can_declare_draw</span>());
+
+    <span class="comment">// three fold (again)</span>
+    <span class="kw">let</span> <span class="ident">game</span> <span class="op">=</span> <span class="ident">fake_pgn_parser</span>(<span class="string">&quot;1. Nc3 Nf6 2. Nb1 Ng8 3. Nc3 Nf6 4. Nb1 Ng8 5. Nc3 Nf6 6. Nb1&quot;</span>);
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">game</span>.<span class="ident">can_declare_draw</span>());
+
+    <span class="comment">// three fold, but with a move at the end that breaks the draw cycle</span>
+    <span class="kw">let</span> <span class="ident">game</span> <span class="op">=</span>
+        <span class="ident">fake_pgn_parser</span>(<span class="string">&quot;1. Nc3 Nf6 2. Nb1 Ng8 3. Nc3 Nf6 4. Nb1 Ng8 5. Nc3 Nf6 6. Nb1 Ng8 7. e4&quot;</span>);
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="op">!</span><span class="ident">game</span>.<span class="ident">can_declare_draw</span>());
+
+    <span class="comment">// three fold, but with a move at the end that breaks the draw cycle</span>
+    <span class="kw">let</span> <span class="ident">game</span> <span class="op">=</span>
+        <span class="ident">fake_pgn_parser</span>(<span class="string">&quot;1. Nc3 Nf6 2. Nb1 Ng8 3. Nc3 Nf6 4. Nb1 Ng8 5. Nc3 Nf6 6. Nb1 Ng8 7. e4&quot;</span>);
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="op">!</span><span class="ident">game</span>.<span class="ident">can_declare_draw</span>());
+
+    <span class="comment">// fifty move rule</span>
+    <span class="kw">let</span> <span class="ident">game</span> <span class="op">=</span> <span class="ident">fake_pgn_parser</span>(<span class="string">&quot;1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5 7. O-O Nc6 8. d5 Ne7 9. Nd2 a5 10. Rb1 Nd7 11. a3 f5 12. b4 Kh8 13. f3 Ng8 14. Qc2 Ngf6 15. Nb5 axb4 16. axb4 Nh5 17. g3 Ndf6 18. c5 Bd7 19. Rb3 Nxg3 20. hxg3 Nh5 21. f4 exf4 22. c6 bxc6 23. dxc6 Nxg3 24. Rxg3 fxg3 25. cxd7 g2 26. Rf3 Qxd7 27. Bb2 fxe4 28. Rxf8+ Rxf8 29. Bxg7+ Qxg7 30. Qxe4 Qf6 31. Nf3 Qf4 32. Qe7 Rf7 33. Qe6 Rf6 34. Qe8+ Rf8 35. Qe7 Rf7 36. Qe6 Rf6 37. Qb3 g5 38. Nxc7 g4 39. Nd5 Qc1+ 40. Qd1 Qxd1+ 41. Bxd1 Rf5 42. Ne3 Rf4 43. Ne1 Rxb4 44. Bxg4 h5 45. Bf3 d5 46. N3xg2 h4 47. Nd3 Ra4 48. Ngf4 Kg7 49. Kg2 Kf6 50. Bxd5 Ra5 51. Bc6 Ra6 52. Bb7 Ra3 53. Be4 Ra4 54. Bd5 Ra5 55. Bc6 Ra6 56. Bf3 Kg5 57. Bb7 Ra1 58. Bc8 Ra4 59. Kf3 Rc4 60. Bd7 Kf6 61. Kg4 Rd4 62. Bc6 Rd8 63. Kxh4 Rg8 64. Be4 Rg1 65. Nh5+ Ke6 66. Ng3 Kf6 67. Kg4 Ra1 68. Bd5 Ra5 69. Bf3 Ra1 70. Kf4 Ke6 71. Nc5+ Kd6 72. Nge4+ Ke7 73. Ke5 Rf1 74. Bg4 Rg1 75. Be6 Re1 76. Bc8 Rc1 77. Kd4 Rd1+ 78. Nd3 Kf7 79. Ke3 Ra1 80. Kf4 Ke7 81. Nb4 Rc1 82. Nd5+ Kf7 83. Bd7 Rf1+ 84. Ke5 Ra1 85. Ng5+ Kg6 86. Nf3 Kg7 87. Bg4 Kg6 88. Nf4+ Kg7 89. Nd4 Re1+ 90. Kf5 Rc1 91. Be2 Re1 92. Bh5 Ra1 93. Nfe6+ Kh6 94. Be8 Ra8 95. Bc6 Ra1 96. Kf6 Kh7 97. Ng5+ Kh8 98. Nde6 Ra6 99. Be8 Ra8 100. Bh5 Ra1 101. Bg6 Rf1+ 102. Ke7 Ra1 103. Nf7+ Kg8 104. Nh6+ Kh8 105. Nf5 Ra7+ 106. Kf6 Ra1 107. Ne3 Re1 108. Nd5 Rg1 109. Bf5 Rf1 110. Ndf4 Ra1 111. Ng6+ Kg8 112. Ne7+ Kh8 113. Ng5&quot;</span>);
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">game</span>.<span class="ident">can_declare_draw</span>());
+
+    <span class="kw">let</span> <span class="ident">game</span> <span class="op">=</span> <span class="ident">fake_pgn_parser</span>(<span class="string">&quot;1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5 7. O-O Nc6 8. d5 Ne7 9. Nd2 a5 10. Rb1 Nd7 11. a3 f5 12. b4 Kh8 13. f3 Ng8 14. Qc2 Ngf6 15. Nb5 axb4 16. axb4 Nh5 17. g3 Ndf6 18. c5 Bd7 19. Rb3 Nxg3 20. hxg3 Nh5 21. f4 exf4 22. c6 bxc6 23. dxc6 Nxg3 24. Rxg3 fxg3 25. cxd7 g2 26. Rf3 Qxd7 27. Bb2 fxe4 28. Rxf8+ Rxf8 29. Bxg7+ Qxg7 30. Qxe4 Qf6 31. Nf3 Qf4 32. Qe7 Rf7 33. Qe6 Rf6 34. Qe8+ Rf8 35. Qe7 Rf7 36. Qe6 Rf6 37. Qb3 g5 38. Nxc7 g4 39. Nd5 Qc1+ 40. Qd1 Qxd1+ 41. Bxd1 Rf5 42. Ne3 Rf4 43. Ne1 Rxb4 44. Bxg4 h5 45. Bf3 d5 46. N3xg2 h4 47. Nd3 Ra4 48. Ngf4 Kg7 49. Kg2 Kf6 50. Bxd5 Ra5 51. Bc6 Ra6 52. Bb7 Ra3 53. Be4 Ra4 54. Bd5 Ra5 55. Bc6 Ra6 56. Bf3 Kg5 57. Bb7 Ra1 58. Bc8 Ra4 59. Kf3 Rc4 60. Bd7 Kf6 61. Kg4 Rd4 62. Bc6 Rd8 63. Kxh4 Rg8 64. Be4 Rg1 65. Nh5+ Ke6 66. Ng3 Kf6 67. Kg4 Ra1 68. Bd5 Ra5 69. Bf3 Ra1 70. Kf4 Ke6 71. Nc5+ Kd6 72. Nge4+ Ke7 73. Ke5 Rf1 74. Bg4 Rg1 75. Be6 Re1 76. Bc8 Rc1 77. Kd4 Rd1+ 78. Nd3 Kf7 79. Ke3 Ra1 80. Kf4 Ke7 81. Nb4 Rc1 82. Nd5+ Kf7 83. Bd7 Rf1+ 84. Ke5 Ra1 85. Ng5+ Kg6 86. Nf3 Kg7 87. Bg4 Kg6 88. Nf4+ Kg7 89. Nd4 Re1+ 90. Kf5 Rc1 91. Be2 Re1 92. Bh5 Ra1 93. Nfe6+ Kh6 94. Be8 Ra8 95. Bc6 Ra1 96. Kf6 Kh7 97. Ng5+ Kh8 98. Nde6 Ra6 99. Be8 Ra8 100. Bh5 Ra1 101. Bg6 Rf1+ 102. Ke7 Ra1 103. Nf7+ Kg8 104. Nh6+ Kh8 105. Nf5 Ra7+ 106. Kf6 Ra1 107. Ne3 Re1 108. Nd5 Rg1 109. Bf5 Rf1 110. Ndf4 Ra1 111. Ng6+ Kg8 112. Ne7+ Kh8&quot;</span>);
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="op">!</span><span class="ident">game</span>.<span class="ident">can_declare_draw</span>());
+}
+</pre></div>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "chess";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

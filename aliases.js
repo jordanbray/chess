@@ -1,0 +1,16 @@
+var ALIASES = {};
+ALIASES["arrayvec"] = {};
+ALIASES["backtrace"] = {};
+ALIASES["backtrace_sys"] = {};
+ALIASES["cfg_if"] = {};
+ALIASES["chess"] = {};
+ALIASES["failure"] = {};
+ALIASES["failure_derive"] = {};
+ALIASES["libc"] = {};
+ALIASES["nodrop"] = {};
+ALIASES["proc_macro2"] = {};
+ALIASES["quote"] = {};
+ALIASES["rustc_demangle"] = {};
+ALIASES["syn"] = {};
+ALIASES["synstructure"] = {};
+ALIASES["unicode_xid"] = {};
