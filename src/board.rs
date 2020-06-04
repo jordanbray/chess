@@ -1108,3 +1108,47 @@ fn test_null_move_en_passant() {
         Board::from_str("rnbqkbnr/pppp2pp/8/4pP2/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 0").unwrap();
     assert_eq!(start.null_move().unwrap(), expected);
 }
+
+#[cfg(test)]
+fn move_of(m: &str) -> ChessMove {
+    let promo = if m.len() > 4 {
+        Some(match m.as_bytes()[4] {
+            b'q' => Piece::Queen,
+            b'r' => Piece::Rook,
+            b'b' => Piece::Bishop,
+            b'n' => Piece::Knight,
+            _ => panic!("unrecognized uci move: {}", m),
+        })
+    } else {
+        None
+    };
+    ChessMove::new(
+        Square::from_string(m[..2].to_string()).unwrap(),
+        Square::from_string(m[2..4].to_string()).unwrap(),
+        promo,
+    )
+}
+
+#[test]
+fn test_hash_behavior() {
+    let test_cases = [
+        ("r1bq1rk1/3pb1pp/1p2p3/p2pPp1Q/3P1B2/4R3/PPPN1PPP/R5K1 b - - 3 16", vec!["d8e8", "h5e8", "f8e8", "h2h3"], 
+        "r1b1r1k1/3pb1pp/1p2p3/p2pPp2/3P1B2/4R2P/PPPN1PP1/R5K1 b - - 0 18"),
+        ("6k1/1R2bp2/4p1p1/2p1P2p/2K2P2/r1P1B2P/2P5/8 b - - 4 37", vec!["f7f5", "e5f6", "e7f6", "b7b4", "g8g7"],
+        "8/6k1/4pbp1/2p4p/1RK2P2/r1P1B2P/2P5/8 w - - 2 40"),
+        ("r1b1r1k1/pp4p1/4p2p/3pPP2/2p4P/P1PB4/2PB1P2/R3K2R b KQ - 0 17", vec!["c4d3", "c2d3", "g8h7", "e1g1", "d5d4"],
+        "r1b1r3/pp4pk/4p2p/4PP2/3p3P/P1PP4/3B1P2/R4RK1 w - - 0 20"),
+        ("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", vec!["c2c4", "d7d5", "c4c5", "b7b5"],
+        "rnbqkbnr/p1p1pppp/8/1pPp4/8/8/PP1PPPPP/RNBQKBNR w KQkq b6 0 3")
+    ];
+    for (init_fen, moves, final_fen) in &test_cases{
+        let init_board = Board::from_str(init_fen).unwrap();
+        let final_board = moves.iter()
+                               .map(|m| move_of(m))
+                               .fold(init_board, |b,m| b.make_move_new(m));
+        let final_board_direct = Board::from_str(final_fen).unwrap();
+
+        assert_eq!(final_board.get_hash(), final_board_direct.get_hash(), 
+                   "final_board: {}, final_board_direct: {}", final_board, final_board_direct);
+    }
+}

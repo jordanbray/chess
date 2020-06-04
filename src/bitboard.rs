@@ -291,7 +291,7 @@ impl BitBoard {
     /// Convert an `Option<Square>` to an `Option<BitBoard>`
     #[inline]
     pub fn from_maybe_square(sq: Option<Square>) -> Option<BitBoard> {
-        sq.map(|s| BitBoard::from_square(s))
+        Some(BitBoard::from_square(sq?)) 
     }
 
     /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`
