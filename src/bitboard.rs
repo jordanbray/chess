@@ -3,6 +3,7 @@ use crate::rank::Rank;
 use crate::square::*;
 use std::fmt;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, Not};
+use serde::{Serialize, Deserialize};
 
 /// A good old-fashioned bitboard
 /// You *do* have access to the actual value, but you are probably better off
@@ -23,7 +24,7 @@ use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, M
 /// assert_eq!(count, 3);
 /// ```
 ///
-#[derive(PartialEq, PartialOrd, Clone, Copy, Debug, Default)]
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub struct BitBoard(pub u64);
 
 /// An empty bitboard.  It is sometimes useful to use !EMPTY to get the universe of squares.

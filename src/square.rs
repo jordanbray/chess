@@ -4,9 +4,10 @@ use crate::file::File;
 use crate::rank::Rank;
 use std::fmt;
 use std::str::FromStr;
+use serde::{Serialize, Deserialize};
 
 /// Represent a square on the chess board
-#[derive(PartialEq, Ord, Eq, PartialOrd, Copy, Clone, Debug, Hash)]
+#[derive(PartialEq, Ord, Eq, PartialOrd, Copy, Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Square(u8);
 
 /// How many squares are there?

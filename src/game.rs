@@ -5,9 +5,10 @@ use crate::error::Error;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;
 use std::str::FromStr;
+use serde::{Serialize, Deserialize};
 
 /// Contains all actions supported within the game
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Eq)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Eq, Serialize, Deserialize)]
 pub enum Action {
     MakeMove(ChessMove),
     OfferDraw(Color),
@@ -33,7 +34,7 @@ pub enum GameResult {
 ///
 /// This structure is slow compared to using `Board` directly, so it is
 /// not recommended for engines.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Game {
     start_pos: Board,
     moves: Vec<Action>,

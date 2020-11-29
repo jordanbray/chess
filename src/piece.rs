@@ -1,8 +1,9 @@
 use crate::color::Color;
 use std::fmt;
+use serde::{Serialize, Deserialize};
 
 /// Represent a chess piece as a very simple enum
-#[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
+#[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum Piece {
     Pawn,
     Knight,

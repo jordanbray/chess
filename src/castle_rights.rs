@@ -4,11 +4,12 @@ use crate::bitboard::{BitBoard, EMPTY};
 use crate::color::Color;
 use crate::file::File;
 use crate::square::Square;
+use serde::{Serialize, Deserialize};
 
 use crate::magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
 
 /// What castle rights does a particular player have?
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub enum CastleRights {
     NoRights,
     KingSide,

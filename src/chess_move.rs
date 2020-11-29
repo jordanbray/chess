@@ -9,9 +9,10 @@ use crate::square::Square;
 use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
+use serde::{Serialize, Deserialize};
 
 /// Represent a ChessMove in memory
-#[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug, Hash)]
+#[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug, Hash, Serialize, Deserialize)]
 pub struct ChessMove {
     source: Square,
     dest: Square,

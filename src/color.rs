@@ -1,8 +1,9 @@
 use crate::rank::Rank;
 use std::ops::Not;
+use serde::{Serialize, Deserialize};
 
 /// Represent a color.
-#[derive(PartialOrd, PartialEq, Eq, Copy, Clone, Debug, Hash)]
+#[derive(PartialOrd, PartialEq, Eq, Copy, Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum Color {
     White,
     Black,
