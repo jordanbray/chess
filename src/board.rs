@@ -854,7 +854,7 @@ impl Board {
     /// ```
     #[inline]
     pub fn make_move_new(&self, m: ChessMove) -> Board {
-        let mut result = unsafe { mem::uninitialized() };
+        let mut result = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
         self.make_move(m, &mut result);
         result
     }
