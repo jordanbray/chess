@@ -146,7 +146,7 @@ impl MoveGen {
                     self.moves[x].bitboard &= !dest_bb;
                     return true;
                 } else {
-                    return false;
+                    //return false;
                 }
             }
         }
