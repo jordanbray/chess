@@ -21,7 +21,7 @@ use std::mem;
 use std::str::FromStr;
 
 /// A representation of a chess board.  That's why you're here, right?
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Board {
     pieces: [BitBoard; NUM_PIECES],
     color_combined: [BitBoard; NUM_COLORS],
