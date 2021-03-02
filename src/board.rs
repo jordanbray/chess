@@ -16,6 +16,7 @@ use crate::square::{Square, ALL_SQUARES};
 use crate::zobrist::Zobrist;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::mem;
 use std::str::FromStr;
 
@@ -47,6 +48,12 @@ impl Default for Board {
     fn default() -> Board {
         Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             .expect("Valid Position")
+    }
+}
+
+impl Hash for Board {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.hash.hash(state);
     }
 }
 
