@@ -3,7 +3,7 @@ use std::mem::transmute;
 use std::str::FromStr;
 
 /// Describe a file (column) on a chess board
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 pub enum File {
     A,
     B,
