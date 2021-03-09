@@ -524,6 +524,36 @@ pub fn fake_pgn_parser(moves: &str) -> Game {
 }
 
 #[test]
+fn test_fen_string() {
+    use crate::square::Square;
+    let mut game = Game::new();
+    assert_eq!(
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        format!("{}", game)
+    );
+    game.make_move(ChessMove::new(Square::E2, Square::E4, None));
+    assert_eq!(
+        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+        format!("{}", game)
+    );
+    game.make_move(ChessMove::new(Square::C7, Square::C5, None));
+    assert_eq!(
+        "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2",
+        format!("{}", game)
+    );
+    game.make_move(ChessMove::new(Square::G1, Square::F3, None));
+    let final_serialized_game = format!("{}", game);
+    assert_eq!(
+        "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+        final_serialized_game
+    );
+    assert_eq!(
+        final_serialized_game,
+        format!("{}", Game::from_str(&final_serialized_game).unwrap()),
+    );
+}
+
+#[test]
 pub fn test_can_declare_draw() {
     let game = fake_pgn_parser(
         "1. Nc3 d5 2. e3 Nc6 3. Nf3 Nf6 4. Bb5 a6 5. Bxc6+ bxc6 6. Ne5 Qd6 7. d4 Nd7
