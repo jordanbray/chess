@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/jordanbray/chess.svg?branch=master)](https://travis-ci.org/jordanbray/chess)
 [![crates.io](https://img.shields.io/crates/v/chess.svg)](https://crates.io/crates/chess)
+[![docs.rs](https://docs.rs/chess/badge.svg)](https://jordanbray.github.io/chess/chess/)
 
 This library handles the process of move generation within a chess engine or chess UI.
 
@@ -166,7 +167,7 @@ This is not a chess engine, just the move generator.  This is not a chess UI, ju
 
 ## API Documentation
 
-... is available at http://jordanbray.github.io/chess/.
+... is available at https://jordanbray.github.io/chess/chess/.
 
 ## Anything Else
 
