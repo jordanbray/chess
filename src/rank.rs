@@ -3,7 +3,7 @@ use std::mem::transmute;
 use std::str::FromStr;
 
 /// Describe a rank (row) on a chess board
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 pub enum Rank {
     First,
     Second,
