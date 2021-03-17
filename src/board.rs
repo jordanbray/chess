@@ -16,11 +16,12 @@ use crate::square::{Square, ALL_SQUARES};
 use crate::zobrist::Zobrist;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::mem;
 use std::str::FromStr;
 
 /// A representation of a chess board.  That's why you're here, right?
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Board {
     pieces: [BitBoard; NUM_PIECES],
     color_combined: [BitBoard; NUM_COLORS],
@@ -47,6 +48,12 @@ impl Default for Board {
     fn default() -> Board {
         Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             .expect("Valid Position")
+    }
+}
+
+impl Hash for Board {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.hash.hash(state);
     }
 }
 
@@ -175,7 +182,7 @@ impl Board {
     ///
     /// assert_eq!(*board.combined(), combined_should_be);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn combined(&self) -> &BitBoard {
         &self.combined
     }
@@ -197,7 +204,7 @@ impl Board {
     /// assert_eq!(*board.color_combined(Color::White), white_pieces);
     /// assert_eq!(*board.color_combined(Color::Black), black_pieces);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn color_combined(&self, color: Color) -> &BitBoard {
         unsafe { self.color_combined.get_unchecked(color.to_index()) }
     }
@@ -232,7 +239,7 @@ impl Board {
     ///
     /// assert_eq!(*board.pieces(Piece::Rook), rooks);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn pieces(&self, piece: Piece) -> &BitBoard {
         unsafe { self.pieces.get_unchecked(piece.to_index()) }
     }
@@ -320,7 +327,7 @@ impl Board {
     /// let mut board = Board::default();
     /// assert_eq!(board.side_to_move(), Color::White);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn side_to_move(&self) -> Color {
         self.side_to_move
     }
@@ -426,6 +433,7 @@ impl Board {
     }
 
     /// Add or remove a piece from the bitboards in this struct.
+    #[inline]
     fn xor(&mut self, piece: Piece, bb: BitBoard, color: Color) {
         unsafe {
             *self.pieces.get_unchecked_mut(piece.to_index()) ^= bb;
@@ -673,7 +681,7 @@ impl Board {
     }
 
     /// Get a hash of the board.
-    #[inline]
+    #[inline(always)]
     pub fn get_hash(&self) -> u64 {
         self.hash
             ^ if let Some(ep) = self.en_passant {
@@ -854,9 +862,11 @@ impl Board {
     /// ```
     #[inline]
     pub fn make_move_new(&self, m: ChessMove) -> Board {
-        let mut result = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
-        self.make_move(m, &mut result);
-        result
+        let mut result = mem::MaybeUninit::<Board>::uninit();
+        unsafe {
+            self.make_move(m, &mut *result.as_mut_ptr());
+            result.assume_init()
+        }
     }
 
     /// Make a chess move onto an already allocated `Board`.

@@ -8,6 +8,7 @@
 extern crate rand;
 
 mod between;
+#[cfg(target_feature = "bmi2")]
 mod bmis;
 mod generate_all_tables;
 mod king;

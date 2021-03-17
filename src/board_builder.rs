@@ -472,7 +472,7 @@ impl FromStr for BoardBuilder {
             fen.castle_rights[Color::Black.to_index()] = CastleRights::NoRights;
         }
 
-        if let Some(sq) = Square::from_string(ep.to_owned()) {
+        if let Ok(sq) = Square::from_str(&ep) {
             fen = fen.en_passant(Some(sq.get_file()));
         }
 

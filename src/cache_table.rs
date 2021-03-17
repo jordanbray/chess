@@ -53,4 +53,39 @@ impl<T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
             entry: entry,
         };
     }
+
+    /// Replace an entry in the hash table with a user-specified replacement policy specified by
+    /// `replace`. The `replace` closure is called with the previous entry occupying the hash table
+    /// slot, and returns true or false to specify whether the entry should be replaced. Note that
+    /// the previous entry may not have the same hash, but merely be the default initialization or
+    /// a hash collision with `hash`.
+    ///
+    /// ```
+    /// use chess::CacheTable;
+    ///
+    /// # fn main() {
+    ///
+    /// let mut table: CacheTable<char> = CacheTable::new(256, 'a');
+    ///
+    /// assert_eq!(table.get(5), None);
+    /// // Note that 'a' is the default initialization value.
+    /// table.replace_if(5, 'b', |old_entry| old_entry != 'a');
+    /// assert_eq!(table.get(5), None);
+    /// table.replace_if(5, 'c', |old_entry| old_entry == 'a');
+    /// assert_eq!(table.get(5), Some('c'));
+    /// table.replace_if(5, 'd', |old_entry| old_entry == 'c');
+    /// assert_eq!(table.get(5), Some('d'));
+    ///
+    /// # }
+    /// ```
+    #[inline(always)]
+    pub fn replace_if<F: Fn(T) -> bool>(&mut self, hash: u64, entry: T, replace: F) {
+        let e = unsafe { self.table.get_unchecked_mut((hash as usize) & self.mask) };
+        if replace(e.entry) {
+            *e = CacheTableEntry {
+                hash: hash,
+                entry: entry,
+            };
+        }
+    }
 }

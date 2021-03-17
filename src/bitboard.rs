@@ -23,7 +23,7 @@ use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, M
 /// assert_eq!(count, 3);
 /// ```
 ///
-#[derive(PartialEq, PartialOrd, Clone, Copy, Debug, Default)]
+#[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Debug, Default, Hash)]
 pub struct BitBoard(pub u64);
 
 /// An empty bitboard.  It is sometimes useful to use !EMPTY to get the universe of squares.

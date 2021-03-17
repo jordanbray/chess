@@ -69,7 +69,7 @@ fn gen_castle_moves() -> BitBoard {
 pub fn write_king_moves(f: &mut File) {
     write!(f, "const KING_MOVES: [BitBoard; 64] = [\n").unwrap();
     for i in 0..64 {
-        unsafe { write!(f, "    BitBoard({}),\n", KING_MOVES[i].to_size(0)).unwrap() };
+        unsafe { write!(f, "    BitBoard({}),\n", KING_MOVES[i].0).unwrap() };
     }
     write!(f, "];\n").unwrap();
 
@@ -78,8 +78,8 @@ pub fn write_king_moves(f: &mut File) {
         write!(
             f,
             " BitBoard({}), BitBoard({})];\n",
-            KINGSIDE_CASTLE_SQUARES[0].to_size(0),
-            KINGSIDE_CASTLE_SQUARES[1].to_size(0)
+            KINGSIDE_CASTLE_SQUARES[0].0,
+            KINGSIDE_CASTLE_SQUARES[1].0
         )
         .unwrap()
     };
@@ -89,8 +89,8 @@ pub fn write_king_moves(f: &mut File) {
         write!(
             f,
             " BitBoard({}), BitBoard({})];\n",
-            QUEENSIDE_CASTLE_SQUARES[0].to_size(0),
-            QUEENSIDE_CASTLE_SQUARES[1].to_size(0)
+            QUEENSIDE_CASTLE_SQUARES[0].0,
+            QUEENSIDE_CASTLE_SQUARES[1].0
         )
         .unwrap()
     };
@@ -98,7 +98,7 @@ pub fn write_king_moves(f: &mut File) {
     write!(
         f,
         "const CASTLE_MOVES: BitBoard = BitBoard({});\n",
-        gen_castle_moves().to_size(0)
+        gen_castle_moves().0
     )
     .unwrap();
 }

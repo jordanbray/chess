@@ -8,6 +8,7 @@
 extern crate rand;
 mod bitboard;
 mod color;
+mod error;
 mod file;
 mod gen_tables;
 mod piece;

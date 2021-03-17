@@ -58,7 +58,7 @@ pub fn write_rays(f: &mut File) {
     write!(f, "const RAYS: [[BitBoard; 64]; 2] = [[\n").unwrap();
     for i in 0..2 {
         for j in 0..64 {
-            unsafe { write!(f, "    BitBoard({}),\n", RAYS[i][j].to_size(0)).unwrap() };
+            unsafe { write!(f, "    BitBoard({}),\n", RAYS[i][j].0).unwrap() };
         }
         if i != 1 {
             write!(f, "  ], [\n").unwrap();

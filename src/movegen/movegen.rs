@@ -233,10 +233,11 @@ impl MoveGen {
             iterable.len()
         } else {
             for m in iterable {
-                let mut bresult = unsafe { mem::uninitialized() };
-                board.make_move(m, &mut bresult);
-                let cur = MoveGen::movegen_perft_test(&bresult, depth - 1);
-                result += cur;
+                let mut bresult = mem::MaybeUninit::<Board>::uninit();
+                unsafe {
+                    board.make_move(m, &mut *bresult.as_mut_ptr());
+                    result += MoveGen::movegen_perft_test(&*bresult.as_ptr(), depth - 1);
+                }
             }
             result
         }
@@ -259,15 +260,19 @@ impl MoveGen {
         } else {
             iterable.set_iterator_mask(*targets);
             for x in &mut iterable {
-                let mut bresult = unsafe { mem::uninitialized() };
-                board.make_move(x, &mut bresult);
-                result += MoveGen::movegen_perft_test_piecewise(&bresult, depth - 1);
+                let mut bresult = mem::MaybeUninit::<Board>::uninit();
+                unsafe {
+                    board.make_move(x, &mut *bresult.as_mut_ptr());
+                    result += MoveGen::movegen_perft_test(&*bresult.as_ptr(), depth - 1);
+                }
             }
             iterable.set_iterator_mask(!EMPTY);
             for x in &mut iterable {
-                let mut bresult = unsafe { mem::uninitialized() };
-                board.make_move(x, &mut bresult);
-                result += MoveGen::movegen_perft_test_piecewise(&bresult, depth - 1);
+                let mut bresult = mem::MaybeUninit::<Board>::uninit();
+                unsafe {
+                    board.make_move(x, &mut *bresult.as_mut_ptr());
+                    result += MoveGen::movegen_perft_test(&*bresult.as_ptr(), depth - 1);
+                }
             }
             result
         }
@@ -371,12 +376,14 @@ fn movegen_perft_kiwipete() {
 
 #[test]
 fn movegen_perft_1() {
-    movegen_perft_test("8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1".to_owned(), 6, 824064); // Invalid FEN
+    movegen_perft_test("8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1".to_owned(), 6, 824064);
+    // Invalid FEN
 }
 
 #[test]
 fn movegen_perft_2() {
-    movegen_perft_test("8/8/1k6/8/2pP4/8/5BK1/8 b - d3 0 1".to_owned(), 6, 824064); // Invalid FEN
+    movegen_perft_test("8/8/1k6/8/2pP4/8/5BK1/8 b - d3 0 1".to_owned(), 6, 824064);
+    // Invalid FEN
 }
 
 #[test]
@@ -539,8 +546,8 @@ fn move_of(m: &str) -> ChessMove {
         None
     };
     ChessMove::new(
-        Square::from_string(m[..2].to_string()).unwrap(),
-        Square::from_string(m[2..4].to_string()).unwrap(),
+        Square::from_str(&m[..2]).unwrap(),
+        Square::from_str(&m[2..4]).unwrap(),
         promo,
     )
 }

@@ -62,7 +62,7 @@ pub fn write_between(f: &mut File) {
     write!(f, "const BETWEEN: [[BitBoard; 64]; 64] = [[\n").unwrap();
     for i in 0..64 {
         for j in 0..64 {
-            unsafe { write!(f, "    BitBoard({}),\n", BETWEEN[i][j].to_size(0)).unwrap() };
+            unsafe { write!(f, "    BitBoard({}),\n", BETWEEN[i][j].0).unwrap() };
         }
         if i != 63 {
             write!(f, "  ], [\n").unwrap();

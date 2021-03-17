@@ -20,8 +20,8 @@ impl Color {
         *self as usize
     }
 
-    /// Covert the `Color` to a rank, which reperesnts the starting position
-    /// for that colors pieces.
+    /// Convert a `Color` to my backrank, which represents the starting rank
+    /// for my pieces.
     #[inline]
     pub fn to_my_backrank(&self) -> Rank {
         match *self {
@@ -30,7 +30,7 @@ impl Color {
         }
     }
 
-    /// Convert a `Color` to my opponents backrank, which represents the starting position for the
+    /// Convert a `Color` to my opponents backrank, which represents the starting rank for the
     /// opponents pieces.
     #[inline]
     pub fn to_their_backrank(&self) -> Rank {
@@ -40,7 +40,7 @@ impl Color {
         }
     }
 
-    /// Convert a `Color` to my second rank, which represents the starting position for my pawns.
+    /// Convert a `Color` to my second rank, which represents the starting rank for my pawns.
     #[inline]
     pub fn to_second_rank(&self) -> Rank {
         match *self {
@@ -49,6 +49,8 @@ impl Color {
         }
     }
 
+    /// Convert a `Color` to my fourth rank, which represents the rank of my pawns when
+    /// moving two squares forward.
     #[inline]
     pub fn to_fourth_rank(&self) -> Rank {
         match *self {

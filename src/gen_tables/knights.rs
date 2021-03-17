@@ -31,7 +31,7 @@ pub fn gen_knight_moves() {
 pub fn write_knight_moves(f: &mut File) {
     write!(f, "const KNIGHT_MOVES: [BitBoard; 64] = [\n").unwrap();
     for i in 0..64 {
-        unsafe { write!(f, "    BitBoard({}),\n", KNIGHT_MOVES[i].to_size(0)).unwrap() };
+        unsafe { write!(f, "    BitBoard({}),\n", KNIGHT_MOVES[i].0).unwrap() };
     }
     write!(f, "];\n").unwrap();
 }

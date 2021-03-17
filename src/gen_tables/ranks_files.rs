@@ -59,24 +59,24 @@ pub fn write_bitboard_data(f: &mut File) {
     unsafe {
         write!(f, "const FILES: [BitBoard; 8] = [\n").unwrap();
         for i in 0..8 {
-            write!(f, "    BitBoard({}),\n", FILES[i].to_size(0)).unwrap();
+            write!(f, "    BitBoard({}),\n", FILES[i].0).unwrap();
         }
         write!(f, "];\n").unwrap();
         write!(f, "const ADJACENT_FILES: [BitBoard; 8] = [\n").unwrap();
         for i in 0..8 {
-            write!(f, "    BitBoard({}),\n", ADJACENT_FILES[i].to_size(0)).unwrap();
+            write!(f, "    BitBoard({}),\n", ADJACENT_FILES[i].0).unwrap();
         }
         write!(f, "];\n").unwrap();
         write!(f, "const RANKS: [BitBoard; 8] = [\n").unwrap();
         for i in 0..8 {
-            write!(f, "    BitBoard({}),\n", RANKS[i].to_size(0)).unwrap();
+            write!(f, "    BitBoard({}),\n", RANKS[i].0).unwrap();
         }
         write!(f, "];\n").unwrap();
         write!(f, "/// What are all the edge squares on the `BitBoard`?\n").unwrap();
         write!(
             f,
             "pub const EDGES: BitBoard = BitBoard({});\n",
-            EDGES.to_size(0)
+            EDGES.0
         )
         .unwrap();
     }

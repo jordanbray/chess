@@ -8,7 +8,7 @@ use crate::square::Square;
 use crate::magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
 
 /// What castle rights does a particular player have?
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 pub enum CastleRights {
     NoRights,
     KingSide,

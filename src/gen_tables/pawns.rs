@@ -90,7 +90,7 @@ pub fn write_pawn_moves(f: &mut File) {
     write!(f, "const PAWN_MOVES: [[BitBoard; 64]; 2] = [[\n").unwrap();
     for i in 0..2 {
         for j in 0..64 {
-            unsafe { write!(f, "    BitBoard({}),\n", PAWN_MOVES[i][j].to_size(0)).unwrap() };
+            unsafe { write!(f, "    BitBoard({}),\n", PAWN_MOVES[i][j].0).unwrap() };
         }
         if i != 1 {
             write!(f, "  ], [\n").unwrap();
@@ -104,7 +104,7 @@ pub fn write_pawn_attacks(f: &mut File) {
     write!(f, "const PAWN_ATTACKS: [[BitBoard; 64]; 2] = [[\n").unwrap();
     for i in 0..2 {
         for j in 0..64 {
-            unsafe { write!(f, "    BitBoard({}),\n", PAWN_ATTACKS[i][j].to_size(0)).unwrap() };
+            unsafe { write!(f, "    BitBoard({}),\n", PAWN_ATTACKS[i][j].0).unwrap() };
         }
         if i != 1 {
             write!(f, "  ], [\n").unwrap();
@@ -115,14 +115,14 @@ pub fn write_pawn_attacks(f: &mut File) {
     write!(
         f,
         "const PAWN_SOURCE_DOUBLE_MOVES: BitBoard = BitBoard({0});\n",
-        gen_source_double_moves().to_size(0)
+        gen_source_double_moves().0
     )
     .unwrap();
 
     write!(
         f,
         "const PAWN_DEST_DOUBLE_MOVES: BitBoard = BitBoard({0});\n",
-        gen_dest_double_moves().to_size(0)
+        gen_dest_double_moves().0
     )
     .unwrap();
 }
