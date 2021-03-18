@@ -44,7 +44,7 @@ impl Rank {
         Rank::from_index(self.to_index().wrapping_sub(1))
     }
 
-    /// Go one file up.  If impossible, wrap around.
+    /// Go one rank up.  If impossible, wrap around.
     #[inline]
     pub fn up(&self) -> Rank {
         Rank::from_index(self.to_index() + 1)
