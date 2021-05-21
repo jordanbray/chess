@@ -153,6 +153,10 @@ pub fn between(sq1: Square, sq2: Square) -> BitBoard {
             .get_unchecked(sq2.to_index())
     }
 }
+#[inline]
+pub const fn between_const(sq1: Square, sq2: Square) -> BitBoard {
+    BETWEEN[sq1.to_index()][sq2.to_index()]
+}
 
 /// Get a `BitBoard` that represents all the squares on a particular rank.
 #[inline]

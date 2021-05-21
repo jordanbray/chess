@@ -38,6 +38,23 @@ impl Rank {
         unsafe { transmute((i as u8) & 7) }
     }
 
+    #[inline]
+    pub const fn from_index_const(i: usize) -> Rank {
+        match i & 7 {
+            0 => Rank::First,
+            1 => Rank::Second,
+            2 => Rank::Third,
+            3 => Rank::Fourth,
+            4 => Rank::Fifth,
+            5 => Rank::Sixth,
+            6 => Rank::Seventh,
+            7 => Rank::Eighth,
+            // unreachable:
+            _ => Rank::First,
+        }
+        // unsafe { transmute((i as u8) & 7) }
+    }
+
     /// Go one rank down.  If impossible, wrap around.
     #[inline]
     pub fn down(&self) -> Rank {
@@ -52,7 +69,7 @@ impl Rank {
 
     /// Convert this `Rank` into a `usize` between 0 and 7 (inclusive).
     #[inline]
-    pub fn to_index(&self) -> usize {
+    pub const fn to_index(&self) -> usize {
         *self as usize
     }
 }

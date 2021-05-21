@@ -44,7 +44,7 @@ pub use crate::file::*;
 
 mod magic;
 pub use crate::magic::{
-    between, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_file, get_king_moves,
+    between, between_const, get_adjacent_files, get_bishop_moves, get_bishop_rays, get_file, get_king_moves,
     get_knight_moves, get_pawn_attacks, get_pawn_moves, get_pawn_quiets, get_rank, get_rook_moves,
     get_rook_rays, line, EDGES,
 };
