@@ -170,6 +170,35 @@ impl Game {
         copy
     }
 
+    fn get_half_move_clock(&self) -> usize {
+        let mut reversible_moves = 0;
+        let mut board = self.start_pos;
+        for x in self.moves.iter() {
+            match *x {
+                Action::MakeMove(m) => {
+                    let white_castle_rights = board.castle_rights(Color::White);
+                    let black_castle_rights = board.castle_rights(Color::Black);
+                    if board.piece_on(m.get_source()) == Some(Piece::Pawn) {
+                        reversible_moves = 0;
+                    } else if board.piece_on(m.get_dest()).is_some() {
+                        reversible_moves = 0;
+                    } else {
+                        reversible_moves += 1;
+                    }
+                    board = board.make_move_new(m);
+
+                    if board.castle_rights(Color::White) != white_castle_rights
+                        || board.castle_rights(Color::Black) != black_castle_rights
+                    {
+                        reversible_moves = 0;
+                    }
+                }
+                _ => {}
+            }
+        }
+        reversible_moves
+    }
+
     /// Determine if a player can legally declare a draw by 3-fold repetition or 50-move rule.
     ///
     /// ```
@@ -205,7 +234,6 @@ impl Game {
         let mut legal_moves_per_turn: Vec<(u64, Vec<ChessMove>)> = vec![];
 
         let mut board = self.start_pos;
-        let mut reversible_moves = 0;
 
         // Loop over each move, counting the reversible_moves for draw by 50 move rule,
         // and filling a list of legal_moves_per_turn list for 3-fold repitition
@@ -216,20 +244,16 @@ impl Game {
                     let white_castle_rights = board.castle_rights(Color::White);
                     let black_castle_rights = board.castle_rights(Color::Black);
                     if board.piece_on(m.get_source()) == Some(Piece::Pawn) {
-                        reversible_moves = 0;
                         legal_moves_per_turn.clear();
                     } else if board.piece_on(m.get_dest()).is_some() {
-                        reversible_moves = 0;
                         legal_moves_per_turn.clear();
                     } else {
-                        reversible_moves += 1;
                     }
                     board = board.make_move_new(m);
 
                     if board.castle_rights(Color::White) != white_castle_rights
                         || board.castle_rights(Color::Black) != black_castle_rights
                     {
-                        reversible_moves = 0;
                         legal_moves_per_turn.clear();
                     }
                     legal_moves_per_turn
@@ -239,7 +263,7 @@ impl Game {
             }
         }
 
-        if reversible_moves >= 100 {
+        if self.get_half_move_clock() >= 100 {
             return true;
         }
 
