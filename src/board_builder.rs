@@ -264,6 +264,71 @@ impl BoardBuilder {
         self.en_passant = file;
         self
     }
+
+    /// A FEN representaion with the last two fileds, the half move clock and the full move
+    /// counter, omitted.
+    pub(crate) fn get_psuedo_fen(&self) -> String {
+        let mut psuedo_fen = String::new();
+        let mut count = 0;
+        for rank in ALL_RANKS.iter().rev() {
+            for file in ALL_FILES.iter() {
+                let square = Square::make_square(*rank, *file).to_index();
+
+                if self.pieces[square].is_some() && count != 0 {
+                    psuedo_fen.push_str(count.to_string().as_str());
+                    count = 0;
+                }
+
+                if let Some((piece, color)) = self.pieces[square] {
+                    psuedo_fen.push_str(piece.to_string(color).as_str());
+                } else {
+                    count += 1;
+                }
+            }
+
+            if count != 0 {
+                psuedo_fen.push_str(count.to_string().as_str());
+            }
+
+            if *rank != Rank::First {
+                psuedo_fen.push_str("/");
+            }
+            count = 0;
+        }
+
+        psuedo_fen.push_str(" ");
+
+        if self.side_to_move == Color::White {
+            psuedo_fen.push_str("w ");
+        } else {
+            psuedo_fen.push_str("b ");
+        }
+
+        psuedo_fen.push_str(
+            self.castle_rights[Color::White.to_index()]
+                .to_string(Color::White)
+                .as_str(),
+        );
+        psuedo_fen.push_str(
+            self.castle_rights[Color::Black.to_index()]
+                .to_string(Color::Black)
+                .as_str(),
+        );
+        if self.castle_rights[0] == CastleRights::NoRights
+            && self.castle_rights[1] == CastleRights::NoRights
+        {
+            psuedo_fen.push_str("-");
+        }
+
+        psuedo_fen.push_str(" ");
+        if let Some(sq) = self.en_passant_target {
+            psuedo_fen.push_str(sq.to_string().as_str());
+        } else {
+            psuedo_fen.push_str("-");
+        }
+
+        psuedo_fen
+    }
 }
 
 impl Index<Square> for BoardBuilder {
@@ -282,65 +347,7 @@ impl IndexMut<Square> for BoardBuilder {
 
 impl fmt::Display for BoardBuilder {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut count = 0;
-        for rank in ALL_RANKS.iter().rev() {
-            for file in ALL_FILES.iter() {
-                let square = Square::make_square(*rank, *file).to_index();
-
-                if self.pieces[square].is_some() && count != 0 {
-                    write!(f, "{}", count)?;
-                    count = 0;
-                }
-
-                if let Some((piece, color)) = self.pieces[square] {
-                    write!(f, "{}", piece.to_string(color))?;
-                } else {
-                    count += 1;
-                }
-            }
-
-            if count != 0 {
-                write!(f, "{}", count)?;
-            }
-
-            if *rank != Rank::First {
-                write!(f, "/")?;
-            }
-            count = 0;
-        }
-
-        write!(f, " ")?;
-
-        if self.side_to_move == Color::White {
-            write!(f, "w ")?;
-        } else {
-            write!(f, "b ")?;
-        }
-
-        write!(
-            f,
-            "{}",
-            self.castle_rights[Color::White.to_index()].to_string(Color::White)
-        )?;
-        write!(
-            f,
-            "{}",
-            self.castle_rights[Color::Black.to_index()].to_string(Color::Black)
-        )?;
-        if self.castle_rights[0] == CastleRights::NoRights
-            && self.castle_rights[1] == CastleRights::NoRights
-        {
-            write!(f, "-")?;
-        }
-
-        write!(f, " ")?;
-        if let Some(sq) = self.en_passant_target {
-            write!(f, "{}", sq)?;
-        } else {
-            write!(f, "-")?;
-        }
-
-        write!(f, " 0 1")
+        write!(f, "{} 0 1", self.get_psuedo_fen())
     }
 }
 
