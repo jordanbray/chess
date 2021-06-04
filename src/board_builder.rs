@@ -53,6 +53,7 @@ pub struct BoardBuilder {
     side_to_move: Color,
     castle_rights: [CastleRights; 2],
     en_passant: Option<File>,
+    en_passant_target: Option<Square>,
 }
 
 impl BoardBuilder {
@@ -81,6 +82,7 @@ impl BoardBuilder {
             side_to_move: Color::White,
             castle_rights: [CastleRights::NoRights, CastleRights::NoRights],
             en_passant: None,
+            en_passant_target: None,
         }
     }
 
@@ -100,6 +102,7 @@ impl BoardBuilder {
     ///         Color::Black,
     ///         CastleRights::NoRights,
     ///         CastleRights::NoRights,
+    ///         None,
     ///         None)
     ///     .try_into()?;
     /// # Ok(())
@@ -110,12 +113,14 @@ impl BoardBuilder {
         white_castle_rights: CastleRights,
         black_castle_rights: CastleRights,
         en_passant: Option<File>,
+        en_passant_target: Option<Square>,
     ) -> BoardBuilder {
         let mut result = BoardBuilder {
             pieces: [None; 64],
             side_to_move: side_to_move,
             castle_rights: [white_castle_rights, black_castle_rights],
             en_passant: en_passant,
+            en_passant_target: en_passant_target,
         };
 
         for piece in pieces.into_iter() {
@@ -329,7 +334,7 @@ impl fmt::Display for BoardBuilder {
         }
 
         write!(f, " ")?;
-        if let Some(sq) = self.get_en_passant() {
+        if let Some(sq) = self.en_passant_target {
             write!(f, "{}", sq)?;
         } else {
             write!(f, "-")?;
@@ -496,6 +501,7 @@ impl From<&Board> for BoardBuilder {
             board.castle_rights(Color::White),
             board.castle_rights(Color::Black),
             board.en_passant().map(|sq| sq.get_file()),
+            board.en_passant_target(),
         )
     }
 }
