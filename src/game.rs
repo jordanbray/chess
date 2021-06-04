@@ -4,6 +4,7 @@ use crate::color::Color;
 use crate::error::Error;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;
+use std::fmt;
 use std::str::FromStr;
 
 /// Contains all actions supported within the game
@@ -168,6 +169,19 @@ impl Game {
         }
 
         copy
+    }
+
+    fn get_full_move_counter(&self) -> usize {
+        let mut half_moves = 2;
+        for x in self.moves.iter() {
+            match *x {
+                Action::MakeMove(_) => {
+                    half_moves += 1;
+                }
+                _ => (),
+            }
+        }
+        half_moves / 2
     }
 
     fn get_half_move_clock(&self) -> usize {
@@ -448,6 +462,18 @@ impl FromStr for Game {
 
     fn from_str(fen: &str) -> Result<Self, Self::Err> {
         Ok(Game::new_with_board(Board::from_str(fen)?))
+    }
+}
+
+impl fmt::Display for Game {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {}",
+            self.current_position().get_psuedo_fen(),
+            self.get_half_move_clock(),
+            self.get_full_move_counter()
+        )
     }
 }
 

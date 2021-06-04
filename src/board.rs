@@ -1084,6 +1084,11 @@ impl Board {
     pub fn checkers(&self) -> &BitBoard {
         &self.checkers
     }
+
+    pub fn get_psuedo_fen(&self) -> String {
+        let board_builder: BoardBuilder = self.into();
+        board_builder.get_psuedo_fen()
+    }
 }
 
 impl fmt::Display for Board {
