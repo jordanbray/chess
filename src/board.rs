@@ -32,6 +32,7 @@ pub struct Board {
     checkers: BitBoard,
     hash: u64,
     en_passant: Option<Square>,
+    en_passant_target: Option<Square>,
 }
 
 /// What is the status of this game?
@@ -71,6 +72,7 @@ impl Board {
             checkers: EMPTY,
             hash: 0,
             en_passant: None,
+            en_passant_target: None,
         }
     }
 
@@ -807,6 +809,39 @@ impl Board {
         self.en_passant
     }
 
+    /// Give me the en_passant_target square, if it exists.
+    ///
+    /// ```
+    /// use chess::{Board, ChessMove, Square};
+    ///
+    /// let move1 = ChessMove::new(Square::D2,
+    ///                            Square::D4,
+    ///                            None);
+    ///
+    /// let move2 = ChessMove::new(Square::H7,
+    ///                            Square::H5,
+    ///                            None);
+    ///
+    /// let move3 = ChessMove::new(Square::D4,
+    ///                            Square::D5,
+    ///                            None);
+    ///
+    /// let move4 = ChessMove::new(Square::E7,
+    ///                            Square::E5,
+    ///                            None);
+    ///
+    /// let board = Board::default().make_move_new(move1)
+    ///                             .make_move_new(move2)
+    ///                             .make_move_new(move3)
+    ///                             .make_move_new(move4);
+    ///
+    /// assert_eq!(board.en_passant_target(), Some(Square::E6));
+    /// ```
+    #[inline]
+    pub fn en_passant_target(self) -> Option<Square> {
+        self.en_passant_target
+    }
+
     /// Set the en_passant square.  Note: This must only be called when self.en_passant is already
     /// None.
     fn set_ep(&mut self, sq: Square) {
@@ -819,6 +854,10 @@ impl Board {
         {
             self.en_passant = Some(sq);
         }
+    }
+
+    fn set_ep_target(&mut self, sq: Option<Square>) {
+        self.en_passant_target = sq;
     }
 
     /// Is a particular move legal?  This function is very slow, but will work on unsanitized
@@ -904,6 +943,9 @@ impl Board {
             result.xor(captured, dest_bb, !self.side_to_move);
         }
 
+        // Reset en_passant target
+        result.set_ep_target(None);
+
         #[allow(deprecated)]
         result.remove_their_castle_rights(CastleRights::square_to_castle_rights(
             !self.side_to_move,
@@ -957,6 +999,7 @@ impl Board {
                 && (dest_bb & get_pawn_dest_double_moves()) != EMPTY
             {
                 result.set_ep(dest);
+                result.set_ep_target(Some(dest.ubackward(self.side_to_move)));
                 result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
             } else if Some(dest.ubackward(self.side_to_move)) == self.en_passant {
                 result.xor(
