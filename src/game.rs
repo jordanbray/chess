@@ -38,6 +38,8 @@ pub enum GameResult {
 pub struct Game {
     start_pos: Board,
     moves: Vec<Action>,
+    start_half_move_clock: usize,
+    start_full_move_counter: usize,
 }
 
 impl Game {
@@ -50,10 +52,7 @@ impl Game {
     /// assert_eq!(game.current_position(), Board::default());
     /// ```
     pub fn new() -> Game {
-        Game {
-            start_pos: Board::default(),
-            moves: vec![],
-        }
+        Game::new_with_board(Board::default())
     }
 
     /// Create a new `Game` with a specific starting position.
@@ -65,9 +64,19 @@ impl Game {
     /// assert_eq!(game.current_position(), Board::default());
     /// ```
     pub fn new_with_board(board: Board) -> Game {
+        Game::new_with_board_and_counters(board, 0, 1)
+    }
+
+    fn new_with_board_and_counters(
+        board: Board,
+        start_half_move_clock: usize,
+        start_full_move_counter: usize,
+    ) -> Game {
         Game {
             start_pos: board,
             moves: vec![],
+            start_half_move_clock,
+            start_full_move_counter,
         }
     }
 
@@ -172,7 +181,7 @@ impl Game {
     }
 
     fn get_full_move_counter(&self) -> usize {
-        let mut half_moves = 2;
+        let mut half_moves = self.start_full_move_counter * 2;
         for x in self.moves.iter() {
             match *x {
                 Action::MakeMove(_) => {
@@ -185,7 +194,7 @@ impl Game {
     }
 
     fn get_half_move_clock(&self) -> usize {
-        let mut reversible_moves = 0;
+        let mut reversible_moves = self.start_half_move_clock;
         let mut board = self.start_pos;
         for x in self.moves.iter() {
             match *x {
@@ -461,7 +470,33 @@ impl FromStr for Game {
     type Err = Error;
 
     fn from_str(fen: &str) -> Result<Self, Self::Err> {
-        Ok(Game::new_with_board(Board::from_str(fen)?))
+        let half_move_clock = fen
+            .split(" ")
+            .nth(4)
+            .ok_or_else(|| Error::InvalidFen {
+                fen: String::from(fen),
+            })?
+            .parse::<usize>()
+            .map_err(|_| Error::InvalidFen {
+                fen: String::from(fen),
+            })?;
+
+        let full_move_counter = fen
+            .split(" ")
+            .nth(5)
+            .ok_or_else(|| Error::InvalidFen {
+                fen: String::from(fen),
+            })?
+            .parse::<usize>()
+            .map_err(|_| Error::InvalidFen {
+                fen: String::from(fen),
+            })?;
+
+        Ok(Game::new_with_board_and_counters(
+            Board::from_str(fen)?,
+            half_move_clock,
+            full_move_counter,
+        ))
     }
 }
 
