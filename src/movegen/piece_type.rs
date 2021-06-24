@@ -38,21 +38,13 @@ pub trait PieceType {
 
         for src in pieces & !pinned {
             let moves = Self::pseudo_legals(src, color, *combined, mask) & check_mask;
-            if moves != EMPTY {
-                unsafe {
-                    movelist.push_unchecked(SquareAndBitBoard::new(src, moves, false));
-                }
-            }
+            push_move(movelist, src, moves);
         }
 
         if !T::IN_CHECK {
             for src in pieces & pinned {
                 let moves = Self::pseudo_legals(src, color, *combined, mask) & line(src, ksq);
-                if moves != EMPTY {
-                    unsafe {
-                        movelist.push_unchecked(SquareAndBitBoard::new(src, moves, false));
-                    }
-                }
+                push_move(movelist, src, moves);
             }
         }
     }
@@ -149,29 +141,13 @@ impl PieceType for PawnType {
 
         for src in pieces & !pinned {
             let moves = Self::pseudo_legals(src, color, *combined, mask) & check_mask;
-            if moves != EMPTY {
-                unsafe {
-                    movelist.push_unchecked(SquareAndBitBoard::new(
-                        src,
-                        moves,
-                        src.get_rank() == color.to_seventh_rank(),
-                    ));
-                }
-            }
+            push_move_pawn(movelist, src, moves, color)
         }
 
         if !T::IN_CHECK {
             for src in pieces & pinned {
                 let moves = Self::pseudo_legals(src, color, *combined, mask) & line(ksq, src);
-                if moves != EMPTY {
-                    unsafe {
-                        movelist.push_unchecked(SquareAndBitBoard::new(
-                            src,
-                            moves,
-                            src.get_rank() == color.to_seventh_rank(),
-                        ));
-                    }
-                }
+                push_move_pawn(movelist, src, moves, color)
             }
         }
 
@@ -182,13 +158,7 @@ impl PieceType for PawnType {
             for src in rank & files & pieces {
                 let dest = ep_sq.uforward(color);
                 if PawnType::legal_ep_move(board, src, dest) {
-                    unsafe {
-                        movelist.push_unchecked(SquareAndBitBoard::new(
-                            src,
-                            BitBoard::from_square(dest),
-                            false,
-                        ));
-                    }
+                    push_move(movelist, src, BitBoard::from_square(dest));
                 }
             }
         }
@@ -243,20 +213,12 @@ impl PieceType for KnightType {
 
             for src in pieces & !pinned {
                 let moves = Self::pseudo_legals(src, color, *combined, mask & check_mask);
-                if moves != EMPTY {
-                    unsafe {
-                        movelist.push_unchecked(SquareAndBitBoard::new(src, moves, false));
-                    }
-                }
+                push_move(movelist, src, moves);
             }
         } else {
             for src in pieces & !pinned {
                 let moves = Self::pseudo_legals(src, color, *combined, mask);
-                if moves != EMPTY {
-                    unsafe {
-                        movelist.push_unchecked(SquareAndBitBoard::new(src, moves, false));
-                    }
-                }
+                push_move(movelist, src, moves);
             }
         };
     }
@@ -396,9 +358,21 @@ impl PieceType for KingType {
             }
         }
         if moves != EMPTY {
-            unsafe {
-                movelist.push_unchecked(SquareAndBitBoard::new(ksq, moves, false));
-            }
+            push_move(movelist, ksq, moves);
         }
+    }
+}
+
+#[inline(always)]
+fn push_move_pawn(movelist: &mut MoveList, sq: Square, bb: BitBoard, color: Color) {
+    if bb != EMPTY {
+        let _ = movelist.try_push(SquareAndBitBoard::new(sq, bb, sq.get_rank() == color.to_seventh_rank()));
+    }
+}
+
+#[inline(always)]
+fn push_move(movelist: &mut MoveList, sq: Square, bb: BitBoard) {
+    if bb != EMPTY {
+        let _ = movelist.try_push(SquareAndBitBoard::new(sq, bb, false));
     }
 }

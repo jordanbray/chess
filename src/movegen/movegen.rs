@@ -525,6 +525,11 @@ fn movegen_issue_15() {
     let _ = MoveGen::new_legal(&board);
 }
 
+#[test]
+fn movegen_issue_55() {
+    MoveGen::new_legal(&"3k4/8/PPPPPPPP/8/PPPPPPPP/8/PPPPPPPP/3K4 w - - 0 1".parse().unwrap());
+}
+
 #[cfg(test)]
 fn move_of(m: &str) -> ChessMove {
     let promo = if m.len() > 4 {
