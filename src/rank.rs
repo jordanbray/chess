@@ -4,15 +4,16 @@ use std::str::FromStr;
 
 /// Describe a rank (row) on a chess board
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
+#[repr(u8)]
 pub enum Rank {
-    First,
-    Second,
-    Third,
-    Fourth,
-    Fifth,
-    Sixth,
-    Seventh,
-    Eighth,
+    First = 0,
+    Second = 1,
+    Third = 2,
+    Fourth = 3,
+    Fifth = 4,
+    Sixth = 5,
+    Seventh = 6,
+    Eighth = 7,
 }
 
 /// How many ranks are there?
