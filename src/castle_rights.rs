@@ -70,6 +70,7 @@ impl CastleRights {
 
     pub fn square_to_castle_rights(color: Color, sq: Square) -> CastleRights {
         unsafe {
+            // SAFETY: All values in constant are < 4
             CastleRights::new_unchecked(
                 *CASTLES_PER_SQUARE
                     .get_unchecked(color.to_index())
@@ -91,6 +92,7 @@ impl CastleRights {
     /// Remove castle rights, and return a new `CastleRights`.
     pub fn remove(&self, remove: CastleRights) -> CastleRights {
         unsafe {
+            // SAFETY: x < 4 => (x & y) < 4
             CastleRights::new_unchecked(self.to_index() & !remove.to_index())
         }
     }
@@ -98,6 +100,7 @@ impl CastleRights {
     /// Add some castle rights, and return a new `CastleRights`.
     pub fn add(&self, add: CastleRights) -> CastleRights {
         unsafe {
+            // SAFETY: x < 4 && y < 4 => (x | y) < 4
             CastleRights::new_unchecked(self.to_index() | add.to_index())
         }
     }
