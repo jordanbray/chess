@@ -3,14 +3,13 @@ use std::fmt;
 
 /// Represent a chess piece as a very simple enum
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
-#[repr(u8)]
 pub enum Piece {
-    Pawn = 0,
-    Knight = 1,
-    Bishop = 2,
-    Rook = 3,
-    Queen = 4,
-    King = 5,
+    Pawn,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    King,
 }
 
 /// How many piece types are there?
