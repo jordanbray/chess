@@ -44,7 +44,7 @@ impl File {
             5 => File::F,
             6 => File::G,
             7 => File::H,
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 

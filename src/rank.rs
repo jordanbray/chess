@@ -45,7 +45,7 @@ impl Rank {
             5 => Rank::Sixth,
             6 => Rank::Seventh,
             7 => Rank::Eighth,
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
