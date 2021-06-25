@@ -20,12 +20,355 @@ use std::hash::{Hash, Hasher};
 use std::mem;
 use std::str::FromStr;
 
+mod board_pieces {
+    use super::*;
+
+    const MAX_PIECES_PER_COLOR: u32 = 16;
+
+    /// Internal representation of "physical" board state
+    ///
+    /// Guarantees:
+    ///  - always consistent pieces, combined and color_combined
+    ///  - Number of pieces per player always <= MAX_PIECES_PER_COLOR
+    ///
+    /// BoardPieces must only be modified through the unsafe functions to mark places where
+    /// that happens. `PieceHandle` and friends provide a safe interface.
+    #[derive(Copy, Clone, PartialEq, Eq, Debug)]
+    pub struct BoardPieces {
+        pieces: [BitBoard; NUM_PIECES],
+        color_combined: [BitBoard; NUM_COLORS],
+        combined: BitBoard,
+    }
+
+    impl BoardPieces {
+        pub const fn new() -> Self {
+            Self {
+                pieces: [EMPTY; NUM_PIECES],
+                color_combined: [EMPTY; NUM_COLORS],
+                combined: EMPTY,
+            }
+        }
+
+        #[inline(always)]
+        pub fn pieces(&self, piece: Piece) -> &BitBoard {
+            &self.pieces[piece.to_index()]
+        }
+
+        #[inline(always)]
+        pub fn combined(&self) -> &BitBoard {
+            &self.combined
+        }
+
+        #[inline(always)]
+        pub fn color_combined(&self, color: Color) -> &BitBoard {
+            &self.color_combined[color.to_index()]
+        }
+
+        #[inline]
+        pub fn piece_on(&self, square: Square) -> Option<Piece> {
+            let opp = BitBoard::from_square(square);
+
+            if self.combined() & opp == EMPTY {
+                None
+            } else {
+                // TODO: investigate branchless version?
+                //naive algorithm
+                /*
+                for p in ALL_PIECES {
+                    if self.pieces(*p) & opp {
+                        return p;
+                    }
+                } */
+                if (self.pieces(Piece::Pawn) ^ self.pieces(Piece::Knight) ^ self.pieces(Piece::Bishop))
+                    & opp
+                    != EMPTY
+                {
+                    if self.pieces(Piece::Pawn) & opp != EMPTY {
+                        Some(Piece::Pawn)
+                    } else if self.pieces(Piece::Knight) & opp != EMPTY {
+                        Some(Piece::Knight)
+                    } else {
+                        Some(Piece::Bishop)
+                    }
+                } else {
+                    if self.pieces(Piece::Rook) & opp != EMPTY {
+                        Some(Piece::Rook)
+                    } else if self.pieces(Piece::Queen) & opp != EMPTY {
+                        Some(Piece::Queen)
+                    } else {
+                        Some(Piece::King)
+                    }
+                }
+            }
+        }
+
+        /// SAFETY:
+        ///     - There must be a piece of given type and color at src
+        ///     - dst must be empty
+        #[inline(always)]
+        unsafe fn move_unchecked(&mut self, src: Square, dst: Square, piece: Piece, color: Color) {
+            let dst_bb = BitBoard::from_square(dst);
+            let src_bb = BitBoard::from_square(src);
+            let move_bb = src_bb | dst_bb;
+
+            self.pieces[piece.to_index()] ^= move_bb;
+            self.color_combined[color.to_index()] ^= move_bb;
+            self.combined ^= move_bb;
+        }
+
+        /// SAFETY: There must be a piece of type old at given square
+        #[inline(always)]
+        unsafe fn change_piece_unchecked(&mut self, square: Square, old: Piece, new: Piece) {
+            let bb = BitBoard::from_square(square);
+            self.pieces[old.to_index()] ^= bb;
+            self.pieces[new.to_index()] ^= bb;
+        }
+
+        /// SAFETY:
+        ///     - There must be a piece at given square
+        ///     - total number of pieces of target color must not exceed MAX_PIECES_PER_COLOR
+        #[inline(always)]
+        unsafe fn toggle_color_unchecked(&mut self, square: Square) {
+            let bb = BitBoard::from_square(square);
+            self.color_combined[0] ^= bb;
+            self.color_combined[1] ^= bb;
+        }
+
+        /// SAFETY:
+        ///     - If the square is empty the total number of pieces of the given color must not
+        ///       exceed MAX_PIECES_PER_COLOR after this operation
+        ///     - Other wise the square must be occupied by the given piece and color
+        #[inline(always)]
+        unsafe fn toggle_piece_unchecked(&mut self, square: Square, piece: Piece, color: Color) {
+            let bb = BitBoard::from_square(square);
+            self.pieces[piece.to_index()] ^= bb;
+            self.color_combined[color.to_index()] ^= bb;
+            self.combined ^= bb;
+        }
+
+        /// Returns the correct color if the square is occupied
+        #[inline(always)]
+        fn color_of_occupied(&self, square: Square) -> Color {
+            match self.color_combined[0] & BitBoard::from_square(square) == EMPTY {
+                false => Color::White,
+                true => Color::Black,
+            }
+        }
+
+        /// Return a PieceHandle to the piece at the given square if there is one
+        #[inline]
+        pub fn get_piece_handle(&mut self, square: Square) -> Option<PieceHandle> {
+            let piece = self.piece_on(square)?;
+            let color = self.color_of_occupied(square);
+            Some(PieceHandle{
+                board_pieces: self,
+                square,
+                piece,
+                color
+            })
+        }
+
+        /// Return a PieceHandle to the piece at the given square if it has the given color and type
+        #[inline(always)]
+        pub fn get_known_piece_handle(&mut self, square: Square, color: Color, piece: Piece) -> Option<PieceHandle> {
+            let bb = BitBoard::from_square(square);
+            if self.pieces(piece) & bb == EMPTY || self.color_combined(color) & bb == EMPTY {
+                None
+            } else {
+                Some(PieceHandle{
+                    board_pieces: self,
+                    square,
+                    piece,
+                    color
+                })
+            }
+        }
+
+        /// Return a handle to the square. Inspired by HashMap's entry API
+        #[inline]
+        pub fn get_square_handle(&mut self, square: Square) -> SquareHandle {
+            if let Some(piece) = self.piece_on(square) {
+                let color = self.color_of_occupied(square);
+                SquareHandle::Occupied(PieceHandle{
+                    board_pieces: self,
+                    square,
+                    piece,
+                    color
+                })
+            } else {
+                SquareHandle::Empty(EmptySquare{
+                    board_pieces: self,
+                    square
+                })
+            }
+        }
+    }
+
+    impl TryFrom<[Option<(Piece, Color)>; 64]> for BoardPieces {
+        type Error = Error;
+        fn try_from(pieces: [Option<(Piece, Color)>; 64]) -> Result<Self, Self::Error> {
+            let black = pieces.iter().filter(|f| matches!(f, Some((_, Color::Black)) )).count();
+            let white = pieces.iter().filter(|f| matches!(f, Some((_, Color::White)) )).count();
+            if black as u32 > MAX_PIECES_PER_COLOR || white as u32 > MAX_PIECES_PER_COLOR {
+                Err(Error::InvalidBoard)
+            } else {
+                let mut result = Self::new();
+                for (sq, (piece, color)) in pieces.iter().zip(ALL_SQUARES.iter()).filter_map(|(f, &sq)| f.map(|f| (sq, f))) {
+                    unsafe {
+                        result.toggle_piece_unchecked(sq, piece, color)
+                    }
+                }
+                Ok(result)
+            }
+        }
+    }
+
+    /// This handle guarantees that it points to an occupied square with the given piece and color
+    pub struct PieceHandle<'a> {
+        board_pieces: &'a mut BoardPieces,
+        square: Square,
+        piece: Piece,
+        color: Color
+    }
+
+    impl<'a> PieceHandle<'a> {
+        #[inline(always)]
+        pub fn square(&self) -> Square {
+            self.square
+        }
+
+        #[inline(always)]
+        pub fn piece(&self) -> Piece {
+            self.piece
+        }
+
+        #[inline(always)]
+        pub fn color(&self) -> Color {
+            self.color
+        }
+
+        /// panics if dst is not empty
+        #[inline]
+        pub fn move_to(&mut self, dst: Square) {
+            let dst_bb = BitBoard::from_square(dst);
+            assert_eq!(self.board_pieces.combined & dst_bb, EMPTY);
+
+            unsafe {
+                self.board_pieces.move_unchecked(self.square, dst, self.piece, self.color)
+            }
+            self.square = dst;
+        }
+
+        #[inline]
+        pub fn move_and_capture(&mut self, dst: Square) -> Option<(Piece, Color)> {
+            let mut captured = None;
+
+            if let Some(captured_piece) = self.board_pieces.piece_on(dst) {
+                let captured_color = self.board_pieces.color_of_occupied(dst);
+                unsafe {
+                    self.board_pieces.toggle_piece_unchecked(dst, captured_piece, captured_color);
+                }
+                captured = Some((captured_piece, captured_color));
+            }
+
+            unsafe {
+                // the destination is empty because we removed the captured piece
+                self.board_pieces.move_unchecked(self.square, dst, self.piece, self.color)
+            }
+
+            captured
+        }
+
+        #[inline]
+        pub fn replace_piece(&mut self, new: Piece) {
+            unsafe {
+                self.board_pieces.change_piece_unchecked(self.square, self.piece, new);
+            }
+            self.piece = new;
+        }
+
+        #[inline]
+        pub fn set_color(mut self, color: Color) -> Result<Self, Self> {
+            if self.color == color {
+                Ok(self)
+            } else {
+                if self.board_pieces.color_combined(color).popcnt() + 1 <= MAX_PIECES_PER_COLOR {
+                    unsafe {
+                        self.board_pieces.toggle_color_unchecked(self.square);
+                        Ok(self)
+                    }
+                } else {
+                    Err(self)
+                }
+            }
+        }
+
+        #[inline]
+        pub fn remove(mut self) -> EmptySquare<'a> {
+            unsafe {
+                self.board_pieces.toggle_piece_unchecked(self.square, self.piece, self.color);
+            }
+            EmptySquare {
+                board_pieces: self.board_pieces,
+                square: self.square
+            }
+        }
+    }
+
+    pub struct EmptySquare<'a> {
+        board_pieces: &'a mut BoardPieces,
+        square: Square,
+    }
+
+    impl<'a> EmptySquare<'a> {
+        pub fn place_piece(mut self, piece: Piece, color: Color) -> Result<PieceHandle<'a>, EmptySquare<'a>> {
+            if self.board_pieces.color_combined(color).popcnt() + 1 <= MAX_PIECES_PER_COLOR {
+                unsafe {
+                    self.board_pieces.toggle_piece_unchecked(self.square, piece, color);
+                }
+                Ok(PieceHandle {
+                    board_pieces: self.board_pieces,
+                    square: self.square,
+                    piece,
+                    color
+                })
+            } else {
+                Err(self)
+            }
+        }
+    }
+
+    pub enum SquareHandle<'a> {
+        Empty(EmptySquare<'a>),
+        Occupied(PieceHandle<'a>)
+    }
+
+    impl<'a> SquareHandle<'a> {
+        pub fn set_piece(self, color: Color, piece: Piece) -> Result<PieceHandle<'a>, SquareHandle<'a>> {
+            match self {
+                SquareHandle::Occupied(piece_handle) => {
+                    match piece_handle.set_color(color) {
+                        Ok(mut piece_handle) => {
+                            piece_handle.replace_piece(piece);
+                            Ok(piece_handle)
+                        },
+                        Err(piece_handle) => {
+                            Err(SquareHandle::Occupied(piece_handle))
+                        }
+                    }
+                },
+                SquareHandle::Empty(empty) => empty.place_piece(piece, color).map_err(SquareHandle::Empty)
+            }
+        }
+    }
+}
+
+use board_pieces::BoardPieces;
+
 /// A representation of a chess board.  That's why you're here, right?
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Board {
-    pieces: [BitBoard; NUM_PIECES],
-    color_combined: [BitBoard; NUM_COLORS],
-    combined: BitBoard,
+    board_pieces: BoardPieces,
     side_to_move: Color,
     castle_rights: [CastleRights; NUM_COLORS],
     pinned: BitBoard,
@@ -62,9 +405,7 @@ impl Board {
     /// Note: This does NOT give you the initial position.  Just a blank slate.
     fn new() -> Board {
         Board {
-            pieces: [EMPTY; NUM_PIECES],
-            color_combined: [EMPTY; NUM_COLORS],
-            combined: EMPTY,
+            board_pieces: BoardPieces::new(),
             side_to_move: Color::White,
             castle_rights: [CastleRights::NoRights; NUM_COLORS],
             pinned: EMPTY,
@@ -184,7 +525,7 @@ impl Board {
     /// ```
     #[inline]
     pub fn combined(&self) -> &BitBoard {
-        &self.combined
+        &self.board_pieces.combined()
     }
 
     /// Grab the "color combined" `BitBoard`.  This is a `BitBoard` with every piece of a particular
@@ -206,7 +547,7 @@ impl Board {
     /// ```
     #[inline]
     pub fn color_combined(&self, color: Color) -> &BitBoard {
-        unsafe { self.color_combined.get_unchecked(color.to_index()) }
+        self.board_pieces.color_combined(color)
     }
 
     /// Give me the `Square` the `color` king is on.
@@ -241,7 +582,7 @@ impl Board {
     /// ```
     #[inline]
     pub fn pieces(&self, piece: Piece) -> &BitBoard {
-        unsafe { self.pieces.get_unchecked(piece.to_index()) }
+        self.board_pieces.pieces(piece)
     }
 
     /// Grab the `CastleRights` for a particular side.
@@ -432,16 +773,6 @@ impl Board {
         self.remove_castle_rights(color, remove);
     }
 
-    /// Add or remove a piece from the bitboards in this struct.
-    fn xor(&mut self, piece: Piece, bb: BitBoard, color: Color) {
-        unsafe {
-            *self.pieces.get_unchecked_mut(piece.to_index()) ^= bb;
-            *self.color_combined.get_unchecked_mut(color.to_index()) ^= bb;
-            self.combined ^= bb;
-            self.hash ^= Zobrist::piece(piece, bb.to_square(), color);
-        }
-    }
-
     /// For a chess UI: set a piece on a particular square.
     ///
     /// ```
@@ -463,19 +794,10 @@ impl Board {
     #[inline]
     pub fn set_piece(&self, piece: Piece, color: Color, square: Square) -> Option<Board> {
         let mut result = *self;
-        let square_bb = BitBoard::from_square(square);
-        match self.piece_on(square) {
-            None => result.xor(piece, square_bb, color),
-            Some(x) => {
-                // remove x from the bitboard
-                if self.color_combined(Color::White) & square_bb == square_bb {
-                    result.xor(x, square_bb, Color::White);
-                } else {
-                    result.xor(x, square_bb, Color::Black);
-                }
-                // add piece to the bitboard
-                result.xor(piece, square_bb, color);
-            }
+
+        if result.board_pieces.get_square_handle(square).set_piece(color, piece).is_err() {
+            // too many pieces of this color
+            return None;
         }
 
         // If setting this piece down leaves my opponent in check, and it's my move, then the
@@ -512,16 +834,11 @@ impl Board {
     #[inline]
     pub fn clear_square(&self, square: Square) -> Option<Board> {
         let mut result = *self;
-        let square_bb = BitBoard::from_square(square);
-        match self.piece_on(square) {
+        match result.board_pieces.get_piece_handle(square) {
             None => {}
             Some(x) => {
                 // remove x from the bitboard
-                if self.color_combined(Color::White) & square_bb == square_bb {
-                    result.xor(x, square_bb, Color::White);
-                } else {
-                    result.xor(x, square_bb, Color::Black);
-                }
+                x.remove();
             }
         }
 
@@ -723,38 +1040,7 @@ impl Board {
     /// ```
     #[inline]
     pub fn piece_on(&self, square: Square) -> Option<Piece> {
-        let opp = BitBoard::from_square(square);
-        if self.combined() & opp == EMPTY {
-            None
-        } else {
-            //naiive algorithm
-            /*
-            for p in ALL_PIECES {
-                if self.pieces(*p) & opp {
-                    return p;
-                }
-            } */
-            if (self.pieces(Piece::Pawn) ^ self.pieces(Piece::Knight) ^ self.pieces(Piece::Bishop))
-                & opp
-                != EMPTY
-            {
-                if self.pieces(Piece::Pawn) & opp != EMPTY {
-                    Some(Piece::Pawn)
-                } else if self.pieces(Piece::Knight) & opp != EMPTY {
-                    Some(Piece::Knight)
-                } else {
-                    Some(Piece::Bishop)
-                }
-            } else {
-                if self.pieces(Piece::Rook) & opp != EMPTY {
-                    Some(Piece::Rook)
-                } else if self.pieces(Piece::Queen) & opp != EMPTY {
-                    Some(Piece::Queen)
-                } else {
-                    Some(Piece::King)
-                }
-            }
-        }
+        self.board_pieces.piece_on(square)
     }
 
     /// What color piece is on a particular square?
@@ -898,88 +1184,93 @@ impl Board {
         let move_bb = source_bb ^ dest_bb;
         let moved = self.piece_on(source).unwrap();
 
-        result.xor(moved, source_bb, self.side_to_move);
-        result.xor(moved, dest_bb, self.side_to_move);
-        if let Some(captured) = self.piece_on(dest) {
-            result.xor(captured, dest_bb, !self.side_to_move);
-        }
+        let ksq = (result.pieces(Piece::King) & result.color_combined(!result.side_to_move)).to_square();
 
         #[allow(deprecated)]
-        result.remove_their_castle_rights(CastleRights::square_to_castle_rights(
+            result.remove_their_castle_rights(CastleRights::square_to_castle_rights(
             !self.side_to_move,
             dest,
         ));
 
         #[allow(deprecated)]
-        result.remove_my_castle_rights(CastleRights::square_to_castle_rights(
+            result.remove_my_castle_rights(CastleRights::square_to_castle_rights(
             self.side_to_move,
             source,
         ));
 
-        let opp_king = result.pieces(Piece::King) & result.color_combined(!result.side_to_move);
+        // extra scope to signal that piece_handle is dropped latest at the end
+        {
+            let mut piece_handle = result.board_pieces.get_piece_handle(source).unwrap();
+            assert_eq!(self.side_to_move, piece_handle.color());
 
-        let castles = moved == Piece::King && (move_bb & get_castle_moves()) == move_bb;
-
-        let ksq = opp_king.to_square();
-
-        const CASTLE_ROOK_START: [File; 8] = [
-            File::A,
-            File::A,
-            File::A,
-            File::A,
-            File::H,
-            File::H,
-            File::H,
-            File::H,
-        ];
-        const CASTLE_ROOK_END: [File; 8] = [
-            File::D,
-            File::D,
-            File::D,
-            File::D,
-            File::F,
-            File::F,
-            File::F,
-            File::F,
-        ];
-
-        if moved == Piece::Knight {
-            result.checkers ^= get_knight_moves(ksq) & dest_bb;
-        } else if moved == Piece::Pawn {
-            if let Some(Piece::Knight) = m.get_promotion() {
-                result.xor(Piece::Pawn, dest_bb, self.side_to_move);
-                result.xor(Piece::Knight, dest_bb, self.side_to_move);
-                result.checkers ^= get_knight_moves(ksq) & dest_bb;
-            } else if let Some(promotion) = m.get_promotion() {
-                result.xor(Piece::Pawn, dest_bb, self.side_to_move);
-                result.xor(promotion, dest_bb, self.side_to_move);
-            } else if (source_bb & get_pawn_source_double_moves()) != EMPTY
-                && (dest_bb & get_pawn_dest_double_moves()) != EMPTY
-            {
-                result.set_ep(dest);
-                result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
-            } else if Some(dest.ubackward(self.side_to_move)) == self.en_passant {
-                result.xor(
-                    Piece::Pawn,
-                    BitBoard::from_square(dest.ubackward(self.side_to_move)),
-                    !self.side_to_move,
-                );
-                result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
-            } else {
-                result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+            if let Some((_captured_piece, _captured_color)) = piece_handle.move_and_capture(dest) {
+                // TODO: Assert we captured the correct color?
             }
-        } else if castles {
-            let my_backrank = self.side_to_move.to_my_backrank();
-            let index = dest.get_file().to_index();
-            let start = BitBoard::set(my_backrank, unsafe {
-                *CASTLE_ROOK_START.get_unchecked(index)
-            });
-            let end = BitBoard::set(my_backrank, unsafe {
-                *CASTLE_ROOK_END.get_unchecked(index)
-            });
-            result.xor(Piece::Rook, start, self.side_to_move);
-            result.xor(Piece::Rook, end, self.side_to_move);
+
+            let castles = piece_handle.piece() == Piece::King && (move_bb & get_castle_moves()) == move_bb;
+
+
+            const CASTLE_ROOK_START: [File; 8] = [
+                File::A,
+                File::A,
+                File::A,
+                File::A,
+                File::H,
+                File::H,
+                File::H,
+                File::H,
+            ];
+            const CASTLE_ROOK_END: [File; 8] = [
+                File::D,
+                File::D,
+                File::D,
+                File::D,
+                File::F,
+                File::F,
+                File::F,
+                File::F,
+            ];
+
+            if moved == Piece::Knight {
+                result.checkers ^= get_knight_moves(ksq) & dest_bb;
+            } else if moved == Piece::Pawn {
+                if let Some(Piece::Knight) = m.get_promotion() {
+                    piece_handle.replace_piece(Piece::Knight);
+                    result.checkers ^= get_knight_moves(ksq) & dest_bb;
+                } else if let Some(promotion) = m.get_promotion() {
+                    piece_handle.replace_piece(promotion);
+                } else if (source_bb & get_pawn_source_double_moves()) != EMPTY
+                    && (dest_bb & get_pawn_dest_double_moves()) != EMPTY
+                {
+                    result.set_ep(dest);
+                    result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+                } else if Some(dest.ubackward(self.side_to_move)) == self.en_passant {
+                    drop(piece_handle);
+
+                    // remove opponents en passant pawn
+                    result.board_pieces.get_known_piece_handle(self.en_passant.unwrap(), !result.side_to_move, Piece::Pawn).unwrap().remove();
+
+                    result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+                } else {
+                    result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+                }
+            } else if castles {
+                drop(piece_handle);
+
+                let my_backrank = self.side_to_move.to_my_backrank();
+                let index = dest.get_file().to_index();
+                let start = BitBoard::set(my_backrank, unsafe {
+                    *CASTLE_ROOK_START.get_unchecked(index)
+                });
+                let end = BitBoard::set(my_backrank, unsafe {
+                    *CASTLE_ROOK_END.get_unchecked(index)
+                });
+
+                let mut rook = result.board_pieces.get_known_piece_handle(start.to_square(), self.side_to_move, Piece::Rook).unwrap();
+                rook.move_to(end.to_square());
+            }
         }
+
         // now, lets see if we're in check or pinned
         let attackers = result.color_combined(result.side_to_move)
             & ((get_bishop_rays(ksq)
@@ -1056,11 +1347,7 @@ impl TryFrom<&BoardBuilder> for Board {
     fn try_from(fen: &BoardBuilder) -> Result<Self, Self::Error> {
         let mut board = Board::new();
 
-        for sq in ALL_SQUARES.iter() {
-            if let Some((piece, color)) = fen[*sq] {
-                board.xor(piece, BitBoard::from_square(*sq), color);
-            }
-        }
+        board.board_pieces = BoardPieces::try_from(*fen.pieces())?;
 
         board.side_to_move = fen.get_side_to_move();
 
