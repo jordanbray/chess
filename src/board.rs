@@ -40,6 +40,7 @@ mod board_pieces {
         pieces: [BitBoard; NUM_PIECES],
         color_combined: [BitBoard; NUM_COLORS],
         combined: BitBoard,
+        hash: u64
     }
 
     impl BoardPieces {
@@ -48,6 +49,7 @@ mod board_pieces {
                 pieces: [EMPTY; NUM_PIECES],
                 color_combined: [EMPTY; NUM_COLORS],
                 combined: EMPTY,
+                hash: 0
             }
         }
 
@@ -74,6 +76,24 @@ mod board_pieces {
         #[inline(always)]
         pub fn color_combined(&self, color: Color) -> &BitBoard {
             &self.color_combined[color.to_index()]
+        }
+
+        #[inline(always)]
+        pub fn hash(&self) -> u64 {
+            debug_assert_eq!(self.hash, self.calc_hash());
+            self.hash
+        }
+
+        fn calc_hash(&self) -> u64 {
+            let mut hash = 0;
+            for piece in ALL_PIECES {
+                for color in ALL_COLORS {
+                    for square in self.color_combined[color.to_index()] & self.pieces[piece.to_index()] {
+                        hash ^= Zobrist::piece(piece, square, color);
+                    }
+                }
+            }
+            hash
         }
 
         #[inline]
@@ -131,6 +151,8 @@ mod board_pieces {
             self.pieces[piece.to_index()] ^= move_bb;
             self.color_combined[color.to_index()] ^= move_bb;
             self.combined ^= move_bb;
+            self.hash ^= Zobrist::piece(piece, src, color);
+            self.hash ^= Zobrist::piece(piece, dst, color);
 
             debug_assert!(self.is_consistent());
         }
@@ -144,6 +166,10 @@ mod board_pieces {
             let bb = BitBoard::from_square(square);
             self.pieces[old.to_index()] ^= bb;
             self.pieces[new.to_index()] ^= bb;
+
+            let color = self.color_of_occupied(square);
+            self.hash ^= Zobrist::piece(old, square, color);
+            self.hash ^= Zobrist::piece(new, square, color);
 
             debug_assert!(self.is_consistent());
         }
@@ -159,6 +185,13 @@ mod board_pieces {
             let bb = BitBoard::from_square(square);
             self.color_combined[0] ^= bb;
             self.color_combined[1] ^= bb;
+
+            // we require the piece for adjusting the hash
+            // One could use unsafe here but color changing is not a function used very often...
+            let piece = self.piece_on(square).unwrap();
+
+            self.hash ^= Zobrist::piece(piece, square, Color::Black);
+            self.hash ^= Zobrist::piece(piece, square, Color::White);
 
             // also checks color counts
             debug_assert!(self.is_consistent());
@@ -176,6 +209,8 @@ mod board_pieces {
             self.pieces[piece.to_index()] ^= bb;
             self.color_combined[color.to_index()] ^= bb;
             self.combined ^= bb;
+
+            self.hash ^= Zobrist::piece(piece, square, color);
 
             debug_assert!(self.is_consistent());
         }
@@ -448,7 +483,6 @@ pub struct Board {
     castle_rights: [CastleRights; NUM_COLORS],
     pinned: BitBoard,
     checkers: BitBoard,
-    hash: u64,
     en_passant: Option<Square>,
 }
 
@@ -471,7 +505,7 @@ impl Default for Board {
 
 impl Hash for Board {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.hash.hash(state);
+        self.board_pieces.hash().hash(state);
     }
 }
 
@@ -485,7 +519,6 @@ impl Board {
             castle_rights: [CastleRights::NoRights; NUM_COLORS],
             pinned: EMPTY,
             checkers: EMPTY,
-            hash: 0,
             en_passant: None,
         }
     }
@@ -1074,7 +1107,7 @@ impl Board {
     /// Get a hash of the board.
     #[inline]
     pub fn get_hash(&self) -> u64 {
-        self.hash
+        self.board_pieces.hash()
             ^ if let Some(ep) = self.en_passant {
                 Zobrist::en_passant(ep.get_file(), !self.side_to_move)
             } else {
