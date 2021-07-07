@@ -261,7 +261,7 @@ mod board_pieces {
 
             for (sq, (piece, color)) in pieces.iter().zip(ALL_SQUARES.iter()).filter_map(|(f, &sq)| f.map(|f| (sq, f))) {
                 color_counts[color.to_index()] += 1;
-                if color_counts[color.to_index()] >= MAX_PIECES_PER_COLOR {
+                if color_counts[color.to_index()] > MAX_PIECES_PER_COLOR {
                     return Err(Error::InvalidBoard);
                 }
 
@@ -314,9 +314,9 @@ mod board_pieces {
             unsafe {
                 // SAFETY: PieceHandle always points to an occupied field and we asserted that
                 //         the destination is empty.
-                self.board_pieces.move_unchecked(self.square, dst, self.piece, self.color)
+                self.board_pieces.move_unchecked(self.square, dst, self.piece, self.color);
+                self.square = dst;
             }
-            self.square = dst;
         }
 
         #[inline]
@@ -334,7 +334,8 @@ mod board_pieces {
 
             unsafe {
                 // SAFETY: the destination is empty because we removed the captured piece
-                self.board_pieces.move_unchecked(self.square, dst, self.piece, self.color)
+                self.board_pieces.move_unchecked(self.square, dst, self.piece, self.color);
+                self.square = dst;
             }
 
             captured
@@ -345,13 +346,13 @@ mod board_pieces {
             unsafe {
                 // SAFETY: self is always a valid piece
                 self.board_pieces.change_piece_unchecked(self.square, self.piece, new);
+                self.piece = new;
             }
-            self.piece = new;
         }
 
         /// Replace color with the requested one. Fails if there is already the maximum number of
         /// pieces of the requested color.
-        pub fn with_color(self, color: Color) -> Result<Self, Self> {
+        pub fn with_color(mut self, color: Color) -> Result<Self, Self> {
             if self.color == color {
                 Ok(self)
             } else {
@@ -359,8 +360,9 @@ mod board_pieces {
                     unsafe {
                         // SAFETY: self is always a valid piece and we just checked the color count
                         self.board_pieces.toggle_color_unchecked(self.square);
-                        Ok(self)
+                        self.color = color;
                     }
+                    Ok(self)
                 } else {
                     Err(self)
                 }
