@@ -23,7 +23,7 @@ use std::str::FromStr;
 mod board_pieces {
     use super::*;
 
-    const MAX_PIECES_PER_COLOR: u32 = 16;
+    pub const MAX_PIECES_PER_COLOR: u32 = 16;
 
     /// Internal representation of "physical" board state
     ///
@@ -436,6 +436,7 @@ mod board_pieces {
 }
 
 use board_pieces::BoardPieces;
+pub(crate) use board_pieces::MAX_PIECES_PER_COLOR;
 
 /// A representation of a chess board.  That's why you're here, right?
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

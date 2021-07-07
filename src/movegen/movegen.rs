@@ -1,5 +1,5 @@
 use crate::bitboard::{BitBoard, EMPTY};
-use crate::board::Board;
+use crate::board::{Board, MAX_PIECES_PER_COLOR};
 use crate::chess_move::ChessMove;
 use crate::magic::between;
 use crate::movegen::piece_type::*;
@@ -27,7 +27,10 @@ impl SquareAndBitBoard {
     }
 }
 
-pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>;
+/// MAX_PIECES_PER_COLOR + 2 for the en passant moves
+const MAX_MOVE_LIST_LEN: usize = MAX_PIECES_PER_COLOR as usize + 2;
+
+pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; MAX_MOVE_LIST_LEN]>>;
 
 /// An incremental move generator
 ///
