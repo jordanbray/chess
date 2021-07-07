@@ -1,5 +1,5 @@
 use crate::bitboard::{BitBoard, EMPTY};
-use crate::board::Board;
+use crate::board::{Board, MAX_PIECES_PER_COLOR};
 use crate::chess_move::ChessMove;
 use crate::magic::between;
 use crate::movegen::piece_type::*;
@@ -27,7 +27,10 @@ impl SquareAndBitBoard {
     }
 }
 
-pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>;
+/// MAX_PIECES_PER_COLOR + 2 for the en passant moves
+const MAX_MOVE_LIST_LEN: usize = MAX_PIECES_PER_COLOR as usize + 2;
+
+pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; MAX_MOVE_LIST_LEN]>>;
 
 /// An incremental move generator
 ///
@@ -91,28 +94,39 @@ pub struct MoveGen {
 }
 
 impl MoveGen {
+    /// panics if there is not exactly one king for the moving side
     #[inline(always)]
     fn enumerate_moves(board: &Board) -> MoveList {
         let checkers = *board.checkers();
         let mask = !board.color_combined(board.side_to_move());
-        let mut movelist = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 18]>::new());
+        let mut movelist = NoDrop::new(ArrayVec::<[SquareAndBitBoard; MAX_MOVE_LIST_LEN]>::new());
 
-        if checkers == EMPTY {
-            PawnType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            KnightType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            BishopType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            RookType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            QueenType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            KingType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-        } else if checkers.popcnt() == 1 {
-            PawnType::legals::<InCheckType>(&mut movelist, &board, mask);
-            KnightType::legals::<InCheckType>(&mut movelist, &board, mask);
-            BishopType::legals::<InCheckType>(&mut movelist, &board, mask);
-            RookType::legals::<InCheckType>(&mut movelist, &board, mask);
-            QueenType::legals::<InCheckType>(&mut movelist, &board, mask);
-            KingType::legals::<InCheckType>(&mut movelist, &board, mask);
-        } else {
-            KingType::legals::<InCheckType>(&mut movelist, &board, mask);
+        assert_eq!((board.pieces(Piece::King) & board.color_combined(board.side_to_move())).popcnt(), 1);
+        assert_eq!(PawnType::EXTRA_MOVES + KnightType::EXTRA_MOVES + BishopType::EXTRA_MOVES + RookType::EXTRA_MOVES + QueenType::EXTRA_MOVES + KingType::EXTRA_MOVES + MAX_PIECES_PER_COLOR as usize,
+                   movelist.capacity());
+        unsafe {
+            // SAFETY:
+            //    Board guarantees that there are maximally MAX_PIECES_PER_COLOR pieces per color
+            //    We assert above that there is exactly one king
+            //    We assert that the move list is long enough
+
+            if checkers == EMPTY {
+                PawnType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+                KnightType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+                BishopType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+                RookType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+                QueenType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+                KingType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+            } else if checkers.popcnt() == 1 {
+                PawnType::legals::<InCheckType>(&mut movelist, &board, mask);
+                KnightType::legals::<InCheckType>(&mut movelist, &board, mask);
+                BishopType::legals::<InCheckType>(&mut movelist, &board, mask);
+                RookType::legals::<InCheckType>(&mut movelist, &board, mask);
+                QueenType::legals::<InCheckType>(&mut movelist, &board, mask);
+                KingType::legals::<InCheckType>(&mut movelist, &board, mask);
+            } else {
+                KingType::legals::<InCheckType>(&mut movelist, &board, mask);
+            }
         }
 
         movelist

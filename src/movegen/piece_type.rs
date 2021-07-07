@@ -11,13 +11,19 @@ use crate::magic::{
     line,
 };
 
+
+/// Helper trait to generate moves for different pieces.
 pub trait PieceType {
-    fn is(piece: Piece) -> bool;
-    fn into_piece() -> Piece;
-    #[inline(always)]
+    const PIECE: Piece;
+    const EXTRA_MOVES: usize = 0;
+
     fn pseudo_legals(src: Square, color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard;
+
     #[inline(always)]
-    fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
+    /// Safety:
+    ///     movelist.remaining_capacity() >= (board.pieces(Self::PIECE) & board.color_combined(board.side_to_move())).popcnt() + if Self::EXTRA_MOVES
+    ///     (board.pieces(Piece::King) & board.color_combined(board.side_to_move())).popcnt() == 1
+    unsafe fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
     where
         T: CheckType,
     {
@@ -26,7 +32,8 @@ pub trait PieceType {
         let my_pieces = board.color_combined(color);
         let ksq = board.king_square(color);
 
-        let pieces = board.pieces(Self::into_piece()) & my_pieces;
+        // SAFETY: we can add a move for each bit set here by requirement
+        let pieces = board.pieces(Self::PIECE) & my_pieces;
         let pinned = board.pinned();
         let checkers = board.checkers();
 
@@ -40,6 +47,8 @@ pub trait PieceType {
             let moves = Self::pseudo_legals(src, color, *combined, mask) & check_mask;
             if moves != EMPTY {
                 unsafe {
+                    // SAFETY: Unpinned subset of pieces
+                    debug_assert_ne!(movelist.remaining_capacity(), 0);
                     movelist.push_unchecked(SquareAndBitBoard::new(src, moves, false));
                 }
             }
@@ -50,6 +59,8 @@ pub trait PieceType {
                 let moves = Self::pseudo_legals(src, color, *combined, mask) & line(src, ksq);
                 if moves != EMPTY {
                     unsafe {
+                        // SAFETY: Pinned subset of pieces (disjoint to previous)
+                        debug_assert_ne!(movelist.remaining_capacity(), 0);
                         movelist.push_unchecked(SquareAndBitBoard::new(src, moves, false));
                     }
                 }
@@ -114,13 +125,8 @@ impl PawnType {
 }
 
 impl PieceType for PawnType {
-    fn is(piece: Piece) -> bool {
-        piece == Piece::Pawn
-    }
-
-    fn into_piece() -> Piece {
-        Piece::Pawn
-    }
+    const PIECE: Piece = Piece::Pawn;
+    const EXTRA_MOVES: usize = 2;
 
     #[inline(always)]
     fn pseudo_legals(src: Square, color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard {
@@ -128,7 +134,7 @@ impl PieceType for PawnType {
     }
 
     #[inline(always)]
-    fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
+    unsafe fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
     where
         T: CheckType,
     {
@@ -137,7 +143,7 @@ impl PieceType for PawnType {
         let my_pieces = board.color_combined(color);
         let ksq = board.king_square(color);
 
-        let pieces = board.pieces(Self::into_piece()) & my_pieces;
+        let pieces = board.pieces(Self::PIECE) & my_pieces;
         let pinned = board.pinned();
         let checkers = board.checkers();
 
@@ -151,6 +157,8 @@ impl PieceType for PawnType {
             let moves = Self::pseudo_legals(src, color, *combined, mask) & check_mask;
             if moves != EMPTY {
                 unsafe {
+                    debug_assert_ne!(movelist.remaining_capacity(), 0);
+                    // SAFETY: unpinned subset of pieces
                     movelist.push_unchecked(SquareAndBitBoard::new(
                         src,
                         moves,
@@ -165,6 +173,8 @@ impl PieceType for PawnType {
                 let moves = Self::pseudo_legals(src, color, *combined, mask) & line(ksq, src);
                 if moves != EMPTY {
                     unsafe {
+                        debug_assert_ne!(movelist.remaining_capacity(), 0);
+                        // SAFETY: pinned subset of pieces
                         movelist.push_unchecked(SquareAndBitBoard::new(
                             src,
                             moves,
@@ -179,10 +189,14 @@ impl PieceType for PawnType {
             let ep_sq = board.en_passant().unwrap();
             let rank = get_rank(ep_sq.get_rank());
             let files = get_adjacent_files(ep_sq.get_file());
+            // (files & rank).popcnt() <= 2
             for src in rank & files & pieces {
                 let dest = ep_sq.uforward(color);
                 if PawnType::legal_ep_move(board, src, dest) {
                     unsafe {
+                        // SAFETY: we require two extra slots for en passant moves.
+                        // There are max two values for src
+                        debug_assert_ne!(movelist.remaining_capacity(), 0);
                         movelist.push_unchecked(SquareAndBitBoard::new(
                             src,
                             BitBoard::from_square(dest),
@@ -196,13 +210,7 @@ impl PieceType for PawnType {
 }
 
 impl PieceType for BishopType {
-    fn is(piece: Piece) -> bool {
-        piece == Piece::Bishop
-    }
-
-    fn into_piece() -> Piece {
-        Piece::Bishop
-    }
+    const PIECE: Piece = Piece::Bishop;
 
     #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard {
@@ -211,13 +219,7 @@ impl PieceType for BishopType {
 }
 
 impl PieceType for KnightType {
-    fn is(piece: Piece) -> bool {
-        piece == Piece::Knight
-    }
-
-    fn into_piece() -> Piece {
-        Piece::Knight
-    }
+    const PIECE: Piece = Piece::Knight;
 
     #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, _combined: BitBoard, mask: BitBoard) -> BitBoard {
@@ -225,7 +227,7 @@ impl PieceType for KnightType {
     }
 
     #[inline(always)]
-    fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
+    unsafe fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
     where
         T: CheckType,
     {
@@ -234,7 +236,9 @@ impl PieceType for KnightType {
         let my_pieces = board.color_combined(color);
         let ksq = board.king_square(color);
 
-        let pieces = board.pieces(Self::into_piece()) & my_pieces;
+        // we can add a move for each set bit in pieces
+        let pieces = board.pieces(Self::PIECE) & my_pieces;
+
         let pinned = board.pinned();
         let checkers = board.checkers();
 
@@ -245,6 +249,8 @@ impl PieceType for KnightType {
                 let moves = Self::pseudo_legals(src, color, *combined, mask & check_mask);
                 if moves != EMPTY {
                     unsafe {
+                        // SAFETY: moves for subset of pieces
+                        debug_assert_ne!(movelist.remaining_capacity(), 0);
                         movelist.push_unchecked(SquareAndBitBoard::new(src, moves, false));
                     }
                 }
@@ -254,6 +260,8 @@ impl PieceType for KnightType {
                 let moves = Self::pseudo_legals(src, color, *combined, mask);
                 if moves != EMPTY {
                     unsafe {
+                        // SAFETY: moves for subset of pieces
+                        debug_assert_ne!(movelist.remaining_capacity(), 0);
                         movelist.push_unchecked(SquareAndBitBoard::new(src, moves, false));
                     }
                 }
@@ -263,13 +271,7 @@ impl PieceType for KnightType {
 }
 
 impl PieceType for RookType {
-    fn is(piece: Piece) -> bool {
-        piece == Piece::Rook
-    }
-
-    fn into_piece() -> Piece {
-        Piece::Rook
-    }
+    const PIECE: Piece = Piece::Rook;
 
     #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard {
@@ -278,13 +280,7 @@ impl PieceType for RookType {
 }
 
 impl PieceType for QueenType {
-    fn is(piece: Piece) -> bool {
-        piece == Piece::Queen
-    }
-
-    fn into_piece() -> Piece {
-        Piece::Queen
-    }
+    const PIECE: Piece = Piece::Queen;
 
     #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard {
@@ -331,13 +327,7 @@ impl KingType {
 }
 
 impl PieceType for KingType {
-    fn is(piece: Piece) -> bool {
-        piece == Piece::King
-    }
-
-    fn into_piece() -> Piece {
-        Piece::King
-    }
+    const PIECE: Piece = Piece::King;
 
     #[inline(always)]
     fn pseudo_legals(src: Square, _color: Color, _combined: BitBoard, mask: BitBoard) -> BitBoard {
@@ -345,7 +335,7 @@ impl PieceType for KingType {
     }
 
     #[inline(always)]
-    fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
+    unsafe fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
     where
         T: CheckType,
     {
@@ -397,6 +387,9 @@ impl PieceType for KingType {
         }
         if moves != EMPTY {
             unsafe {
+                // SAFETY: we require that there is exactly one king of our color -> we have the
+                // space to add his moves
+                debug_assert_ne!(movelist.remaining_capacity(), 0);
                 movelist.push_unchecked(SquareAndBitBoard::new(ksq, moves, false));
             }
         }
