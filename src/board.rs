@@ -31,8 +31,10 @@ mod board_pieces {
     ///  - always consistent pieces, combined and color_combined
     ///  - Number of pieces per player always <= MAX_PIECES_PER_COLOR
     ///
-    /// BoardPieces must only be modified through the unsafe functions to mark places where
-    /// that happens. `PieceHandle` and friends provide a safe interface.
+    /// Unsafe code can rely on these invariants. BoardPieces must only be modified through the
+    /// unsafe functions to mark places where that happens. `PieceHandle` and friends provide a safe
+    /// interface. Use the `grab_*` methods to obtain them. You can understand "grab" here as a
+    /// domain specific "lock" replacement.
     #[derive(Copy, Clone, PartialEq, Eq, Debug)]
     pub struct BoardPieces {
         pieces: [BitBoard; NUM_PIECES],
@@ -47,6 +49,16 @@ mod board_pieces {
                 color_combined: [EMPTY; NUM_COLORS],
                 combined: EMPTY,
             }
+        }
+
+        // this function must ALWAYS return true. Otherwise it might result in unsound code
+        // elsewhere.
+        const fn is_consistent(&self) -> bool {
+            BitBoard::combine(&self.pieces).0 == self.combined.0 &&
+                BitBoard::combine(&self.color_combined).0 == self.combined.0 &&
+                BitBoard::are_disjoint(&self.pieces) && BitBoard::are_disjoint(&self.color_combined) &&
+                self.color_combined[0].popcnt() <= MAX_PIECES_PER_COLOR &&
+                self.color_combined[1].popcnt() <= MAX_PIECES_PER_COLOR
         }
 
         #[inline(always)]
@@ -66,6 +78,8 @@ mod board_pieces {
 
         #[inline]
         pub fn piece_on(&self, square: Square) -> Option<Piece> {
+            debug_assert!(self.is_consistent());
+
             let opp = BitBoard::from_square(square);
 
             if self.combined() & opp == EMPTY {
@@ -107,6 +121,9 @@ mod board_pieces {
         ///     - dst must be empty
         #[inline(always)]
         unsafe fn move_unchecked(&mut self, src: Square, dst: Square, piece: Piece, color: Color) {
+            debug_assert!(self.is_consistent());
+            debug_assert!(self.grab_known_piece_handle(src, color, piece).is_some());
+
             let dst_bb = BitBoard::from_square(dst);
             let src_bb = BitBoard::from_square(src);
             let move_bb = src_bb | dst_bb;
@@ -114,14 +131,21 @@ mod board_pieces {
             self.pieces[piece.to_index()] ^= move_bb;
             self.color_combined[color.to_index()] ^= move_bb;
             self.combined ^= move_bb;
+
+            debug_assert!(self.is_consistent());
         }
 
         /// SAFETY: There must be a piece of type old at given square
         #[inline(always)]
         unsafe fn change_piece_unchecked(&mut self, square: Square, old: Piece, new: Piece) {
+            debug_assert!(self.is_consistent());
+            debug_assert_eq!(self.piece_on(square), Some(old));
+
             let bb = BitBoard::from_square(square);
             self.pieces[old.to_index()] ^= bb;
             self.pieces[new.to_index()] ^= bb;
+
+            debug_assert!(self.is_consistent());
         }
 
         /// SAFETY:
@@ -129,9 +153,15 @@ mod board_pieces {
         ///     - total number of pieces of target color must not exceed MAX_PIECES_PER_COLOR
         #[inline(always)]
         unsafe fn toggle_color_unchecked(&mut self, square: Square) {
+            debug_assert!(self.is_consistent());
+            debug_assert!(self.grab_piece_handle(square).is_some());
+
             let bb = BitBoard::from_square(square);
             self.color_combined[0] ^= bb;
             self.color_combined[1] ^= bb;
+
+            // also checks color counts
+            debug_assert!(self.is_consistent());
         }
 
         /// SAFETY:
@@ -140,10 +170,14 @@ mod board_pieces {
         ///     - Other wise the square must be occupied by the given piece and color
         #[inline(always)]
         unsafe fn toggle_piece_unchecked(&mut self, square: Square, piece: Piece, color: Color) {
+            debug_assert!(self.is_consistent());
+
             let bb = BitBoard::from_square(square);
             self.pieces[piece.to_index()] ^= bb;
             self.color_combined[color.to_index()] ^= bb;
             self.combined ^= bb;
+
+            debug_assert!(self.is_consistent());
         }
 
         /// Returns the correct color if the square is occupied
@@ -157,7 +191,7 @@ mod board_pieces {
 
         /// Return a PieceHandle to the piece at the given square if there is one
         #[inline]
-        pub fn get_piece_handle(&mut self, square: Square) -> Option<PieceHandle> {
+        pub fn grab_piece_handle(&mut self, square: Square) -> Option<PieceHandle> {
             let piece = self.piece_on(square)?;
             let color = self.color_of_occupied(square);
             Some(PieceHandle{
@@ -168,9 +202,10 @@ mod board_pieces {
             })
         }
 
-        /// Return a PieceHandle to the piece at the given square if it has the given color and type
+        /// Return a PieceHandle to the piece at the given square if it has the given color and
+        /// type. This is faster than getting the piece handle just by square.
         #[inline(always)]
-        pub fn get_known_piece_handle(&mut self, square: Square, color: Color, piece: Piece) -> Option<PieceHandle> {
+        pub fn grab_known_piece_handle(&mut self, square: Square, color: Color, piece: Piece) -> Option<PieceHandle> {
             let bb = BitBoard::from_square(square);
             if self.pieces(piece) & bb == EMPTY || self.color_combined(color) & bb == EMPTY {
                 None
@@ -186,7 +221,7 @@ mod board_pieces {
 
         /// Return a handle to the square. Inspired by HashMap's entry API
         #[inline]
-        pub fn get_square_handle(&mut self, square: Square) -> SquareHandle {
+        pub fn grab_square_handle(&mut self, square: Square) -> SquareHandle {
             if let Some(piece) = self.piece_on(square) {
                 let color = self.color_of_occupied(square);
                 SquareHandle::Occupied(PieceHandle{
@@ -202,28 +237,51 @@ mod board_pieces {
                 })
             }
         }
+
+        /// Return a handle to an empty square
+        #[inline]
+        pub fn grab_empty_square(&mut self, square: Square) -> Option<EmptySquare> {
+            if self.combined & BitBoard::from_square(square) == EMPTY {
+                Some(EmptySquare{
+                    board_pieces: self,
+                    square
+                })
+            } else {
+                None
+            }
+        }
     }
 
     impl TryFrom<[Option<(Piece, Color)>; 64]> for BoardPieces {
         type Error = Error;
         fn try_from(pieces: [Option<(Piece, Color)>; 64]) -> Result<Self, Self::Error> {
-            let black = pieces.iter().filter(|f| matches!(f, Some((_, Color::Black)) )).count();
-            let white = pieces.iter().filter(|f| matches!(f, Some((_, Color::White)) )).count();
-            if black as u32 > MAX_PIECES_PER_COLOR || white as u32 > MAX_PIECES_PER_COLOR {
-                Err(Error::InvalidBoard)
-            } else {
-                let mut result = Self::new();
-                for (sq, (piece, color)) in pieces.iter().zip(ALL_SQUARES.iter()).filter_map(|(f, &sq)| f.map(|f| (sq, f))) {
-                    unsafe {
-                        result.toggle_piece_unchecked(sq, piece, color)
-                    }
+            let mut board_pieces = Self::new();
+
+            let mut color_counts = [0u32; NUM_COLORS];
+
+            for (sq, (piece, color)) in pieces.iter().zip(ALL_SQUARES.iter()).filter_map(|(f, &sq)| f.map(|f| (sq, f))) {
+                color_counts[color.to_index()] += 1;
+                if color_counts[color.to_index()] >= MAX_PIECES_PER_COLOR {
+                    return Err(Error::InvalidBoard);
                 }
-                Ok(result)
+
+                // this could be replaced by unsafe code because
+                //     a. there can be no double occupations due to the input format
+                //     b. we checked the color count before hand
+                let placed = board_pieces.grab_empty_square(sq)
+                    .expect("Square not empty. This is a bug")
+                    .place_piece(piece, color);
+
+                // rather panic than silently dropping an internal logic error
+                assert!(placed.is_ok());
             }
+
+            Ok(board_pieces)
         }
     }
 
     /// This handle guarantees that it points to an occupied square with the given piece and color
+    /// It provides a safe interface to modify `BoardPieces`.
     pub struct PieceHandle<'a> {
         board_pieces: &'a mut BoardPieces,
         square: Square,
@@ -254,6 +312,8 @@ mod board_pieces {
             assert_eq!(self.board_pieces.combined & dst_bb, EMPTY);
 
             unsafe {
+                // SAFETY: PieceHandle always points to an occupied field and we asserted that
+                //         the destination is empty.
                 self.board_pieces.move_unchecked(self.square, dst, self.piece, self.color)
             }
             self.square = dst;
@@ -266,13 +326,14 @@ mod board_pieces {
             if let Some(captured_piece) = self.board_pieces.piece_on(dst) {
                 let captured_color = self.board_pieces.color_of_occupied(dst);
                 unsafe {
+                    // SAFETY: we known that the piece we are about to capture is there
                     self.board_pieces.toggle_piece_unchecked(dst, captured_piece, captured_color);
                 }
                 captured = Some((captured_piece, captured_color));
             }
 
             unsafe {
-                // the destination is empty because we removed the captured piece
+                // SAFETY: the destination is empty because we removed the captured piece
                 self.board_pieces.move_unchecked(self.square, dst, self.piece, self.color)
             }
 
@@ -282,18 +343,21 @@ mod board_pieces {
         #[inline]
         pub fn replace_piece(&mut self, new: Piece) {
             unsafe {
+                // SAFETY: self is always a valid piece
                 self.board_pieces.change_piece_unchecked(self.square, self.piece, new);
             }
             self.piece = new;
         }
 
-        #[inline]
-        pub fn set_color(mut self, color: Color) -> Result<Self, Self> {
+        /// Replace color with the requested one. Fails if there is already the maximum number of
+        /// pieces of the requested color.
+        pub fn with_color(self, color: Color) -> Result<Self, Self> {
             if self.color == color {
                 Ok(self)
             } else {
                 if self.board_pieces.color_combined(color).popcnt() + 1 <= MAX_PIECES_PER_COLOR {
                     unsafe {
+                        // SAFETY: self is always a valid piece and we just checked the color count
                         self.board_pieces.toggle_color_unchecked(self.square);
                         Ok(self)
                     }
@@ -304,8 +368,9 @@ mod board_pieces {
         }
 
         #[inline]
-        pub fn remove(mut self) -> EmptySquare<'a> {
+        pub fn remove(self) -> EmptySquare<'a> {
             unsafe {
+                // SAFETY: self is always a valid piece
                 self.board_pieces.toggle_piece_unchecked(self.square, self.piece, self.color);
             }
             EmptySquare {
@@ -321,9 +386,14 @@ mod board_pieces {
     }
 
     impl<'a> EmptySquare<'a> {
-        pub fn place_piece(mut self, piece: Piece, color: Color) -> Result<PieceHandle<'a>, EmptySquare<'a>> {
+        /// Places a piece of the given type and color at the square.
+        ///
+        /// Returns a `PieceHandle` on success and an unchaged `EmptySquare` if there is
+        /// already the maximum number of pieces of the requested color.
+        pub fn place_piece(self, piece: Piece, color: Color) -> Result<PieceHandle<'a>, EmptySquare<'a>> {
             if self.board_pieces.color_combined(color).popcnt() + 1 <= MAX_PIECES_PER_COLOR {
                 unsafe {
+                    // SAFETY: self is always empty and we just checked the max color count
                     self.board_pieces.toggle_piece_unchecked(self.square, piece, color);
                 }
                 Ok(PieceHandle {
@@ -344,10 +414,12 @@ mod board_pieces {
     }
 
     impl<'a> SquareHandle<'a> {
-        pub fn set_piece(self, color: Color, piece: Piece) -> Result<PieceHandle<'a>, SquareHandle<'a>> {
+        /// places a piece of the given color and type at the square. Fails if there is
+        /// already the maximum number of pieces of the requested color.
+        pub fn place_piece(self, color: Color, piece: Piece) -> Result<PieceHandle<'a>, SquareHandle<'a>> {
             match self {
                 SquareHandle::Occupied(piece_handle) => {
-                    match piece_handle.set_color(color) {
+                    match piece_handle.with_color(color) {
                         Ok(mut piece_handle) => {
                             piece_handle.replace_piece(piece);
                             Ok(piece_handle)
@@ -795,7 +867,7 @@ impl Board {
     pub fn set_piece(&self, piece: Piece, color: Color, square: Square) -> Option<Board> {
         let mut result = *self;
 
-        if result.board_pieces.get_square_handle(square).set_piece(color, piece).is_err() {
+        if result.board_pieces.grab_square_handle(square).place_piece(color, piece).is_err() {
             // too many pieces of this color
             return None;
         }
@@ -834,7 +906,7 @@ impl Board {
     #[inline]
     pub fn clear_square(&self, square: Square) -> Option<Board> {
         let mut result = *self;
-        match result.board_pieces.get_piece_handle(square) {
+        match result.board_pieces.grab_piece_handle(square) {
             None => {}
             Some(x) => {
                 // remove x from the bitboard
@@ -1200,7 +1272,7 @@ impl Board {
 
         // extra scope to signal that piece_handle is dropped latest at the end
         {
-            let mut piece_handle = result.board_pieces.get_piece_handle(source).unwrap();
+            let mut piece_handle = result.board_pieces.grab_piece_handle(source).unwrap();
             assert_eq!(self.side_to_move, piece_handle.color());
 
             if let Some((_captured_piece, _captured_color)) = piece_handle.move_and_capture(dest) {
@@ -1248,7 +1320,7 @@ impl Board {
                     drop(piece_handle);
 
                     // remove opponents en passant pawn
-                    result.board_pieces.get_known_piece_handle(self.en_passant.unwrap(), !result.side_to_move, Piece::Pawn).unwrap().remove();
+                    result.board_pieces.grab_known_piece_handle(self.en_passant.unwrap(), !result.side_to_move, Piece::Pawn).unwrap().remove();
 
                     result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
                 } else {
@@ -1266,7 +1338,7 @@ impl Board {
                     *CASTLE_ROOK_END.get_unchecked(index)
                 });
 
-                let mut rook = result.board_pieces.get_known_piece_handle(start.to_square(), self.side_to_move, Piece::Rook).unwrap();
+                let mut rook = result.board_pieces.grab_known_piece_handle(start.to_square(), self.side_to_move, Piece::Rook).unwrap();
                 rook.move_to(end.to_square());
             }
         }

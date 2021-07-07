@@ -302,7 +302,7 @@ impl BitBoard {
 
     /// Count the number of `Squares` set in this `BitBoard`
     #[inline]
-    pub fn popcnt(&self) -> u32 {
+    pub const fn popcnt(&self) -> u32 {
         self.0.count_ones()
     }
 
@@ -316,6 +316,32 @@ impl BitBoard {
     #[inline]
     pub fn to_size(&self, rightshift: u8) -> usize {
         (self.0 >> rightshift) as usize
+    }
+
+    pub(crate) const fn are_disjoint(boards: &[Self]) -> bool {
+        // trades readability for const
+        let mut disjoint = true;
+        let mut i = 0;
+        while i + 1 < boards.len() {
+            let mut j = i + 1;
+            while j < boards.len() {
+                disjoint |= boards[i].0 & boards[j].0 == EMPTY.0;
+                j += 1;
+            }
+            i += 1;
+        }
+        disjoint
+    }
+
+    pub(crate) const fn combine(boards: &[Self]) -> BitBoard {
+        // trades readability for const
+        let mut uni = EMPTY;
+        let mut i = 0;
+        while i < boards.len() {
+            uni.0 |= boards[i].0;
+            i += 1;
+        }
+        uni
     }
 }
 
