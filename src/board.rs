@@ -155,16 +155,14 @@ impl Board {
     /// ```
     #[inline]
     pub fn status(&self) -> BoardStatus {
-        let moves = MoveGen::new_legal(&self).len();
-        match moves {
-            0 => {
-                if self.checkers == EMPTY {
-                    BoardStatus::Stalemate
-                } else {
-                    BoardStatus::Checkmate
-                }
+        if MoveGen::has_legal_moves(&self) {
+            BoardStatus::Ongoing
+        } else {
+            if self.checkers == EMPTY {
+                BoardStatus::Stalemate
+            } else {
+                BoardStatus::Checkmate
             }
-            _ => BoardStatus::Ongoing,
         }
     }
 
