@@ -29,6 +29,14 @@ debug = true
 [profile.test]
 opt-level = 3
 
+# always optimize build script, because it takes a long time to run unoptimized
+[profile.dev.build-override]
+opt-level = 3
+[profile.release.build-override]
+opt-level = 3
+[profile.test.build-override]
+opt-level = 3
+
 [build-dependencies]
 rand = { version = "0.7.2", default_features = false, features = ["small_rng"] }
 failure = "0.1.6"
