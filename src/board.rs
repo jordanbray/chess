@@ -1000,6 +1000,21 @@ impl Board {
         result.side_to_move = !result.side_to_move;
     }
 
+
+    /// EXPERIMENTAL CODE
+    pub fn unmake_move(&mut self, m: ChessMovePlus) {
+        let moved = self.piece_on(m.dest).unwrap();
+        self.xor(moved, BitBoard::from_square(m.dest), !self.side_to_move);
+        self.xor(moved, BitBoard::from_square(m.source), !self.side_to_move);
+        if let Some(captured_piece) = m.captured_piece {
+            self.xor(captured_piece, BitBoard::from_square(m.dest), self.side_to_move);
+        } 
+        self.side_to_move = !self.side_to_move;
+        self.en_passant = m.pre_move_en_passant_square;
+        self.update_pin_info();
+    }
+
+
     /// Update the pin information.
     fn update_pin_info(&mut self) {
         self.pinned = EMPTY;
@@ -1160,5 +1175,36 @@ fn test_hash_behavior() {
 
         assert_eq!(final_board.get_hash(), final_board_direct.get_hash(), 
                    "final_board: {}, final_board_direct: {}", final_board, final_board_direct);
+    }
+}
+
+/// EXPERIMENTAL CODE
+pub struct ChessMovePlus {
+    pub source: Square,
+    pub dest: Square,
+    pub promotion: Option<Piece>,
+    pub captured_piece: Option<Piece>,
+    pub is_en_passant: bool,
+    pub pre_move_en_passant_square: Option<Square>
+}
+
+impl ChessMovePlus {
+    #[inline(always)]
+    pub fn is_en_passant(m: ChessMove, board: &Board) -> bool{
+        if let Some(ep) =  board.en_passant(){
+            let ep_target_sq = ep.backward(!board.side_to_move()).unwrap();
+            ep_target_sq == m.get_dest() && BitBoard::from_square(m.get_source()) & board.pieces(Piece::Pawn) != EMPTY
+        } else {false}
+    }
+
+    pub fn new(m: ChessMove, board: &Board) -> Self {
+        ChessMovePlus{
+            source: m.get_source(),
+            dest: m.get_dest(),
+            promotion: m.get_promotion(),
+            captured_piece: board.piece_on(m.get_dest()),
+            is_en_passant: Self::is_en_passant(m, board),
+            pre_move_en_passant_square: board.en_passant
+        }
     }
 }
