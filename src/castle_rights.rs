@@ -8,12 +8,23 @@ use crate::square::Square;
 use crate::magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
 
 /// What castle rights does a particular player have?
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
 pub enum CastleRights {
     NoRights,
     KingSide,
     QueenSide,
     Both,
+}
+
+impl PartialOrd for CastleRights {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        let (self_index, other_index) = (self.to_index(), other.to_index());
+        if self_index * other_index == 2 { // if one is KingSide and the other is QueenSide
+            None
+        } else {
+            self_index.partial_cmp(&other_index)
+        }
+    }
 }
 
 /// How many different types of `CastleRights` are there?
