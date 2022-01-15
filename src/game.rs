@@ -4,7 +4,9 @@ use crate::color::Color;
 use crate::error::Error;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;
+use crate::square::Square;
 use std::str::FromStr;
+use std::fmt;
 
 /// Contains all actions supported within the game
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Eq)]
@@ -37,6 +39,8 @@ pub enum GameResult {
 pub struct Game {
     start_pos: Board,
     moves: Vec<Action>,
+    pgn: String,
+    move_number: usize,
 }
 
 impl Game {
@@ -52,6 +56,8 @@ impl Game {
         Game {
             start_pos: Board::default(),
             moves: vec![],
+            pgn: String::new(),
+            move_number: 0,
         }
     }
 
@@ -67,6 +73,8 @@ impl Game {
         Game {
             start_pos: board,
             moves: vec![],
+            pgn: String::new(),
+            move_number: 0,
         }
     }
 
@@ -310,6 +318,7 @@ impl Game {
             return false;
         }
         if self.current_position().legal(chess_move) {
+            self.update_pgn(chess_move);
             self.moves.push(Action::MakeMove(chess_move));
             true
         } else {
@@ -417,6 +426,169 @@ impl Game {
         self.moves.push(Action::Resign(color));
         return true;
     }
+
+    /// Update the PGN string, internally store in `Game`.
+    /// Called when making a move, never called directly.
+    /// Use the Display trait implementation to get the current PGN
+    ///
+    /// ```
+    /// use chess::{Game, MoveGen};
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// let mut movegen = MoveGen::new_legal(&game.current_position());
+    ///
+    /// game.make_move(movegen.next().expect("At least one legal move"));
+    ///
+    /// println!("Current PGN: {}", game);
+    /// ```
+    ///
+    ///
+    fn update_pgn(&mut self, chess_move: ChessMove) {
+        // get a copy of the current_position, BEFORE a move is made
+        let mut copy: Board = self.current_position();
+
+        let source_sq = chess_move.get_source();
+        let dest_sq = chess_move.get_dest();
+        let current_color = copy.side_to_move();
+        let current_piece: Piece = copy.piece_on(source_sq).unwrap();
+
+        // first of all, if it's not the first move, add a space
+        if self.move_number > 0 {
+            self.pgn.push(' ');
+        }
+
+        // if it's white's turn, add the move number
+        // eg. "1. " for the first move of the game
+        if current_color == Color::White {
+            self.move_number += 1;
+            self.pgn.push_str(&self.move_number.to_string());
+            self.pgn.push_str(". ");
+        }
+
+        // get the corresponding symbol:
+        // O-O / O-O-O for castles
+        // or N, B, R, Q, K for a piece move
+        // (nothing if it's a pawn)
+
+        // handle castles first
+        if current_piece == Piece::King {
+            let short_castle = "O-O";
+            let long_castle = "O-O-O";
+            match current_color {
+                Color::White => {
+                    if source_sq == Square::E1 && (dest_sq == Square::G1 || dest_sq == Square::C1) {
+                        if dest_sq == Square::G1 {
+                            self.pgn.push_str(short_castle);
+                            return;
+                        } else {
+                            self.pgn.push_str(long_castle);
+                            return;
+                        }
+                    }
+                },
+                Color::Black => {
+                    if source_sq == Square::E8 && (dest_sq == Square::G8 || dest_sq == Square::C8) {
+                        if dest_sq == Square::G8 {
+                            self.pgn.push_str(short_castle);
+                            return;
+                        } else {
+                            self.pgn.push_str(long_castle);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Piece str representation is a capital only for white (lowercase for black)
+        // but we want a capital letter in all cases
+        if current_piece != Piece::Pawn {
+            self.pgn.push_str(&current_piece.to_string(Color::White));
+        }
+
+        // avoiding ambiguity
+        // Rook and Knight moves can be ambigious if:
+        // * there are two rooks/knights of the same color
+        // * both of them can go to the same destination square
+        if current_piece == Piece::Rook || current_piece == Piece::Knight {
+            let mut other_rook_or_knight_sq: Option<Square> = None;
+
+            // iterate over all the squares for the current piece type
+            // this is to find the other piece of the same color, if there is one
+            for s in *copy.pieces(current_piece) {
+                // we ignore the square of the current piece
+                if s != source_sq {
+                    // get square of the other rook/knight of same color, if there is one
+                    if copy.color_on(s) == Some(current_color) {
+                        other_rook_or_knight_sq = Some(s);
+                    }
+                }
+            }
+
+            // if we have two pieces of same color
+            // can we legally go to the same destination square with the other piece?
+            // if that's the case, the move can indeed be ambiguous
+            match other_rook_or_knight_sq {
+                Some(s) => {
+                    let other_piece_move = ChessMove::new(s, dest_sq, None);
+                    if copy.legal(other_piece_move) {
+                        if s.get_file() == source_sq.get_file() {
+                            // if the pieces are on the same file, add full square
+                            self.pgn.push_str(&source_sq.to_string());
+                        } else {
+                            // else add only the file
+                            self.pgn.push_str(&source_sq.get_file().to_string());
+                        }
+                    }
+                },
+                None => {}
+            }
+        }
+
+        // for a capture
+        match copy.piece_on(dest_sq) {
+            Some(_) => {
+                // for pawns, you need "dxc4" if pawn in file d takes c4
+                // add the original file
+                if current_piece == Piece::Pawn {
+                    self.pgn.push_str(&source_sq.get_file().to_string());
+                }
+
+                // add an 'x' for the capture
+                self.pgn.push('x');
+            },
+            None => {}
+        }
+
+        // add the square the pieces goes to
+        self.pgn.push_str(&dest_sq.to_string());
+
+        // is it a promotion?
+        // e8=Q for ex or c8=B for flexing
+        // the initial square is already written, handle the =Q
+        match chess_move.get_promotion() {
+            Some(promotion_piece) => {
+                self.pgn.push_str(&format!("={}", &promotion_piece.to_string(Color::White)));
+            },
+            None => {}
+        }
+
+        // to test for checks and checkmate, make the move in our copy
+        copy = copy.make_move_new(chess_move);
+
+        // is it checkmate?
+        if copy.status() == BoardStatus::Checkmate {
+            self.pgn.push('#');
+            return;
+        }
+
+        // if there are one or more checkers, then a '+' has to be added
+        if copy.checkers().popcnt() > 0 {
+            self.pgn.push('+');
+        }
+    }
+
 }
 
 impl FromStr for Game {
@@ -424,6 +596,12 @@ impl FromStr for Game {
 
     fn from_str(fen: &str) -> Result<Self, Self::Err> {
         Ok(Game::new_with_board(Board::from_str(fen)?))
+    }
+}
+
+impl fmt::Display for Game {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.pgn)
     }
 }
 
@@ -437,6 +615,18 @@ pub fn fake_pgn_parser(moves: &str) -> Game {
             g
         })
 }
+
+#[test]
+pub fn test_valid_pgn() {
+    // TODO
+    // fake_pgn_parser doesn't understand "a8=Q"
+    // after that fix, add the move "41. a8=Q Rxa8"
+    //
+    let pgn = "1. Nc3 d5 2. e3 Nc6 3. Nf3 Nf6 4. Bb5 a6 5. Bxc6+ bxc6 6. Ne5 Qd6 7. d4 Nd7 8. f4 Nxe5 9. dxe5 Qg6 10. O-O Bf5 11. e4 Bxe4 12. Nxe4 Qxe4 13. Re1 Qb4 14. e6 f6 15. Be3 g6 16. Qd4 Qxd4 17. Bxd4 Bh6 18. g3 g5 19. f5 g4 20. Rad1 Rg8 21. b3 Rb8 22. c4 dxc4 23. bxc4 Rd8 24. Kg2 Rc8 25. Bc5 Rg5 26. Rd7 Bf8 27. Rf1 a5 28. Kg1 a4 29. Bb4 Rh5 30. Rf4 Rg5 31. Rf1 Rh5 32. Rf4 Rg5 33. c5 a3 34. Bxa3 Bg7 35. Bb4 Bf8 36. a3 Bg7 37. a4 Bh8 38. a5 Bg7 39. a6 Bh6 40. a7 Bg7";
+    let game = fake_pgn_parser(pgn);
+    assert_eq!(pgn, game.to_string());
+}
+
 
 #[test]
 pub fn test_can_declare_draw() {
