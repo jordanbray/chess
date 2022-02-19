@@ -14,9 +14,9 @@ license = "MIT"
 documentation = "https://jordanbray.github.io/chess/chess/index.html"
 
 [dependencies]
-arrayvec = "0.5.2"
+arrayvec = "0.7"
 nodrop = "0.1.14"
-failure = "0.1.8"
+failure = "0.1"
 
 [profile.release]
 opt-level = 3
@@ -30,5 +30,5 @@ debug = true
 opt-level = 3
 
 [build-dependencies]
-rand = { version = "0.7.2", default_features = false, features = ["small_rng"] }
-failure = "0.1.6"
+rand = { version = "0.8", default_features = false, features = ["small_rng"] }
+failure = "0.1"

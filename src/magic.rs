@@ -170,6 +170,12 @@ pub fn get_file(file: File) -> BitBoard {
     unsafe { *FILES.get_unchecked(file.to_index()) }
 }
 
+/// Get a `BitBoard` that represents all the squares on a particular file.
+#[inline]
+pub const fn get_file_const(file: File) -> BitBoard {
+    FILES[file.to_index()] 
+}
+
 /// Get a `BitBoard` that represents the squares on the 1 or 2 files next to this file.
 #[inline]
 pub fn get_adjacent_files(file: File) -> BitBoard {
