@@ -1,166 +1,187 @@
-use std::hint::unreachable_unchecked;
-
+use crate::between;
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::color::Color;
 use crate::file::File;
 use crate::square::Square;
 
-use crate::magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
-
-/// What castle rights does a particular player have?
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
-pub enum CastleRights {
-    NoRights,
-    KingSide,
-    QueenSide,
-    Both,
+/// Represents the possible castle types.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum CastleType {
+    Kingside,
+    Queenside
 }
 
-impl PartialOrd for CastleRights {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let (self_index, other_index) = (self.to_index(), other.to_index());
-        if self_index * other_index == 2 { // if one is KingSide and the other is QueenSide
-            None
-        } else {
-            self_index.partial_cmp(&other_index)
+impl CastleType {
+    /// The file the king ends up on after this type of castling
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn king_dest_file(&self) -> File {
+        match self {
+            CastleType::Kingside => File::G,
+            CastleType::Queenside => File::C,
         }
     }
-}
 
-/// How many different types of `CastleRights` are there?
-pub const NUM_CASTLE_RIGHTS: usize = 4;
-
-/// Enumerate all castle rights.
-pub const ALL_CASTLE_RIGHTS: [CastleRights; NUM_CASTLE_RIGHTS] = [
-    CastleRights::NoRights,
-    CastleRights::KingSide,
-    CastleRights::QueenSide,
-    CastleRights::Both,
-];
-
-const CASTLES_PER_SQUARE: [[u8; 64]; 2] = [
-    [
-        2, 0, 0, 0, 3, 0, 0, 1, // 1
-        0, 0, 0, 0, 0, 0, 0, 0, // 2
-        0, 0, 0, 0, 0, 0, 0, 0, // 3
-        0, 0, 0, 0, 0, 0, 0, 0, // 4
-        0, 0, 0, 0, 0, 0, 0, 0, // 5
-        0, 0, 0, 0, 0, 0, 0, 0, // 6
-        0, 0, 0, 0, 0, 0, 0, 0, // 7
-        0, 0, 0, 0, 0, 0, 0, 0, // 8
-    ],
-    [
-        0, 0, 0, 0, 0, 0, 0, 0, // 1
-        0, 0, 0, 0, 0, 0, 0, 0, // 2
-        0, 0, 0, 0, 0, 0, 0, 0, // 3
-        0, 0, 0, 0, 0, 0, 0, 0, // 4
-        0, 0, 0, 0, 0, 0, 0, 0, // 5
-        0, 0, 0, 0, 0, 0, 0, 0, // 6
-        0, 0, 0, 0, 0, 0, 0, 0, // 7
-        2, 0, 0, 0, 3, 0, 0, 1,
-    ],
-];
-
-impl CastleRights {
-    /// Can I castle kingside?
-    pub fn has_kingside(&self) -> bool {
-        self.to_index() & 1 == 1
+    /// The square the king ends up on after this type of castling
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn king_dest(&self, color: Color) -> Square {
+        Square::make_square(color.to_my_backrank(), self.king_dest_file())
     }
 
-    /// Can I castle queenside?
-    pub fn has_queenside(&self) -> bool {
-        self.to_index() & 2 == 2
+    /// The file the rook ends up on after this type of castling
+    #[inline(always)]
+    pub fn rook_dest_file(&self) -> File {
+        match self {
+            CastleType::Kingside => File::F,
+            CastleType::Queenside => File::D,
+        }
     }
 
-    pub fn square_to_castle_rights(color: Color, sq: Square) -> CastleRights {
-        CastleRights::from_index(unsafe {
-            *CASTLES_PER_SQUARE
-                .get_unchecked(color.to_index())
-                .get_unchecked(sq.to_index())
-        } as usize)
+    /// The square the rook ends up on after this type of castling
+    #[inline(always)]
+    pub fn rook_dest(&self, color: Color) -> Square {
+        Square::make_square(color.to_my_backrank(), self.rook_dest_file())
     }
+
 
     /// What squares need to be empty to castle kingside?
-    pub fn kingside_squares(&self, color: Color) -> BitBoard {
-        unsafe { *KINGSIDE_CASTLE_SQUARES.get_unchecked(color.to_index()) }
+    fn kingside_squares(king_square: Square) -> BitBoard {
+        let dest = Square::make_square(king_square.get_rank(), File::G);
+        between(king_square, dest) | BitBoard::from_square(dest)
     }
 
     /// What squares need to be empty to castle queenside?
-    pub fn queenside_squares(&self, color: Color) -> BitBoard {
-        unsafe { *QUEENSIDE_CASTLE_SQUARES.get_unchecked(color.to_index()) }
+    fn queenside_squares(king_square: Square) -> BitBoard {
+        let dest = Square::make_square(king_square.get_rank(), File::C);
+        between(king_square, dest) | BitBoard::from_square(dest)
+    }
+
+    /// The squares that the must be clear and not under attack for the king
+    /// to be able to castle
+    #[inline(always)]
+    pub fn king_journey_squares(&self, king_square: Square) -> BitBoard {
+        match self {
+            CastleType::Kingside => Self::kingside_squares(king_square),
+            CastleType::Queenside => Self::queenside_squares(king_square),
+        }
+    }
+}
+
+/// What castle rights does a particular player have?
+/// 
+/// `CastleRights` is a pair of `Option<File>` values, one for kingside castling,
+/// and one for queenside castling.
+/// 
+/// If the value is `None`, we don't have that castling right. If it is `Some(file)`, we can
+/// castle with our rook positioned on the given `file`.
+/// 
+/// This allows supporting chess 960 positions in addition to normal chess positions.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+pub struct CastleRights {
+    pub(crate) kingside: Option<File>,
+    pub(crate) queenside: Option<File>
+}
+
+impl Default for CastleRights {
+    #[inline]
+    fn default() -> Self {
+        Self { queenside: None, kingside: None }
+    }
+}
+
+impl CastleRights {
+
+    /// Crate a new `CastleRights` value given the kingside and queenside castle rights.
+    pub fn new(kingside: Option<File>, queenside: Option<File>) -> CastleRights {
+        CastleRights{kingside, queenside}
+    }
+
+    /// Can I castle kingside?
+    #[inline(always)]
+    pub fn has_kingside(&self) -> bool {
+        self.kingside.is_some()
+    }
+
+    /// Can I castle queenside?
+    #[inline(always)]
+    pub fn has_queenside(&self) -> bool {
+        self.queenside.is_some()
+    }
+
+    /// Can I castle both sides?
+    #[inline(always)]
+    pub fn has_both(&self) -> bool {
+        self.has_kingside() & self.has_queenside()
+    }
+
+    /// Can I castle either side?
+    #[inline(always)]
+    pub fn has_any(&self) -> bool {
+        self.has_kingside() | self.has_queenside()
+    }
+
+    /// Do I have the given castle right?
+    #[inline(always)]
+    pub fn has(&self, castle_type: CastleType) -> bool {
+        match castle_type {
+            CastleType::Kingside => self.kingside.is_some(),
+            CastleType::Queenside => self.queenside.is_some(),
+        }
+    }
+
+    /// Return the value for the given castle type
+    #[inline(always)]
+    pub fn get(&self, castle_type: CastleType) -> Option<File> {
+        match castle_type {
+            CastleType::Kingside => self.kingside,
+            CastleType::Queenside => self.queenside,
+        }
+    }
+
+    pub fn to_string(&self, color: Color) -> String {
+        let queenside = match self.queenside {
+            Some(file) => file.to_string(),
+            None => "".to_string(),
+        };
+        let kingside = match self.kingside {
+            Some(file) => file.to_string(),
+            None => "".to_string()
+        };
+        let result = format!("{}{}", queenside, kingside);
+
+        if color == Color::Black {
+            result.to_lowercase()
+        } else {
+            result
+        }
     }
 
     /// Remove castle rights, and return a new `CastleRights`.
-    pub fn remove(&self, remove: CastleRights) -> CastleRights {
-        CastleRights::from_index(self.to_index() & !remove.to_index())
+    pub fn remove(&self, remove: File) -> CastleRights {
+        let mut res = *self;
+        if res.kingside == Some(remove) { res.kingside = None; }
+        else if res.queenside == Some(remove) {res.queenside = None;}
+        res
     }
 
-    /// Add some castle rights, and return a new `CastleRights`.
-    pub fn add(&self, add: CastleRights) -> CastleRights {
-        CastleRights::from_index(self.to_index() | add.to_index())
-    }
+    #[allow(non_upper_case_globals)]
+    pub const NoRights: Self = CastleRights{ kingside: None, queenside: None};
 
-    /// Convert `CastleRights` to `usize` for table lookups
-    pub fn to_index(&self) -> usize {
-        *self as usize
-    }
-
-    /// Convert `usize` to `CastleRights`.  Panic if invalid number.
-    pub fn from_index(i: usize) -> CastleRights {
-        match i {
-            0 => CastleRights::NoRights,
-            1 => CastleRights::KingSide,
-            2 => CastleRights::QueenSide,
-            3 => CastleRights::Both,
-            _ => unsafe { unreachable_unchecked() },
-        }
-    }
-
-    /// Which rooks can we "guarantee" we haven't moved yet?
+    /// What rooks are guaranteed to not have moved given this castle rights?
     pub fn unmoved_rooks(&self, color: Color) -> BitBoard {
-        match *self {
-            CastleRights::NoRights => EMPTY,
-            CastleRights::KingSide => BitBoard::set(color.to_my_backrank(), File::H),
-            CastleRights::QueenSide => BitBoard::set(color.to_my_backrank(), File::A),
-            CastleRights::Both => {
-                BitBoard::set(color.to_my_backrank(), File::A)
-                    ^ BitBoard::set(color.to_my_backrank(), File::H)
-            }
+        let mut res = EMPTY;
+        if let Some(file) = self.kingside {
+            res |= BitBoard::set(color.to_my_backrank(), file);
         }
+        if let Some(file) = self.queenside {
+            res |= BitBoard::set(color.to_my_backrank(), file);
+        }
+        res
     }
 
-    /// Convert the castle rights to an FEN compatible string.
-    ///
-    /// ```
-    /// use chess::{CastleRights, Color};
-    ///
-    /// assert_eq!(CastleRights::NoRights.to_string(Color::White), "");
-    /// assert_eq!(CastleRights::Both.to_string(Color::Black), "kq");
-    /// assert_eq!(CastleRights::KingSide.to_string(Color::White), "K");
-    /// assert_eq!(CastleRights::QueenSide.to_string(Color::Black), "q");
-    /// ```
-    pub fn to_string(&self, color: Color) -> String {
-        let result = match *self {
-            CastleRights::NoRights => "",
-            CastleRights::KingSide => "k",
-            CastleRights::QueenSide => "q",
-            CastleRights::Both => "kq",
-        };
-
-        if color == Color::White {
-            result.to_uppercase()
-        } else {
-            result.to_string()
-        }
-    }
-
-    /// Given a square of a rook, which side is it on?
-    /// Note: It is invalid to pass in a non-rook square.  The code may panic.
-    pub fn rook_square_to_castle_rights(square: Square) -> CastleRights {
-        match square.get_file() {
-            File::A => CastleRights::QueenSide,
-            File::H => CastleRights::KingSide,
-            _ => unsafe { unreachable_unchecked() },
-        }
+    /// for hashing purposes only
+    pub(crate) fn to_index(&self) -> usize {
+        self.kingside.is_some() as usize + self.queenside.is_some() as usize * 2
     }
 }

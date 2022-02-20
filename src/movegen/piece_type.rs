@@ -1,3 +1,4 @@
+use crate::{CastleType};
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::board::Board;
 use crate::color::Color;
@@ -14,7 +15,6 @@ use crate::magic::{
 pub trait PieceType {
     fn is(piece: Piece) -> bool;
     fn into_piece() -> Piece;
-    #[inline(always)]
     fn pseudo_legals(src: Square, color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard;
     #[inline(always)]
     fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
@@ -365,33 +365,42 @@ impl PieceType for KingType {
         // If we are not in check, we may be able to castle.
         // We can do so iff:
         //  * the `Board` structure says we can.
-        //  * the squares between my king and my rook are empty.
+        //  * the squares between my king and king dest are empty (except for the castling rook).
+        //  * the square between the castling rook and the rook dest are empty (except for the king).
         //  * no enemy pieces are attacking the squares between the king, and the kings
         //    destination square.
         //  ** This is determined by going to the left or right, and calling
         //     'legal_king_move' for that square.
         if !T::IN_CHECK {
-            if board.my_castle_rights().has_kingside()
-                && (combined & board.my_castle_rights().kingside_squares(color)) == EMPTY
-            {
-                let middle = ksq.uright();
-                let right = middle.uright();
-                if KingType::legal_king_move(board, middle)
-                    && KingType::legal_king_move(board, right)
-                {
-                    moves ^= BitBoard::from_square(right);
-                }
-            }
+            for castle_type in [CastleType::Kingside, CastleType::Queenside] {
+                if let Some(rook_file) = board.my_castle_rights().get(castle_type) {
+                    // println!("has castle rights: {:?}, rook file: {}", castle_type, rook_file);
+                    let rook_sq = Square::make_square(color.to_my_backrank(), rook_file);
+                    let rook_sq_bb = BitBoard::from_square(rook_sq);
+                    let king_sq_bb = BitBoard::from_square(ksq);
+                    let king_journey_squares = castle_type.king_journey_squares(ksq);
+                    // println!("king path clear: {}", combined & !rook_sq_bb & !king_sq_bb & king_journey_squares == EMPTY);
+                    if combined & !rook_sq_bb & !king_sq_bb & king_journey_squares == EMPTY {
+                        let rook_dest_sq = castle_type.rook_dest(color);
+                        let rook_path = between(rook_sq, rook_dest_sq) | BitBoard::from_square(rook_dest_sq);
 
-            if board.my_castle_rights().has_queenside()
-                && (combined & board.my_castle_rights().queenside_squares(color)) == EMPTY
-            {
-                let middle = ksq.uleft();
-                let left = middle.uleft();
-                if KingType::legal_king_move(board, middle)
-                    && KingType::legal_king_move(board, left)
-                {
-                    moves ^= BitBoard::from_square(left);
+                        let rook_path_clear = combined & !rook_sq_bb & !king_sq_bb & rook_path == EMPTY;
+                        // println!("rook path clear: {}", rook_path_clear);
+                        if rook_path_clear {
+
+                            let mut journey_squares_not_attacked = true;
+                            for sq in king_journey_squares {
+                                if !KingType::legal_king_move(board, sq) {
+                                    journey_squares_not_attacked = false;
+                                    break;
+                                }
+                            }
+                            // println!("journey_squares_not_attacked: {}", journey_squares_not_attacked);
+                            if journey_squares_not_attacked {
+                                moves ^= rook_sq_bb;
+                            }
+                        }
+                    }
                 }
             }
         }

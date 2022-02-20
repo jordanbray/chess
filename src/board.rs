@@ -6,7 +6,7 @@ use crate::color::{Color, ALL_COLORS, NUM_COLORS};
 use crate::error::Error;
 use crate::file::File;
 use crate::magic::{
-    between, get_adjacent_files, get_bishop_rays, get_castle_moves, get_file, get_king_moves,
+    between, get_adjacent_files, get_bishop_rays, get_king_moves,
     get_knight_moves, get_pawn_attacks, get_pawn_dest_double_moves, get_pawn_source_double_moves,
     get_rank, get_rook_rays,
 };
@@ -267,15 +267,16 @@ impl Board {
     ///
     /// let mut board = Board::default();
     ///
-    /// assert_eq!(board.castle_rights(Color::White), CastleRights::Both);
-    /// assert_eq!(board.castle_rights(Color::Black), CastleRights::Both);
+    /// assert!(board.castle_rights(Color::White).has_both());
+    /// assert!(board.castle_rights(Color::Black).has_both());
     ///
     /// board = board.make_move_new(move1)
     ///              .make_move_new(move2)
     ///              .make_move_new(move3)
     ///              .make_move_new(move4);
     ///
-    /// assert_eq!(board.castle_rights(Color::White), CastleRights::KingSide);
+    /// assert!(board.castle_rights(Color::White).has_kingside());
+    /// assert!(!board.castle_rights(Color::White).has_queenside());
     /// assert_eq!(board.castle_rights(Color::Black), CastleRights::NoRights);
     /// ```
     #[inline]
@@ -283,36 +284,31 @@ impl Board {
         unsafe { *self.castle_rights.get_unchecked(color.to_index()) }
     }
 
-    /// Add castle rights for a particular side.  Note: this can create an invalid position.
-    #[deprecated(
-        since = "3.1.0",
-        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
-    )]
     #[inline]
-    pub fn add_castle_rights(&mut self, color: Color, add: CastleRights) {
+    fn set_castle_rights(&mut self, color: Color, castle_rights: CastleRights) {
         unsafe {
             *self.castle_rights.get_unchecked_mut(color.to_index()) =
-                self.castle_rights(color).add(add);
+                castle_rights;
         }
     }
 
     /// Remove castle rights for a particular side.
     ///
     /// ```
-    /// use chess::{Board, CastleRights, Color};
+    /// use chess::{Board, CastleRights, Color, File};
     ///
     /// let mut board = Board::default();
-    /// assert_eq!(board.castle_rights(Color::White), CastleRights::Both);
+    /// assert!( board.castle_rights(Color::White).has_kingside());
     ///
-    /// board.remove_castle_rights(Color::White, CastleRights::KingSide);
-    /// assert_eq!(board.castle_rights(Color::White), CastleRights::QueenSide);
+    /// board.remove_castle_rights(Color::White, File::H);
+    /// assert!(!board.castle_rights(Color::White).has_kingside());
     /// ```
     #[deprecated(
         since = "3.1.0",
         note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     #[inline]
-    pub fn remove_castle_rights(&mut self, color: Color, remove: CastleRights) {
+    pub fn remove_castle_rights(&mut self, color: Color, remove: File) {
         unsafe {
             *self.castle_rights.get_unchecked_mut(color.to_index()) =
                 self.castle_rights(color).remove(remove);
@@ -335,11 +331,11 @@ impl Board {
     /// Grab my `CastleRights`.
     ///
     /// ```
-    /// use chess::{Board, Color, CastleRights};
+    /// use chess::{Board, Color, CastleRights, File};
     ///
     /// let mut board = Board::default();
-    /// board.remove_castle_rights(Color::White, CastleRights::KingSide);
-    /// board.remove_castle_rights(Color::Black, CastleRights::QueenSide);
+    /// board.remove_castle_rights(Color::White, File::H);
+    /// board.remove_castle_rights(Color::Black, File::A);
     ///
     /// assert_eq!(board.my_castle_rights(), board.castle_rights(Color::White));
     /// ```
@@ -354,29 +350,30 @@ impl Board {
         note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     #[inline]
-    pub fn add_my_castle_rights(&mut self, add: CastleRights) {
+    pub fn set_my_castle_rights(&mut self, castle_rights: CastleRights) {
         let color = self.side_to_move();
         #[allow(deprecated)]
-        self.add_castle_rights(color, add);
+        self.set_castle_rights(color, castle_rights);
     }
 
     /// Remove some of my `CastleRights`.
     ///
     /// ```
-    /// use chess::{Board, CastleRights};
+    /// use chess::{Board, CastleRights, File};
     ///
     /// let mut board = Board::default();
-    /// assert_eq!(board.my_castle_rights(), CastleRights::Both);
+    /// assert!(board.my_castle_rights().has_both());
     ///
-    /// board.remove_my_castle_rights(CastleRights::KingSide);
-    /// assert_eq!(board.my_castle_rights(), CastleRights::QueenSide);
+    /// board.remove_my_castle_rights(File::H);
+    /// assert!(board.my_castle_rights().has_queenside());
+    /// assert!(!board.my_castle_rights().has_kingside());
     /// ```
     #[deprecated(
         since = "3.1.0",
         note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     #[inline]
-    pub fn remove_my_castle_rights(&mut self, remove: CastleRights) {
+    pub fn remove_my_castle_rights(&mut self, remove: File) {
         let color = self.side_to_move();
         #[allow(deprecated)]
         self.remove_castle_rights(color, remove);
@@ -385,11 +382,11 @@ impl Board {
     /// My opponents `CastleRights`.
     ///
     /// ```
-    /// use chess::{Board, Color, CastleRights};
+    /// use chess::{Board, Color, CastleRights, File};
     ///
     /// let mut board = Board::default();
-    /// board.remove_castle_rights(Color::White, CastleRights::KingSide);
-    /// board.remove_castle_rights(Color::Black, CastleRights::QueenSide);
+    /// board.remove_castle_rights(Color::White, File::H);
+    /// board.remove_castle_rights(Color::Black, File::A);
     ///
     /// assert_eq!(board.their_castle_rights(), board.castle_rights(Color::Black));
     /// ```
@@ -398,35 +395,24 @@ impl Board {
         self.castle_rights(!self.side_to_move())
     }
 
-    /// Add to my opponents `CastleRights`. Note: This can make the position invalid.
-    #[deprecated(
-        since = "3.1.0",
-        note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
-    )]
-    #[inline]
-    pub fn add_their_castle_rights(&mut self, add: CastleRights) {
-        let color = !self.side_to_move();
-        #[allow(deprecated)]
-        self.add_castle_rights(color, add)
-    }
-
     /// Remove some of my opponents `CastleRights`.
     ///
     /// ```
-    /// use chess::{Board, CastleRights};
+    /// use chess::{Board, CastleRights, File};
     ///
     /// let mut board = Board::default();
-    /// assert_eq!(board.their_castle_rights(), CastleRights::Both);
+    /// assert!(board.their_castle_rights().has_both());
     ///
-    /// board.remove_their_castle_rights(CastleRights::KingSide);
-    /// assert_eq!(board.their_castle_rights(), CastleRights::QueenSide);
+    /// board.remove_their_castle_rights(File::H);
+    /// assert!(board.their_castle_rights().has_queenside());
+    /// assert!(!board.their_castle_rights().has_kingside());
     /// ```
     #[deprecated(
         since = "3.1.0",
         note = "When doing board setup, use the BoardBuilder structure.  It ensures you don't end up with an invalid position."
     )]
     #[inline]
-    pub fn remove_their_castle_rights(&mut self, remove: CastleRights) {
+    pub fn remove_their_castle_rights(&mut self, remove: File) {
         let color = !self.side_to_move();
         #[allow(deprecated)]
         self.remove_castle_rights(color, remove);
@@ -650,7 +636,7 @@ impl Board {
         for color in ALL_COLORS.iter() {
             // get the castle rights
             let castle_rights = self.castle_rights(*color);
-
+            let king_square = self.king_square(*color);
             // the castle rights object will tell us which rooks shouldn't have moved yet.
             // verify there are rooks on all those squares
             if castle_rights.unmoved_rooks(*color)
@@ -660,12 +646,17 @@ impl Board {
             {
                 return false;
             }
-            // if we have castle rights, make sure we have a king on the (E, {1,8}) square,
-            // depending on the color
-            if castle_rights != CastleRights::NoRights {
-                if self.pieces(Piece::King) & self.color_combined(*color)
-                    != get_file(File::E) & get_rank(color.to_my_backrank())
-                {
+            
+            if castle_rights != CastleRights::NoRights && king_square.get_rank() != color.to_my_backrank() {
+                return false;
+            }
+            if let Some(file) = castle_rights.kingside {
+                if king_square.get_file() >= file {
+                    return false;
+                }
+            }
+            if let Some(file) = castle_rights.queenside {
+                if king_square.get_file() <= file {
                     return false;
                 }
             }
@@ -896,53 +887,40 @@ impl Board {
 
         let source_bb = BitBoard::from_square(source);
         let dest_bb = BitBoard::from_square(dest);
-        let move_bb = source_bb ^ dest_bb;
         let moved = self.piece_on(source).unwrap();
 
+        let castles_target_rook = dest_bb & self.pieces(Piece::Rook) & self.color_combined(self.side_to_move);
+        let castles = moved == Piece::King && castles_target_rook == dest_bb;
+
         result.xor(moved, source_bb, self.side_to_move);
-        result.xor(moved, dest_bb, self.side_to_move);
-        if let Some(captured) = self.piece_on(dest) {
-            result.xor(captured, dest_bb, !self.side_to_move);
+        
+        if !castles {
+            if let Some(captured) = self.piece_on(dest) {
+                result.xor(captured, dest_bb, !self.side_to_move);
+            }
+            result.xor(moved, dest_bb, self.side_to_move);
+        } else {
+            let dest_file = if dest_bb.0 > source_bb.0 {File::G} else {File::C};
+            result.xor(moved, BitBoard::set(self.side_to_move.to_my_backrank(), dest_file), self.side_to_move);
         }
 
-        #[allow(deprecated)]
-        result.remove_their_castle_rights(CastleRights::square_to_castle_rights(
-            !self.side_to_move,
-            dest,
-        ));
+        if dest.get_rank() == self.side_to_move().to_their_backrank() {
+            #[allow(deprecated)]
+            result.remove_their_castle_rights(dest.get_file());
+        }
 
-        #[allow(deprecated)]
-        result.remove_my_castle_rights(CastleRights::square_to_castle_rights(
-            self.side_to_move,
-            source,
-        ));
+        if moved == Piece::King {
+            #[allow(deprecated)]
+            result.set_castle_rights(self.side_to_move(), CastleRights::NoRights);
+        } else if source.get_rank() == self.side_to_move().to_my_backrank(){
+            #[allow(deprecated)]
+            result.remove_my_castle_rights(source.get_file());
+        }
 
         let opp_king = result.pieces(Piece::King) & result.color_combined(!result.side_to_move);
 
-        let castles = moved == Piece::King && (move_bb & get_castle_moves()) == move_bb;
 
         let ksq = opp_king.to_square();
-
-        const CASTLE_ROOK_START: [File; 8] = [
-            File::A,
-            File::A,
-            File::A,
-            File::A,
-            File::H,
-            File::H,
-            File::H,
-            File::H,
-        ];
-        const CASTLE_ROOK_END: [File; 8] = [
-            File::D,
-            File::D,
-            File::D,
-            File::D,
-            File::F,
-            File::F,
-            File::F,
-            File::F,
-        ];
 
         if moved == Piece::Knight {
             result.checkers ^= get_knight_moves(ksq) & dest_bb;
@@ -971,13 +949,8 @@ impl Board {
             }
         } else if castles {
             let my_backrank = self.side_to_move.to_my_backrank();
-            let index = dest.get_file().to_index();
-            let start = BitBoard::set(my_backrank, unsafe {
-                *CASTLE_ROOK_START.get_unchecked(index)
-            });
-            let end = BitBoard::set(my_backrank, unsafe {
-                *CASTLE_ROOK_END.get_unchecked(index)
-            });
+            let start = castles_target_rook;
+            let end = BitBoard::set(my_backrank, if dest_bb.0 > source_bb.0 {File::F} else {File::D});
             result.xor(Piece::Rook, start, self.side_to_move);
             result.xor(Piece::Rook, end, self.side_to_move);
         }
@@ -1087,9 +1060,9 @@ impl TryFrom<&BoardBuilder> for Board {
         }
 
         #[allow(deprecated)]
-        board.add_castle_rights(Color::White, fen.get_castle_rights(Color::White));
+        board.set_castle_rights(Color::White, fen.get_castle_rights(Color::White));
         #[allow(deprecated)]
-        board.add_castle_rights(Color::Black, fen.get_castle_rights(Color::Black));
+        board.set_castle_rights(Color::Black, fen.get_castle_rights(Color::Black));
 
         board.update_pin_info();
 
@@ -1148,8 +1121,8 @@ fn move_of(m: &str) -> ChessMove {
         None
     };
     ChessMove::new(
-        Square::from_string(m[..2].to_string()).unwrap(),
-        Square::from_string(m[2..4].to_string()).unwrap(),
+        Square::from_str(&m[..2]).unwrap(),
+        Square::from_str(&m[2..4].to_string()).unwrap(),
         promo,
     )
 }
@@ -1161,7 +1134,7 @@ fn test_hash_behavior() {
         "r1b1r1k1/3pb1pp/1p2p3/p2pPp2/3P1B2/4R2P/PPPN1PP1/R5K1 b - - 0 18"),
         ("6k1/1R2bp2/4p1p1/2p1P2p/2K2P2/r1P1B2P/2P5/8 b - - 4 37", vec!["f7f5", "e5f6", "e7f6", "b7b4", "g8g7"],
         "8/6k1/4pbp1/2p4p/1RK2P2/r1P1B2P/2P5/8 w - - 2 40"),
-        ("r1b1r1k1/pp4p1/4p2p/3pPP2/2p4P/P1PB4/2PB1P2/R3K2R b KQ - 0 17", vec!["c4d3", "c2d3", "g8h7", "e1g1", "d5d4"],
+        ("r1b1r1k1/pp4p1/4p2p/3pPP2/2p4P/P1PB4/2PB1P2/R3K2R b KQ - 0 17", vec!["c4d3", "c2d3", "g8h7", "e1h1", "d5d4"],
         "r1b1r3/pp4pk/4p2p/4PP2/3p3P/P1PP4/3B1P2/R4RK1 w - - 0 20"),
         ("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", vec!["c2c4", "d7d5", "c4c5", "b7b5"],
         "rnbqkbnr/p1p1pppp/8/1pPp4/8/8/PP1PPPPP/RNBQKBNR w KQkq b6 0 3")
@@ -1174,7 +1147,58 @@ fn test_hash_behavior() {
         let final_board_direct = Board::from_str(final_fen).unwrap();
 
         assert_eq!(final_board.get_hash(), final_board_direct.get_hash(), 
-                   "final_board: {}, final_board_direct: {}", final_board, final_board_direct);
+                   "\n       final_board: {},\nfinal_board_direct: {}", final_board, final_board_direct);
+    }
+}
+
+#[test]
+fn test_960_castling() {
+    let test_cases = vec![
+        // (fen, after_ks_castling, after_qs_castling)
+        ("rnb1kbnr/pppppppp/8/8/8/3N4/PPPPPPPP/RK2BBNR w KQkq - 0 1", None, Some("rnb1kbnr/pppppppp/8/8/8/3N4/PPPPPPPP/2KRBBNR b kq - 1 1")),
+        ("rnb1k2r/ppppbppp/4pn2/8/4P3/3N1P2/PPPPN1PP/2KRBB1R b kq - 2 4", Some("rnb2rk1/ppppbppp/4pn2/8/4P3/3N1P2/PPPPN1PP/2KRBB1R w - - 3 5"), None),
+        ("2rk2r1/pppb1ppp/n2pnb2/8/1N1Pp3/2P1P1N1/PP1BBPPP/1RK1R3 b KQkq - 1 1", Some("2r2rk1/pppb1ppp/n2pnb2/8/1N1Pp3/2P1P1N1/PP1BBPPP/1RK1R3 w KQ - 2 2"), Some("2kr2r1/pppb1ppp/n2pnb2/8/1N1Pp3/2P1P1N1/PP1BBPPP/1RK1R3 w KQ - 2 2")),
+        ("2rk2r1/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/1RK1R3 w KQkq - 0 3", Some("2rk2r1/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/1R3RK1 b kq - 1 3"), Some("2rk2r1/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/2KRR3 b kq - 1 3")),
+        ("2rk2r1/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1B1PPP/RBK1R3 w KQkq - 1 3", Some("2rk2r1/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1B1PPP/RB3RK1 b kq - 2 3"), None),
+        ("2rk2r1/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/4RKR1 w KQkq - 0 3", Some("2rk2r1/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/4RRK1 b kq - 1 3"), Some("2rk2r1/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/2KR2R1 b kq - 1 3")),
+        ("1r1rk3/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/2KR2R1 b Kq - 1 3", None, None),
+        ("1r1rk3/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/2KR2R1 b Kd - 1 3", None, Some("1rkr4/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/2KR2R1 w K - 2 4"))
+    ];
+
+    for (i, (fen, after_ks_castling, after_qs_castling)) in test_cases.into_iter().enumerate() {
+        println!("{}- {}", i + 1, fen);
+        let board = Board::from_str(fen).unwrap();
+        let color = board.side_to_move();
+        let moves = MoveGen::new_legal(&board).collect::<Vec<_>>();
+        if let Some(after_ks_castling) = after_ks_castling {
+            assert!(board.castle_rights(board.side_to_move()).has_kingside());
+            let ks_castles = ChessMove::new(board.king_square(color), 
+                                            Square::make_square(color.to_my_backrank(), board.castle_rights(color).kingside.unwrap()),
+                                            None);
+            assert!(moves.contains(&ks_castles));
+            let ks_castled_board = board.make_move_new(ks_castles);
+            assert_eq!(ks_castled_board, Board::from_str(after_ks_castling).unwrap());
+        } else if let Some(ks_castling_rook) = board.castle_rights(color).kingside {
+            let ks_castles = ChessMove::new(board.king_square(color),
+                                            Square::make_square(color.to_my_backrank(), ks_castling_rook),
+                                            None);
+            assert!(!moves.contains(&ks_castles));
+        }
+        if let Some(after_qs_castling) = after_qs_castling {
+            assert!(board.castle_rights(board.side_to_move()).has_queenside());
+            let qs_castles = ChessMove::new(board.king_square(color), 
+                                            Square::make_square(color.to_my_backrank(), board.castle_rights(color).queenside.unwrap()),
+                                            None);
+            assert!(moves.contains(&qs_castles));
+            let qs_castled_board = board.make_move_new(qs_castles);
+            assert_eq!(qs_castled_board, Board::from_str(after_qs_castling).unwrap(),
+                       "actual: {},\nexpected: {}", qs_castled_board, Board::from_str(after_qs_castling).unwrap());
+        } else if let Some(qs_castling_rook) = board.castle_rights(color).queenside {
+            let qs_castles = ChessMove::new(board.king_square(color),
+                                            Square::make_square(color.to_my_backrank(), qs_castling_rook),
+                                            None);
+            assert!(!moves.contains(&qs_castles));
+        }
     }
 }
 
