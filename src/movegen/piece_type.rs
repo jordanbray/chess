@@ -1,4 +1,4 @@
-use crate::{CastleType};
+use crate::{CastleType, File};
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::board::Board;
 use crate::color::Color;
@@ -374,18 +374,16 @@ impl PieceType for KingType {
         if !T::IN_CHECK {
             for castle_type in [CastleType::Kingside, CastleType::Queenside] {
                 if let Some(rook_file) = board.my_castle_rights().get(castle_type) {
-                    // println!("has castle rights: {:?}, rook file: {}", castle_type, rook_file);
-                    let rook_sq = Square::make_square(color.to_my_backrank(), rook_file);
+                    let backrank = color.to_my_backrank();
+                    let rook_sq = Square::make_square(backrank, rook_file);
                     let rook_sq_bb = BitBoard::from_square(rook_sq);
                     let king_sq_bb = BitBoard::from_square(ksq);
                     let king_journey_squares = castle_type.king_journey_squares(ksq);
-                    // println!("king path clear: {}", combined & !rook_sq_bb & !king_sq_bb & king_journey_squares == EMPTY);
                     if combined & !rook_sq_bb & !king_sq_bb & king_journey_squares == EMPTY {
                         let rook_dest_sq = castle_type.rook_dest(color);
                         let rook_path = between(rook_sq, rook_dest_sq) | BitBoard::from_square(rook_dest_sq);
 
                         let rook_path_clear = combined & !rook_sq_bb & !king_sq_bb & rook_path == EMPTY;
-                        // println!("rook path clear: {}", rook_path_clear);
                         if rook_path_clear {
 
                             let mut journey_squares_not_attacked = true;
@@ -395,7 +393,26 @@ impl PieceType for KingType {
                                     break;
                                 }
                             }
-                            // println!("journey_squares_not_attacked: {}", journey_squares_not_attacked);
+                            // check that there are no enemy heavy pieces waiting for the king on the other side!
+                            if castle_type == CastleType::Kingside {
+                                if rook_file != File::H {
+                                    let their_heavy_pieces = (board.pieces(Piece::Rook) | board.pieces(Piece::Queen)) & board.color_combined(!color);
+                                    if their_heavy_pieces & BitBoard::set(backrank, File::H) != EMPTY {
+                                        continue;
+                                    }
+                                }
+                            } else {
+                                if rook_file != File::A {
+                                    let their_heavy_pieces = (board.pieces(Piece::Rook) | board.pieces(Piece::Queen)) & board.color_combined(!color);
+                                    if their_heavy_pieces & BitBoard::set(backrank, File::B) != EMPTY {
+                                        continue;
+                                    }
+                                    if their_heavy_pieces & BitBoard::set(backrank, File::A) != EMPTY &&
+                                       combined & !rook_sq_bb & BitBoard::set(backrank, File::B) == EMPTY {
+                                        continue;
+                                    }
+                                }
+                            }
                             if journey_squares_not_attacked {
                                 moves ^= rook_sq_bb;
                             }
