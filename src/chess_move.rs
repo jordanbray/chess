@@ -1,3 +1,4 @@
+use crate::CastleType;
 use crate::board::Board;
 use crate::error::Error;
 use crate::file::File;
@@ -382,6 +383,25 @@ impl ChessMove {
             let dest_file = Some(self.dest.get_file());
             let castle_rights = board.castle_rights(color);
             dest_file == castle_rights.kingside || dest_file == castle_rights.queenside
+        }
+    }
+
+    pub fn get_castles(&self, board: &Board) -> Option<CastleType> {
+        let color = board.side_to_move();
+        if self.source == board.king_square(color) &&
+           self.dest.get_rank() == color.to_my_backrank() 
+        {
+            let dest_file = Some(self.dest.get_file());
+            let castle_rights = board.castle_rights(color);
+            if dest_file == castle_rights.kingside {
+                Some(CastleType::Kingside)
+            } else if dest_file == castle_rights.queenside {
+                Some(CastleType::Queenside)
+            } else {
+                None
+            }
+        } else {
+            None
         }
     }
 }

@@ -509,7 +509,7 @@ impl FromStr for BoardBuilder {
                 fen.castle_rights[Color::Black.to_index()].kingside = Some(find_rook_file(&fen, Color::Black, true)?);
             } else if c == 'q' {
                 fen.castle_rights[Color::Black.to_index()].queenside = Some(find_rook_file(&fen, Color::Black, false)?);
-            } else if ('a' .. 'h').contains(&c.to_ascii_lowercase()){
+            } else if ('a' ..= 'h').contains(&c.to_ascii_lowercase()){
                 let file = File::from_index((c.to_ascii_lowercase() as u8 - 'a' as u8) as usize);
                 let color = if c.is_ascii_lowercase() {Color::Black} else {Color::White};
                 let ksq = match king_squares[color.to_index()]{
