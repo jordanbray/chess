@@ -1,3 +1,4 @@
+use crate::CastleType;
 use crate::board::Board;
 use crate::castle_rights::CastleRights;
 use crate::color::Color;
@@ -143,7 +144,7 @@ impl BoardBuilder {
     /// use chess::{BoardBuilder, Board, CastleRights, Color};
     ///
     /// let bb: BoardBuilder = Board::default().into();
-    /// assert_eq!(bb.get_castle_rights(Color::White), CastleRights::Both);
+    /// assert!(bb.get_castle_rights(Color::White).has_both());
     /// ```
     pub fn get_castle_rights(&self, color: Color) -> CastleRights {
         self.castle_rights[color.to_index()]
@@ -189,12 +190,12 @@ impl BoardBuilder {
     /// This function can be used on self directly or in a builder pattern.
     ///
     /// ```
-    /// use chess::{BoardBuilder, Color, CastleRights};
+    /// use chess::{BoardBuilder, Color, CastleRights, File};
     /// BoardBuilder::new()
     ///              .castle_rights(Color::White, CastleRights::NoRights);
     ///
     /// let mut bb = BoardBuilder::new();
-    /// bb.castle_rights(Color::Black, CastleRights::Both);
+    /// bb.castle_rights(Color::Black, CastleRights::new(Some(File::H), Some(File::A)));
     /// ```
     pub fn castle_rights<'a>(
         &'a mut self,
@@ -312,15 +313,46 @@ impl fmt::Display for BoardBuilder {
             write!(f, "b ")?;
         }
 
+        // If the rook for a given side is the outermost rook, use 'K' or 'Q' (respectively 'k' or 'q' for black),
+        // otherwise, use the rook's file
+        let castle_rights_to_str = |color: Color| {
+            let mut res = String::new();
+            let rank = color.to_my_backrank();
+            for castle_side in [CastleType::Kingside, CastleType::Queenside] {
+                if let Some(file) = self.get_castle_rights(color).get(castle_side){
+                    let mut outer_most_rook = true;
+                    let file_ind = file.to_index();
+                    let file_ind = if castle_side == CastleType::Kingside {file_ind} else {7 - file_ind};
+                    for outside_file in (file_ind + 1) ..=7 {
+                        let outside_file = if castle_side == CastleType::Kingside {outside_file} else {7 - outside_file};
+                        if self[Square::make_square(rank, File::from_index(outside_file))] == Some((Piece::Rook, color)) {
+                            outer_most_rook = false;
+                            break;
+                        }
+                    }
+                    let castle_right_char = if outer_most_rook {
+                        if castle_side == CastleType::Kingside {'k'} else {'q'}
+                    } else {
+                        ('a' as u8 + file.to_index() as u8) as char
+                    };
+                    let castle_right_char = if color == Color::White {castle_right_char.to_ascii_uppercase()} else {castle_right_char};
+                    use std::fmt::Write;
+                    write!(&mut res, "{}", castle_right_char).unwrap();
+
+                }
+            }
+            res
+        };
+
         write!(
             f,
             "{}",
-            self.castle_rights[Color::White.to_index()].to_string(Color::White)
+            castle_rights_to_str(Color::White)
         )?;
         write!(
             f,
             "{}",
-            self.castle_rights[Color::Black.to_index()].to_string(Color::Black)
+            castle_rights_to_str(Color::Black)
         )?;
         if self.castle_rights[0] == CastleRights::NoRights
             && self.castle_rights[1] == CastleRights::NoRights
@@ -364,6 +396,8 @@ impl FromStr for BoardBuilder {
         let side = tokens[1];
         let castles = tokens[2];
         let ep = tokens[3];
+
+        let mut king_squares = [None; 2];
 
         for x in pieces.chars() {
             match x {
@@ -428,11 +462,13 @@ impl FromStr for BoardBuilder {
                 'k' => {
                     fen[Square::make_square(cur_rank, cur_file)] =
                         Some((Piece::King, Color::Black));
+                    king_squares[Color::Black.to_index()] = Some(Square::make_square(cur_rank, cur_file));
                     cur_file = cur_file.right();
                 }
                 'K' => {
                     fen[Square::make_square(cur_rank, cur_file)] =
                         Some((Piece::King, Color::White));
+                    king_squares[Color::White.to_index()] = Some(Square::make_square(cur_rank, cur_file));
                     cur_file = cur_file.right();
                 }
                 _ => {
@@ -452,25 +488,43 @@ impl FromStr for BoardBuilder {
             }
         }
 
-        if castles.contains("K") && castles.contains("Q") {
-            fen.castle_rights[Color::White.to_index()] = CastleRights::Both;
-        } else if castles.contains("K") {
-            fen.castle_rights[Color::White.to_index()] = CastleRights::KingSide;
-        } else if castles.contains("Q") {
-            fen.castle_rights[Color::White.to_index()] = CastleRights::QueenSide;
-        } else {
-            fen.castle_rights[Color::White.to_index()] = CastleRights::NoRights;
-        }
+        let find_rook_file = |bb: &BoardBuilder, color: Color, kingside: bool| -> Result<File, Error> {
+            let rank = color.to_my_backrank();
+            for file in 0..6 {
+                let file = if kingside {7 - file} else {file};
+                let file = File::from_index(file);
+                if bb[Square::make_square(rank, file)] == Some((Piece::Rook, color)) {
+                    return Ok(file);
+                }
+            }
+            return Err(Error::InvalidFen { fen: value.to_string()})
+        };
 
-        if castles.contains("k") && castles.contains("q") {
-            fen.castle_rights[Color::Black.to_index()] = CastleRights::Both;
-        } else if castles.contains("k") {
-            fen.castle_rights[Color::Black.to_index()] = CastleRights::KingSide;
-        } else if castles.contains("q") {
-            fen.castle_rights[Color::Black.to_index()] = CastleRights::QueenSide;
-        } else {
-            fen.castle_rights[Color::Black.to_index()] = CastleRights::NoRights;
+        for c in castles.chars() {
+            if c == 'K' {
+                fen.castle_rights[Color::White.to_index()].kingside = Some(find_rook_file(&fen, Color::White, true)?);
+            } else if c == 'Q' {
+                fen.castle_rights[Color::White.to_index()].queenside = Some(find_rook_file(&fen, Color::White, false)?);
+            } else if c == 'k' {
+                fen.castle_rights[Color::Black.to_index()].kingside = Some(find_rook_file(&fen, Color::Black, true)?);
+            } else if c == 'q' {
+                fen.castle_rights[Color::Black.to_index()].queenside = Some(find_rook_file(&fen, Color::Black, false)?);
+            } else if ('a' ..= 'h').contains(&c.to_ascii_lowercase()){
+                let file = File::from_index((c.to_ascii_lowercase() as u8 - 'a' as u8) as usize);
+                let color = if c.is_ascii_lowercase() {Color::Black} else {Color::White};
+                let ksq = match king_squares[color.to_index()]{
+                    Some(ksq) => ksq,
+                    None => return Err(Error::InvalidFen {fen: value.to_string()})
+                };
+                let is_kingside = file > ksq.get_file();
+                if is_kingside {
+                    fen.castle_rights[color.to_index()].kingside= Some(file);
+                } else {
+                    fen.castle_rights[color.to_index()].queenside = Some(file);
+                };
+            }
         }
+        
 
         if let Ok(sq) = Square::from_str(&ep) {
             fen = fen.en_passant(Some(sq.get_file()));
@@ -525,9 +579,9 @@ fn check_initial_position() {
 #[test]
 fn invalid_castle_rights() {
     let res: Result<Board, _> = BoardBuilder::new()
-        .piece(Square::A1, Piece::King, Color::White)
+        .piece(Square::E2, Piece::King, Color::White)
         .piece(Square::A8, Piece::King, Color::Black)
-        .castle_rights(Color::White, CastleRights::Both)
+        .castle_rights(Color::White, CastleRights{kingside: Some(File::H), queenside: Some(File::A)})
         .try_into();
     assert!(res.is_err());
 }
@@ -554,4 +608,19 @@ fn test_in_check() {
     bb.side_to_move(Color::Black);
     let res: Result<Board, _> = bb.try_into();
     assert!(res.is_err()); // My opponent cannot be in check when it's my move.
+}
+
+#[test]
+fn test_castle_rights_in_fen_output() {
+    let test_cases = vec![
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "1r1rk3/pppb1p1p/3pnb2/6p1/1P1Pp3/4P1N1/PP1BBPPP/2KR2R1 b Kd - 0 1",
+        "1r1rk3/ppp2p1p/2bpnb2/6p1/1P1Pp3/2B1P1N1/PP2BPPP/2KR2R1 b Kq - 0 1",
+        "nqbn1krr/ppp2pb1/3p4/4p1pp/3PP1PP/8/PPP2PB1/NQBN1KRR w Gg - 0 1",
+        "1rr1k3/ppp2pb1/1nqpbn2/4p1pp/3PP1PP/1B1QN3/PPP1NPB1/2R1RK2 w Eq - 0 1"
+    ];
+    for fen in test_cases {
+        let board = Board::from_str(fen).unwrap();
+        assert_eq!(board.to_string(), fen);
+    }
 }

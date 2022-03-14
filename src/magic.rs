@@ -104,11 +104,6 @@ pub fn get_pawn_attacks(sq: Square, color: Color, blockers: BitBoard) -> BitBoar
             & blockers
     }
 }
-/// Get the legal destination castle squares for both players
-#[inline]
-pub fn get_castle_moves() -> BitBoard {
-    CASTLE_MOVES
-}
 
 /// Get the quiet pawn moves (non-captures) for a particular square, given the pawn's color and
 /// the potential blocking pieces.
@@ -153,6 +148,10 @@ pub fn between(sq1: Square, sq2: Square) -> BitBoard {
             .get_unchecked(sq2.to_index())
     }
 }
+#[inline]
+pub const fn between_const(sq1: Square, sq2: Square) -> BitBoard {
+    BETWEEN[sq1.to_index()][sq2.to_index()]
+}
 
 /// Get a `BitBoard` that represents all the squares on a particular rank.
 #[inline]
@@ -164,6 +163,12 @@ pub fn get_rank(rank: Rank) -> BitBoard {
 #[inline]
 pub fn get_file(file: File) -> BitBoard {
     unsafe { *FILES.get_unchecked(file.to_index()) }
+}
+
+/// Get a `BitBoard` that represents all the squares on a particular file.
+#[inline]
+pub const fn get_file_const(file: File) -> BitBoard {
+    FILES[file.to_index()] 
 }
 
 /// Get a `BitBoard` that represents the squares on the 1 or 2 files next to this file.

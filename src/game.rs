@@ -35,8 +35,8 @@ pub enum GameResult {
 /// not recommended for engines.
 #[derive(Clone, Debug)]
 pub struct Game {
-    start_pos: Board,
-    moves: Vec<Action>,
+    pub start_pos: Board,
+    pub moves: Vec<Action>,
 }
 
 impl Game {

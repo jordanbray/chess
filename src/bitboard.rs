@@ -83,6 +83,12 @@ impl BitOr for BitBoard {
         BitBoard(self.0 | other.0)
     }
 }
+impl BitBoard {
+    #[inline]
+    pub const fn bit_or(self, other: BitBoard) -> BitBoard {
+        BitBoard(self.0 | other.0)
+    }
+}
 
 impl BitOr for &BitBoard {
     type Output = BitBoard;
@@ -283,15 +289,15 @@ impl BitBoard {
     }
 
     /// Construct a new `BitBoard` with a particular `Square` set
-    #[inline]
-    pub fn from_square(sq: Square) -> BitBoard {
+    #[inline(always)]
+    pub const fn from_square(sq: Square) -> BitBoard {
         BitBoard(1u64 << sq.to_int())
     }
 
     /// Convert an `Option<Square>` to an `Option<BitBoard>`
     #[inline]
     pub fn from_maybe_square(sq: Option<Square>) -> Option<BitBoard> {
-        sq.map(|s| BitBoard::from_square(s))
+        Some(BitBoard::from_square(sq?)) 
     }
 
     /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`

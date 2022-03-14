@@ -27,7 +27,7 @@ impl SquareAndBitBoard {
     }
 }
 
-pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>;
+pub type MoveList = NoDrop<ArrayVec<SquareAndBitBoard, 18>>;
 
 /// An incremental move generator
 ///
@@ -95,7 +95,7 @@ impl MoveGen {
     fn enumerate_moves(board: &Board) -> MoveList {
         let checkers = *board.checkers();
         let mask = !board.color_combined(board.side_to_move());
-        let mut movelist = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 18]>::new());
+        let mut movelist = NoDrop::new(ArrayVec::<SquareAndBitBoard, 18>::new());
 
         if checkers == EMPTY {
             PawnType::legals::<NotInCheckType>(&mut movelist, &board, mask);
@@ -137,11 +137,17 @@ impl MoveGen {
     }
 
     /// Never, ever, iterate this move
+    /// If this move was to be iterated, returns true; otherwise returns false.
     pub fn remove_move(&mut self, chess_move: ChessMove) -> bool {
         for x in 0..self.moves.len() {
             if self.moves[x].square == chess_move.get_source() {
-                self.moves[x].bitboard &= !BitBoard::from_square(chess_move.get_dest());
-                return true;
+                let dest_bb = BitBoard::from_square(chess_move.get_dest());
+                if self.moves[x].bitboard & dest_bb != EMPTY {
+                    self.moves[x].bitboard &= !dest_bb;
+                    return true;
+                } else {
+                    //return false;
+                }
             }
         }
         false
@@ -169,6 +175,7 @@ impl MoveGen {
         // that in i.  Then, increment i to point to a new unused slot.
         for j in (i + 1)..self.moves.len() {
             if self.moves[j].bitboard & self.iterator_mask != EMPTY {
+                // self.moves.swap(i, j);
                 let backup = self.moves[i];
                 self.moves[i] = self.moves[j];
                 self.moves[j] = backup;

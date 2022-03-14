@@ -1,4 +1,5 @@
 use crate::error::Error;
+use std::fmt::Display;
 use std::mem::transmute;
 use std::str::FromStr;
 
@@ -13,6 +14,12 @@ pub enum File {
     F,
     G,
     H,
+}
+
+impl Display for File {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", ('A' as u8 + self.to_index() as u8) as char)
+    }
 }
 
 /// How many files are there?
@@ -51,7 +58,7 @@ impl File {
 
     /// Convert this `File` into a `usize` from 0 to 7 inclusive.
     #[inline]
-    pub fn to_index(&self) -> usize {
+    pub const fn to_index(&self) -> usize {
         *self as usize
     }
 }

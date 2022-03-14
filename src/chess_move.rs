@@ -1,3 +1,4 @@
+use crate::CastleType;
 use crate::board::Board;
 use crate::error::Error;
 use crate::file::File;
@@ -11,6 +12,8 @@ use std::fmt;
 use std::str::FromStr;
 
 /// Represent a ChessMove in memory
+/// 
+/// Castling moves are encoded as king takes rook
 #[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug, Hash)]
 pub struct ChessMove {
     source: Square,
@@ -62,9 +65,10 @@ impl ChessMove {
         // Castles first...
         if move_text == "O-O" || move_text == "O-O-O" {
             let rank = board.side_to_move().to_my_backrank();
-            let source_file = File::E;
-            let dest_file = if move_text == "O-O" { File::G } else { File::C };
-
+            let source_file = board.king_square(board.side_to_move()).get_file();
+            let board_castle_rights = board.castle_rights(board.side_to_move());
+            let dest_file = if move_text == "O-O" { board_castle_rights.kingside} else { board_castle_rights.queenside };
+            let dest_file = dest_file.ok_or(Error::InvalidSanMove)?;
             let m = ChessMove::new(
                 Square::make_square(rank, source_file),
                 Square::make_square(rank, dest_file),
@@ -369,6 +373,36 @@ impl ChessMove {
         }
 
         found_move.ok_or(error.clone())
+    }
+
+    pub fn is_castles(&self, board: &Board) -> bool {
+        let color = board.side_to_move();
+        self.source == board.king_square(color) &&
+        self.dest.get_rank() == color.to_my_backrank() && 
+        {
+            let dest_file = Some(self.dest.get_file());
+            let castle_rights = board.castle_rights(color);
+            dest_file == castle_rights.kingside || dest_file == castle_rights.queenside
+        }
+    }
+
+    pub fn get_castles(&self, board: &Board) -> Option<CastleType> {
+        let color = board.side_to_move();
+        if self.source == board.king_square(color) &&
+           self.dest.get_rank() == color.to_my_backrank() 
+        {
+            let dest_file = Some(self.dest.get_file());
+            let castle_rights = board.castle_rights(color);
+            if dest_file == castle_rights.kingside {
+                Some(CastleType::Kingside)
+            } else if dest_file == castle_rights.queenside {
+                Some(CastleType::Queenside)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }
 
