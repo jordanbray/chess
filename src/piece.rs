@@ -38,6 +38,17 @@ impl Piece {
         *self as usize
     }
 
+    fn piece_char(&self) -> char {
+        match *self {
+            Piece::Pawn => 'p',
+            Piece::Knight => 'n',
+            Piece::Bishop => 'b',
+            Piece::Rook => 'r',
+            Piece::Queen => 'q',
+            Piece::King => 'k',
+        }
+    }
+
     /// Convert a piece with a color to a string.  White pieces are uppercase, black pieces are
     /// lowercase.
     ///
@@ -48,6 +59,7 @@ impl Piece {
     /// assert_eq!(Piece::Knight.to_string(Color::Black), "n");
     /// ```
     #[inline]
+    #[cfg(feature="std")]
     pub fn to_string(&self, color: Color) -> String {
         let piece = format!("{}", self);
         if color == Color::White {
@@ -56,21 +68,30 @@ impl Piece {
             piece
         }
     }
+
+    #[inline]
+    pub fn with_color(&self, color: Color) -> PieceWithColor {
+        PieceWithColor { piece: *self, color }
+    }
 }
 
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match *self {
-                Piece::Pawn => "p",
-                Piece::Knight => "n",
-                Piece::Bishop => "b",
-                Piece::Rook => "r",
-                Piece::Queen => "q",
-                Piece::King => "k",
-            }
-        )
+        write!(f, "{}", self.piece_char())
+    }
+}
+
+pub struct PieceWithColor {
+    piece: Piece,
+    color: Color,
+}
+
+impl fmt::Display for PieceWithColor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.color == Color::White {
+            write!(f, "{}", self.piece.piece_char().to_uppercase())
+        } else {
+            write!(f, "{}", self.piece.piece_char())
+        }
     }
 }

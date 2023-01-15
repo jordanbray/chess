@@ -14,9 +14,9 @@ license = "MIT"
 documentation = "https://jordanbray.github.io/chess/chess/index.html"
 
 [dependencies]
-arrayvec = "0.5.1"
-nodrop = "0.1.14"
-failure = "0.1.6"
+arrayvec = { version = "0.7.2", default-features = false }
+nodrop = { version = "0.1.14", default_features = false }
+failure = { version = "0.1.6", optional = true }
 
 [profile.release]
 opt-level = 3
@@ -32,3 +32,16 @@ opt-level = 3
 [build-dependencies]
 rand = { version = "0.7.2", default_features = false, features = ["small_rng"] }
 failure = "0.1.6"
+
+[features]
+default = ["std"]
+std = [ "dep:failure" ]
+
+# always optimize build script, because it takes a long time to run unoptimized
+[profile.dev.build-override]
+opt-level = 3
+[profile.release.build-override]
+opt-level = 3
+[profile.test.build-override]
+opt-level = 3
+

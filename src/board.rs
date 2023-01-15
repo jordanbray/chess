@@ -95,6 +95,7 @@ impl Board {
     /// ```
     #[deprecated(since = "3.1.0", note = "please use `Board::from_str(fen)?` instead")]
     #[inline]
+    #[cfg(feature="std")]
     pub fn from_fen(fen: String) -> Option<Board> {
         Board::from_str(&fen).ok()
     }

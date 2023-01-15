@@ -5,7 +5,8 @@ use crate::error::Error;
 use crate::file::{File, ALL_FILES};
 use crate::piece::Piece;
 use crate::rank::{Rank, ALL_RANKS};
-use crate::square::{Square, ALL_SQUARES};
+use crate::square::{Square, ALL_SQUARES, NUM_SQUARES};
+use arrayvec::ArrayVec;
 
 use std::fmt;
 use std::ops::{Index, IndexMut};
@@ -288,7 +289,7 @@ impl fmt::Display for BoardBuilder {
                 }
 
                 if let Some((piece, color)) = self.pieces[square] {
-                    write!(f, "{}", piece.to_string(color))?;
+                    write!(f, "{}", piece.with_color(color))?;
                 } else {
                     count += 1;
                 }
@@ -315,12 +316,12 @@ impl fmt::Display for BoardBuilder {
         write!(
             f,
             "{}",
-            self.castle_rights[Color::White.to_index()].to_string(Color::White)
+            self.castle_rights[Color::White.to_index()].with_color(Color::White)
         )?;
         write!(
             f,
             "{}",
-            self.castle_rights[Color::Black.to_index()].to_string(Color::Black)
+            self.castle_rights[Color::Black.to_index()].with_color(Color::Black)
         )?;
         if self.castle_rights[0] == CastleRights::NoRights
             && self.castle_rights[1] == CastleRights::NoRights
@@ -353,17 +354,19 @@ impl FromStr for BoardBuilder {
         let mut cur_file = File::A;
         let mut fen = &mut BoardBuilder::new();
 
-        let tokens: Vec<&str> = value.split(' ').collect();
-        if tokens.len() < 4 {
-            return Err(Error::InvalidFen {
+        #[cfg(feature="std")]
+        let invalid = || Error::InvalidFen {
                 fen: value.to_string(),
-            });
-        }
+            };
+        #[cfg(not(feature="std"))]
+        let invalid = || Error::InvalidFen;
 
-        let pieces = tokens[0];
-        let side = tokens[1];
-        let castles = tokens[2];
-        let ep = tokens[3];
+        let mut tokens = value.split(' ');
+
+        let pieces = tokens.next().ok_or(invalid())?;
+        let side = tokens.next().ok_or(invalid())?;
+        let castles = tokens.next().ok_or(invalid())?;
+        let ep = tokens.next().ok_or(invalid())?;
 
         for x in pieces.chars() {
             match x {
@@ -436,9 +439,7 @@ impl FromStr for BoardBuilder {
                     cur_file = cur_file.right();
                 }
                 _ => {
-                    return Err(Error::InvalidFen {
-                        fen: value.to_string(),
-                    });
+                    return Err(invalid());
                 }
             }
         }
@@ -446,9 +447,7 @@ impl FromStr for BoardBuilder {
             "w" | "W" => fen = fen.side_to_move(Color::White),
             "b" | "B" => fen = fen.side_to_move(Color::Black),
             _ => {
-                return Err(Error::InvalidFen {
-                    fen: value.to_string(),
-                })
+                return Err(invalid())
             }
         }
 
@@ -482,7 +481,7 @@ impl FromStr for BoardBuilder {
 
 impl From<&Board> for BoardBuilder {
     fn from(board: &Board) -> Self {
-        let mut pieces = vec![];
+        let mut pieces = ArrayVec::<_, NUM_SQUARES>::new();
         for sq in ALL_SQUARES.iter() {
             if let Some(piece) = board.piece_on(*sq) {
                 let color = board.color_on(*sq).unwrap();
