@@ -14,7 +14,7 @@ license = "MIT"
 documentation = "https://jordanbray.github.io/chess/chess/index.html"
 
 [dependencies]
-arrayvec = "0.5.1"
+arrayvec = "0.7.2"
 nodrop = "0.1.14"
 failure = "0.1.6"
 

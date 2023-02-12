@@ -27,7 +27,7 @@ impl SquareAndBitBoard {
     }
 }
 
-pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>;
+pub type MoveList = NoDrop<ArrayVec<SquareAndBitBoard, 18>>;
 
 /// An incremental move generator
 ///
@@ -95,7 +95,7 @@ impl MoveGen {
     fn enumerate_moves(board: &Board) -> MoveList {
         let checkers = *board.checkers();
         let mask = !board.color_combined(board.side_to_move());
-        let mut movelist = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 18]>::new());
+        let mut movelist = NoDrop::new(ArrayVec::<SquareAndBitBoard, 18>::new());
 
         if checkers == EMPTY {
             PawnType::legals::<NotInCheckType>(&mut movelist, &board, mask);
@@ -226,11 +226,8 @@ impl MoveGen {
             iterable.len()
         } else {
             for m in iterable {
-                let mut bresult = mem::MaybeUninit::<Board>::uninit();
-                unsafe {
-                    board.make_move(m, &mut *bresult.as_mut_ptr());
-                    result += MoveGen::movegen_perft_test(&*bresult.as_ptr(), depth - 1);
-                }
+                let bresult = board.make_move_new(m);
+                result += MoveGen::movegen_perft_test(&bresult, depth - 1);
             }
             result
         }

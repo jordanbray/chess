@@ -861,11 +861,118 @@ impl Board {
     /// ```
     #[inline]
     pub fn make_move_new(&self, m: ChessMove) -> Board {
-        let mut result = mem::MaybeUninit::<Board>::uninit();
-        unsafe {
-            self.make_move(m, &mut *result.as_mut_ptr());
-            result.assume_init()
+        let mut result = *self;
+        result.remove_ep();
+        result.checkers = EMPTY;
+        result.pinned = EMPTY;
+        let source = m.get_source();
+        let dest = m.get_dest();
+
+        let source_bb = BitBoard::from_square(source);
+        let dest_bb = BitBoard::from_square(dest);
+        let move_bb = source_bb ^ dest_bb;
+        let moved = self.piece_on(source).unwrap();
+
+        result.xor(moved, source_bb, self.side_to_move);
+        result.xor(moved, dest_bb, self.side_to_move);
+        if let Some(captured) = self.piece_on(dest) {
+            result.xor(captured, dest_bb, !self.side_to_move);
         }
+
+        #[allow(deprecated)]
+        result.remove_their_castle_rights(CastleRights::square_to_castle_rights(
+            !self.side_to_move,
+            dest,
+        ));
+
+        #[allow(deprecated)]
+        result.remove_my_castle_rights(CastleRights::square_to_castle_rights(
+            self.side_to_move,
+            source,
+        ));
+
+        let opp_king = result.pieces(Piece::King) & result.color_combined(!result.side_to_move);
+
+        let castles = moved == Piece::King && (move_bb & get_castle_moves()) == move_bb;
+
+        let ksq = opp_king.to_square();
+
+        const CASTLE_ROOK_START: [File; 8] = [
+            File::A,
+            File::A,
+            File::A,
+            File::A,
+            File::H,
+            File::H,
+            File::H,
+            File::H,
+        ];
+        const CASTLE_ROOK_END: [File; 8] = [
+            File::D,
+            File::D,
+            File::D,
+            File::D,
+            File::F,
+            File::F,
+            File::F,
+            File::F,
+        ];
+
+        if moved == Piece::Knight {
+            result.checkers ^= get_knight_moves(ksq) & dest_bb;
+        } else if moved == Piece::Pawn {
+            if let Some(Piece::Knight) = m.get_promotion() {
+                result.xor(Piece::Pawn, dest_bb, self.side_to_move);
+                result.xor(Piece::Knight, dest_bb, self.side_to_move);
+                result.checkers ^= get_knight_moves(ksq) & dest_bb;
+            } else if let Some(promotion) = m.get_promotion() {
+                result.xor(Piece::Pawn, dest_bb, self.side_to_move);
+                result.xor(promotion, dest_bb, self.side_to_move);
+            } else if (source_bb & get_pawn_source_double_moves()) != EMPTY
+                && (dest_bb & get_pawn_dest_double_moves()) != EMPTY
+            {
+                result.set_ep(dest);
+                result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+            } else if Some(dest.ubackward(self.side_to_move)) == self.en_passant {
+                result.xor(
+                    Piece::Pawn,
+                    BitBoard::from_square(dest.ubackward(self.side_to_move)),
+                    !self.side_to_move,
+                );
+                result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+            } else {
+                result.checkers ^= get_pawn_attacks(ksq, !result.side_to_move, dest_bb);
+            }
+        } else if castles {
+            let my_backrank = self.side_to_move.to_my_backrank();
+            let index = dest.get_file().to_index();
+            let start = BitBoard::set(my_backrank, unsafe {
+                *CASTLE_ROOK_START.get_unchecked(index)
+            });
+            let end = BitBoard::set(my_backrank, unsafe {
+                *CASTLE_ROOK_END.get_unchecked(index)
+            });
+            result.xor(Piece::Rook, start, self.side_to_move);
+            result.xor(Piece::Rook, end, self.side_to_move);
+        }
+        // now, lets see if we're in check or pinned
+        let attackers = result.color_combined(result.side_to_move)
+            & ((get_bishop_rays(ksq)
+                & (result.pieces(Piece::Bishop) | result.pieces(Piece::Queen)))
+                | (get_rook_rays(ksq)
+                    & (result.pieces(Piece::Rook) | result.pieces(Piece::Queen))));
+
+        for sq in attackers {
+            let between = between(sq, ksq) & result.combined();
+            if between == EMPTY {
+                result.checkers ^= BitBoard::from_square(sq);
+            } else if between.popcnt() == 1 {
+                result.pinned ^= between;
+            }
+        }
+
+        result.side_to_move = !result.side_to_move;
+        result
     }
 
     /// Make a chess move onto an already allocated `Board`.
