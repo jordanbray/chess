@@ -32,17 +32,14 @@ impl Square {
     /// Create a new square, given an index.
     ///
     /// ```
-    ///
     /// use chess::{Square, Rank, File, EMPTY};
     ///
-    /// assert_eq!(unsafe { Square::new(0) }, Square::default());
+    /// assert_eq!(Square::new(0), Square::default());
     ///
-    /// let bad_sq = unsafe { Square::new(64) };
+    /// // This is no longer invalid
+    /// let bad_sq = Square::new(64);
     ///
-    /// // Iterate over all possible squares and ensure that *none* of them are equal to `bad_sq`.
-    /// for sq in !EMPTY {
-    ///     assert_ne!(bad_sq, sq);
-    /// }
+    /// assert_eq!(Square::default(), bad_sq);
     /// ```
     #[inline]
     pub fn new(sq: u8) -> Square {

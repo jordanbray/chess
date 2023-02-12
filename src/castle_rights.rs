@@ -8,12 +8,13 @@ use crate::square::Square;
 use crate::magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
 
 /// What castle rights does a particular player have?
+#[repr(u8)]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 pub enum CastleRights {
-    NoRights,
-    KingSide,
-    QueenSide,
-    Both,
+    NoRights = 0,
+    KingSide = 1,
+    QueenSide = 2,
+    Both = 3,
 }
 
 /// How many different types of `CastleRights` are there?
@@ -94,9 +95,9 @@ impl CastleRights {
         *self as usize
     }
 
-    /// Convert `usize` to `CastleRights`.  Panic if invalid number.
+    /// Convert `usize` to `CastleRights`.
     pub fn from_index(i: usize) -> CastleRights {
-        match i {
+        match i & 3 {
             0 => CastleRights::NoRights,
             1 => CastleRights::KingSide,
             2 => CastleRights::QueenSide,
@@ -144,12 +145,11 @@ impl CastleRights {
     }
 
     /// Given a square of a rook, which side is it on?
-    /// Note: It is invalid to pass in a non-rook square.  The code may panic.
     pub fn rook_square_to_castle_rights(square: Square) -> CastleRights {
         match square.get_file() {
             File::A => CastleRights::QueenSide,
             File::H => CastleRights::KingSide,
-            _ => unsafe { unreachable_unchecked() },
+            _ => CastleRights::NoRights,
         }
     }
 }
