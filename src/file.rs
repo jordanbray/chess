@@ -1,18 +1,18 @@
 use crate::error::Error;
-use std::mem::transmute;
 use std::str::FromStr;
 
 /// Describe a file (column) on a chess board
+#[repr(u8)]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 pub enum File {
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H,
+    A = 0,
+    B = 1,
+    C = 2,
+    D = 3,
+    E = 4,
+    F = 5,
+    G = 6,
+    H = 7,
 }
 
 /// How many files are there?
@@ -34,7 +34,18 @@ impl File {
     /// Convert a `usize` into a `File` (the inverse of to_index).  If i > 7, wrap around.
     #[inline]
     pub fn from_index(i: usize) -> File {
-        unsafe { transmute((i as u8) & 7) }
+        // match is optimized to no-op with opt-level=1 with rustc 1.53.0
+        match i & 7 {
+            0 => File::A,
+            1 => File::B,
+            2 => File::C,
+            3 => File::D,
+            4 => File::E,
+            5 => File::F,
+            6 => File::G,
+            7 => File::H,
+            _ => unreachable!(),
+        }
     }
 
     /// Go one file to the left.  If impossible, wrap around.
