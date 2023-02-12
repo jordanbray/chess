@@ -259,6 +259,10 @@ impl BoardBuilder {
         self.en_passant = file;
         self
     }
+
+    pub(crate) fn pieces(&self) -> &[Option<(Piece, Color)>; 64] {
+        &self.pieces
+    }
 }
 
 impl Index<Square> for BoardBuilder {
