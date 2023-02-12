@@ -118,6 +118,45 @@ impl MoveGen {
         movelist
     }
 
+    /// Check whether the board has any legal moves or not
+    #[inline(always)]
+    pub fn has_legal_moves(board: &Board) -> bool {
+        let checkers = *board.checkers();
+        let mask = !board.color_combined(board.side_to_move());
+        let mut movelist = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 18]>::new());
+
+        let legal_fns = if checkers == EMPTY {
+            [
+                PawnType::legals::<NotInCheckType>  ,
+                KnightType::legals::<NotInCheckType>,
+                BishopType::legals::<NotInCheckType>,
+                RookType::legals::<NotInCheckType>  ,
+                QueenType::legals::<NotInCheckType> ,
+                KingType::legals::<NotInCheckType>  ,
+            ]
+        } else if checkers.popcnt() == 1 {
+            [
+                PawnType::legals::<InCheckType>  ,
+                KnightType::legals::<InCheckType>,
+                BishopType::legals::<InCheckType>,
+                RookType::legals::<InCheckType>  ,
+                QueenType::legals::<InCheckType> ,
+                KingType::legals::<InCheckType>  ,
+            ]
+        } else {
+            KingType::legals::<InCheckType>(&mut movelist, &board, mask);
+            return movelist.len() != 0
+        };
+
+        for f in legal_fns {
+            f(&mut movelist, &board, mask);
+            if movelist.len() != 0 { return true }
+            movelist.clear();
+        }
+
+        return false
+    }
+
     /// Create a new `MoveGen` structure, only generating legal moves
     #[inline(always)]
     pub fn new_legal(board: &Board) -> MoveGen {
