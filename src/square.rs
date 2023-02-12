@@ -24,13 +24,12 @@ impl Default for Square {
     /// assert_eq!(explicit_sq, implicit_sq);
     /// ```
     fn default() -> Square {
-        unsafe { Square::new(0) }
+        Square::new(0)
     }
 }
 
 impl Square {
     /// Create a new square, given an index.
-    /// Note: It is invalid, but allowed, to pass in a number >= 64.  Doing so will crash stuff.
     ///
     /// ```
     ///
@@ -46,8 +45,8 @@ impl Square {
     /// }
     /// ```
     #[inline]
-    pub unsafe fn new(sq: u8) -> Square {
-        Square(sq)
+    pub fn new(sq: u8) -> Square {
+        Square(sq & 63)
     }
 
     /// Make a square given a rank and a file
