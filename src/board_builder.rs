@@ -1,6 +1,6 @@
 use crate::board::Board;
 use crate::castle_rights::CastleRights;
-use crate::color::Color;
+use crate::color::{Color, NUM_COLORS};
 use crate::error::Error;
 use crate::file::{File, ALL_FILES};
 use crate::piece::Piece;
@@ -51,7 +51,7 @@ use std::str::FromStr;
 pub struct BoardBuilder {
     pieces: [Option<(Piece, Color)>; 64],
     side_to_move: Color,
-    castle_rights: [CastleRights; 2],
+    castle_rights: [CastleRights; NUM_COLORS],
     en_passant: Option<File>,
 }
 
