@@ -1,7 +1,9 @@
+#[cfg(feature="std")]
 use failure::Fail;
 
 /// Sometimes, bad stuff happens.
 #[derive(Clone, Debug, Fail)]
+#[cfg(feature="std")]
 pub enum Error {
     /// The FEN string is invalid
     #[fail(display = "Invalid FEN string: {}", fen)]
@@ -31,5 +33,17 @@ pub enum Error {
 
     /// An attempt was made to convert a string not equal to "a"-"h" to a file
     #[fail(display = "The string specified does not contain a valid file")]
+    InvalidFile,
+}
+
+#[derive(Clone, Debug)]
+#[cfg(not(feature="std"))]
+pub enum Error {
+    InvalidFen,
+    InvalidBoard,
+    InvalidSquare,
+    InvalidSanMove,
+    InvalidUciMove,
+    InvalidRank,
     InvalidFile,
 }

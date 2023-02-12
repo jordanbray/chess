@@ -385,6 +385,7 @@ impl Square {
         since = "3.1.0",
         note = "please use `Square::from_str(square)?` instead"
     )]
+    #[cfg(feature="std")]
     pub fn from_string(s: String) -> Option<Square> {
         Square::from_str(&s).ok()
     }
@@ -984,23 +985,28 @@ impl FromStr for Square {
         if s.len() < 2 {
             return Err(Error::InvalidSquare);
         }
-        let ch: Vec<char> = s.chars().collect();
-        match ch[0] {
-            'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' => {}
-            _ => {
-                return Err(Error::InvalidSquare);
+
+        let mut i = s.chars();
+        if let (Some(c1), Some(c2)) = (i.next(), i.next()) {
+            match c1 {
+                'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' => {}
+                _ => {
+                    return Err(Error::InvalidSquare);
+                }
             }
-        }
-        match ch[1] {
-            '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {}
-            _ => {
-                return Err(Error::InvalidSquare);
+            match c2 {
+                '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {}
+                _ => {
+                    return Err(Error::InvalidSquare);
+                }
             }
+            Ok(Square::make_square(
+                Rank::from_index((c2 as usize) - ('1' as usize)),
+                File::from_index((c1 as usize) - ('a' as usize)),
+            ))
+        } else {
+            Err(Error::InvalidSquare)
         }
-        Ok(Square::make_square(
-            Rank::from_index((ch[1] as usize) - ('1' as usize)),
-            File::from_index((ch[0] as usize) - ('a' as usize)),
-        ))
     }
 }
 

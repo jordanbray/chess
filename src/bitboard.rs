@@ -254,18 +254,17 @@ impl Not for &BitBoard {
 impl fmt::Display for BitBoard {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut s: String = "".to_owned();
         for x in 0..64 {
             if self.0 & (1u64 << x) == (1u64 << x) {
-                s.push_str("X ");
+                write!(f, "X ")?;
             } else {
-                s.push_str(". ");
+                write!(f, ". ")?;
             }
             if x % 8 == 7 {
-                s.push_str("\n");
+                write!(f, "\n")?;
             }
         }
-        write!(f, "{}", s)
+        Ok(())
     }
 }
 

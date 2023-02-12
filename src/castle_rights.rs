@@ -1,4 +1,5 @@
 use std::hint::unreachable_unchecked;
+use std::fmt;
 
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::color::Color;
@@ -118,6 +119,15 @@ impl CastleRights {
         }
     }
 
+    fn to_str(&self) -> &'static str {
+        match *self {
+            CastleRights::NoRights => "",
+            CastleRights::KingSide => "k",
+            CastleRights::QueenSide => "q",
+            CastleRights::Both => "kq",
+        }
+    }
+
     /// Convert the castle rights to an FEN compatible string.
     ///
     /// ```
@@ -128,13 +138,9 @@ impl CastleRights {
     /// assert_eq!(CastleRights::KingSide.to_string(Color::White), "K");
     /// assert_eq!(CastleRights::QueenSide.to_string(Color::Black), "q");
     /// ```
+    #[cfg(feature="std")]
     pub fn to_string(&self, color: Color) -> String {
-        let result = match *self {
-            CastleRights::NoRights => "",
-            CastleRights::KingSide => "k",
-            CastleRights::QueenSide => "q",
-            CastleRights::Both => "kq",
-        };
+        let result = self.to_str();
 
         if color == Color::White {
             result.to_uppercase()
@@ -150,6 +156,30 @@ impl CastleRights {
             File::A => CastleRights::QueenSide,
             File::H => CastleRights::KingSide,
             _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub fn with_color(&self, color: Color) -> CastleRightsWithColor {
+        CastleRightsWithColor { castle_rights: *self, color }
+    }
+}
+
+pub struct CastleRightsWithColor {
+    castle_rights: CastleRights,
+    color: Color,
+}
+
+impl fmt::Display for CastleRightsWithColor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = self.castle_rights.to_str();
+
+        if self.color == Color::White {
+            for c in s.chars() {
+                write!(f, "{}", c.to_uppercase())?
+            }
+            Ok(())
+        } else {
+            write!(f, "{}", s)
         }
     }
 }
