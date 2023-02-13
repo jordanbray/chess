@@ -4,6 +4,7 @@ use crate::color::Color;
 use crate::error::Error;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;
+use std::fmt;
 use std::str::FromStr;
 
 /// Contains all actions supported within the game
@@ -37,6 +38,8 @@ pub enum GameResult {
 pub struct Game {
     start_pos: Board,
     moves: Vec<Action>,
+    start_half_move_clock: usize,
+    start_full_move_counter: usize,
 }
 
 impl Game {
@@ -49,10 +52,7 @@ impl Game {
     /// assert_eq!(game.current_position(), Board::default());
     /// ```
     pub fn new() -> Game {
-        Game {
-            start_pos: Board::default(),
-            moves: vec![],
-        }
+        Game::new_with_board(Board::default())
     }
 
     /// Create a new `Game` with a specific starting position.
@@ -64,9 +64,19 @@ impl Game {
     /// assert_eq!(game.current_position(), Board::default());
     /// ```
     pub fn new_with_board(board: Board) -> Game {
+        Game::new_with_board_and_counters(board, 0, 1)
+    }
+
+    fn new_with_board_and_counters(
+        board: Board,
+        start_half_move_clock: usize,
+        start_full_move_counter: usize,
+    ) -> Game {
         Game {
             start_pos: board,
             moves: vec![],
+            start_half_move_clock,
+            start_full_move_counter,
         }
     }
 
@@ -170,6 +180,48 @@ impl Game {
         copy
     }
 
+    fn get_full_move_counter(&self) -> usize {
+        let mut half_moves = self.start_full_move_counter * 2;
+        for x in self.moves.iter() {
+            match *x {
+                Action::MakeMove(_) => {
+                    half_moves += 1;
+                }
+                _ => (),
+            }
+        }
+        half_moves / 2
+    }
+
+    fn get_half_move_clock(&self) -> usize {
+        let mut reversible_moves = self.start_half_move_clock;
+        let mut board = self.start_pos;
+        for x in self.moves.iter() {
+            match *x {
+                Action::MakeMove(m) => {
+                    let white_castle_rights = board.castle_rights(Color::White);
+                    let black_castle_rights = board.castle_rights(Color::Black);
+                    if board.piece_on(m.get_source()) == Some(Piece::Pawn) {
+                        reversible_moves = 0;
+                    } else if board.piece_on(m.get_dest()).is_some() {
+                        reversible_moves = 0;
+                    } else {
+                        reversible_moves += 1;
+                    }
+                    board = board.make_move_new(m);
+
+                    if board.castle_rights(Color::White) != white_castle_rights
+                        || board.castle_rights(Color::Black) != black_castle_rights
+                    {
+                        reversible_moves = 0;
+                    }
+                }
+                _ => {}
+            }
+        }
+        reversible_moves
+    }
+
     /// Determine if a player can legally declare a draw by 3-fold repetition or 50-move rule.
     ///
     /// ```
@@ -205,7 +257,6 @@ impl Game {
         let mut legal_moves_per_turn: Vec<(u64, Vec<ChessMove>)> = vec![];
 
         let mut board = self.start_pos;
-        let mut reversible_moves = 0;
 
         // Loop over each move, counting the reversible_moves for draw by 50 move rule,
         // and filling a list of legal_moves_per_turn list for 3-fold repitition
@@ -216,20 +267,16 @@ impl Game {
                     let white_castle_rights = board.castle_rights(Color::White);
                     let black_castle_rights = board.castle_rights(Color::Black);
                     if board.piece_on(m.get_source()) == Some(Piece::Pawn) {
-                        reversible_moves = 0;
                         legal_moves_per_turn.clear();
                     } else if board.piece_on(m.get_dest()).is_some() {
-                        reversible_moves = 0;
                         legal_moves_per_turn.clear();
                     } else {
-                        reversible_moves += 1;
                     }
                     board = board.make_move_new(m);
 
                     if board.castle_rights(Color::White) != white_castle_rights
                         || board.castle_rights(Color::Black) != black_castle_rights
                     {
-                        reversible_moves = 0;
                         legal_moves_per_turn.clear();
                     }
                     legal_moves_per_turn
@@ -239,7 +286,7 @@ impl Game {
             }
         }
 
-        if reversible_moves >= 100 {
+        if self.get_half_move_clock() >= 100 {
             return true;
         }
 
@@ -423,7 +470,45 @@ impl FromStr for Game {
     type Err = Error;
 
     fn from_str(fen: &str) -> Result<Self, Self::Err> {
-        Ok(Game::new_with_board(Board::from_str(fen)?))
+        let half_move_clock = fen
+            .split(" ")
+            .nth(4)
+            .ok_or_else(|| Error::InvalidFen {
+                fen: String::from(fen),
+            })?
+            .parse::<usize>()
+            .map_err(|_| Error::InvalidFen {
+                fen: String::from(fen),
+            })?;
+
+        let full_move_counter = fen
+            .split(" ")
+            .nth(5)
+            .ok_or_else(|| Error::InvalidFen {
+                fen: String::from(fen),
+            })?
+            .parse::<usize>()
+            .map_err(|_| Error::InvalidFen {
+                fen: String::from(fen),
+            })?;
+
+        Ok(Game::new_with_board_and_counters(
+            Board::from_str(fen)?,
+            half_move_clock,
+            full_move_counter,
+        ))
+    }
+}
+
+impl fmt::Display for Game {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {}",
+            self.current_position().get_psuedo_fen(),
+            self.get_half_move_clock(),
+            self.get_full_move_counter()
+        )
     }
 }
 
@@ -436,6 +521,36 @@ pub fn fake_pgn_parser(moves: &str) -> Game {
             g.make_move(ChessMove::from_san(&g.current_position(), m).expect("Valid SAN Move"));
             g
         })
+}
+
+#[test]
+fn test_fen_string() {
+    use crate::square::Square;
+    let mut game = Game::new();
+    assert_eq!(
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        format!("{}", game)
+    );
+    game.make_move(ChessMove::new(Square::E2, Square::E4, None));
+    assert_eq!(
+        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+        format!("{}", game)
+    );
+    game.make_move(ChessMove::new(Square::C7, Square::C5, None));
+    assert_eq!(
+        "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2",
+        format!("{}", game)
+    );
+    game.make_move(ChessMove::new(Square::G1, Square::F3, None));
+    let final_serialized_game = format!("{}", game);
+    assert_eq!(
+        "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+        final_serialized_game
+    );
+    assert_eq!(
+        final_serialized_game,
+        format!("{}", Game::from_str(&final_serialized_game).unwrap()),
+    );
 }
 
 #[test]
