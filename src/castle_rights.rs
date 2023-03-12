@@ -9,6 +9,7 @@ use crate::magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
 
 /// What castle rights does a particular player have?
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
+#[repr(u8)]
 pub enum CastleRights {
     NoRights,
     KingSide,
@@ -51,6 +52,12 @@ const CASTLES_PER_SQUARE: [[u8; 64]; 2] = [
 ];
 
 impl CastleRights {
+    /// SAFETY: value must be smaller NUM_CASTLE_RIGHTS
+    unsafe fn new_unchecked(value: usize) -> CastleRights {
+        debug_assert!(value < NUM_CASTLE_RIGHTS);
+        std::mem::transmute(value as u8)
+    }
+
     /// Can I castle kingside?
     pub fn has_kingside(&self) -> bool {
         self.to_index() & 1 == 1
@@ -62,11 +69,14 @@ impl CastleRights {
     }
 
     pub fn square_to_castle_rights(color: Color, sq: Square) -> CastleRights {
-        CastleRights::from_index(unsafe {
-            *CASTLES_PER_SQUARE
-                .get_unchecked(color.to_index())
-                .get_unchecked(sq.to_index())
-        } as usize)
+        unsafe {
+            // SAFETY: All values in constant are < 4
+            CastleRights::new_unchecked(
+                *CASTLES_PER_SQUARE
+                    .get_unchecked(color.to_index())
+                    .get_unchecked(sq.to_index()) as usize
+            )
+        }
     }
 
     /// What squares need to be empty to castle kingside?
@@ -81,12 +91,18 @@ impl CastleRights {
 
     /// Remove castle rights, and return a new `CastleRights`.
     pub fn remove(&self, remove: CastleRights) -> CastleRights {
-        CastleRights::from_index(self.to_index() & !remove.to_index())
+        unsafe {
+            // SAFETY: x < 4 => (x & y) < 4
+            CastleRights::new_unchecked(self.to_index() & !remove.to_index())
+        }
     }
 
     /// Add some castle rights, and return a new `CastleRights`.
     pub fn add(&self, add: CastleRights) -> CastleRights {
-        CastleRights::from_index(self.to_index() | add.to_index())
+        unsafe {
+            // SAFETY: x < 4 && y < 4 => (x | y) < 4
+            CastleRights::new_unchecked(self.to_index() | add.to_index())
+        }
     }
 
     /// Convert `CastleRights` to `usize` for table lookups
@@ -101,7 +117,7 @@ impl CastleRights {
             1 => CastleRights::KingSide,
             2 => CastleRights::QueenSide,
             3 => CastleRights::Both,
-            _ => unsafe { unreachable_unchecked() },
+            _ => unreachable!()
         }
     }
 
@@ -149,7 +165,7 @@ impl CastleRights {
         match square.get_file() {
             File::A => CastleRights::QueenSide,
             File::H => CastleRights::KingSide,
-            _ => unsafe { unreachable_unchecked() },
+            _ => unreachable!(),
         }
     }
 }
