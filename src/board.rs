@@ -17,7 +17,7 @@ use crate::zobrist::Zobrist;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::mem;
+
 use std::str::FromStr;
 
 /// A representation of a chess board.  That's why you're here, right?
@@ -35,6 +35,7 @@ pub struct Board {
 }
 
 /// What is the status of this game?
+#[repr(u8)]
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum BoardStatus {
     Ongoing,
@@ -60,7 +61,7 @@ impl Hash for Board {
 impl Board {
     /// Construct a new `Board` that is completely empty.
     /// Note: This does NOT give you the initial position.  Just a blank slate.
-    fn new() -> Board {
+    const fn new() -> Board {
         Board {
             pieces: [EMPTY; NUM_PIECES],
             color_combined: [EMPTY; NUM_COLORS],
@@ -73,6 +74,7 @@ impl Board {
             en_passant: None,
         }
     }
+
 
     /// Construct a board from a FEN string.
     ///
@@ -183,7 +185,7 @@ impl Board {
     /// assert_eq!(*board.combined(), combined_should_be);
     /// ```
     #[inline]
-    pub fn combined(&self) -> &BitBoard {
+    pub const fn combined(&self) -> &BitBoard {
         &self.combined
     }
 
@@ -328,7 +330,7 @@ impl Board {
     /// assert_eq!(board.side_to_move(), Color::White);
     /// ```
     #[inline]
-    pub fn side_to_move(&self) -> Color {
+    pub const fn side_to_move(&self) -> Color {
         self.side_to_move
     }
 
@@ -803,7 +805,7 @@ impl Board {
     /// assert_eq!(board.en_passant(), Some(Square::E5));
     /// ```
     #[inline]
-    pub fn en_passant(self) -> Option<Square> {
+    pub const fn en_passant(self) -> Option<Square> {
         self.en_passant
     }
 

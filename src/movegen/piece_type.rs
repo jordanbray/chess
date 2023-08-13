@@ -14,7 +14,6 @@ use crate::magic::{
 pub trait PieceType {
     fn is(piece: Piece) -> bool;
     fn into_piece() -> Piece;
-    #[inline(always)]
     fn pseudo_legals(src: Square, color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard;
     #[inline(always)]
     fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)

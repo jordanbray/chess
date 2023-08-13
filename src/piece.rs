@@ -2,6 +2,7 @@ use crate::color::Color;
 use std::fmt;
 
 /// Represent a chess piece as a very simple enum
+#[repr(u8)]
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
 pub enum Piece {
     Pawn,

@@ -75,7 +75,7 @@ impl BoardBuilder {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new() -> BoardBuilder {
+    pub const fn new() -> BoardBuilder {
         BoardBuilder {
             pieces: [None; 64],
             side_to_move: Color::White,
@@ -113,9 +113,9 @@ impl BoardBuilder {
     ) -> BoardBuilder {
         let mut result = BoardBuilder {
             pieces: [None; 64],
-            side_to_move: side_to_move,
+            side_to_move,
             castle_rights: [white_castle_rights, black_castle_rights],
-            en_passant: en_passant,
+            en_passant,
         };
 
         for piece in pieces.into_iter() {
@@ -133,7 +133,7 @@ impl BoardBuilder {
     /// let bb: BoardBuilder = Board::default().into();
     /// assert_eq!(bb.get_side_to_move(), Color::White);
     /// ```
-    pub fn get_side_to_move(&self) -> Color {
+    pub const fn get_side_to_move(&self) -> Color {
         self.side_to_move
     }
 
@@ -145,7 +145,7 @@ impl BoardBuilder {
     /// let bb: BoardBuilder = Board::default().into();
     /// assert_eq!(bb.get_castle_rights(Color::White), CastleRights::Both);
     /// ```
-    pub fn get_castle_rights(&self, color: Color) -> CastleRights {
+    pub const fn get_castle_rights(&self, color: Color) -> CastleRights {
         self.castle_rights[color.to_index()]
     }
 
