@@ -967,8 +967,8 @@ impl fmt::Display for Square {
         write!(
             f,
             "{}{}",
-            (('a' as u8) + ((self.0 & 7) as u8)) as char,
-            (('1' as u8) + ((self.0 >> 3) as u8)) as char
+            (b'a' + (self.0 & 7)) as char,
+            (b'1' + (self.0 >> 3)) as char
         )
     }
 }

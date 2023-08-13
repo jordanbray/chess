@@ -15,44 +15,44 @@ pub fn write_zobrist(f: &mut File) {
 
     write!(f, "const SIDE_TO_MOVE: u64 = {};\n\n", rng.next_u64()).unwrap();
 
-    write!(
+    writeln!(
         f,
-        "const ZOBRIST_PIECES: [[[u64; NUM_SQUARES]; NUM_PIECES]; NUM_COLORS] = [[[\n"
+        "const ZOBRIST_PIECES: [[[u64; NUM_SQUARES]; NUM_PIECES]; NUM_COLORS] = [[["
     )
     .unwrap();
     for i in 0..NUM_COLORS {
         for j in 0..NUM_PIECES {
             for _ in 0..NUM_SQUARES {
-                write!(f, "    {},\n", rng.next_u64()).unwrap();
+                writeln!(f, "    {},", rng.next_u64()).unwrap();
             }
             if j != NUM_PIECES - 1 {
-                write!(f, "   ], [\n").unwrap();
+                writeln!(f, "   ], [").unwrap();
             }
         }
         if i != NUM_COLORS - 1 {
-            write!(f, "  ]], [[\n").unwrap();
+            writeln!(f, "  ]], [[").unwrap();
         }
     }
     write!(f, "]]];\n\n").unwrap();
 
-    write!(f, "const ZOBRIST_CASTLES: [[u64; 4]; NUM_COLORS] = [[\n").unwrap();
+    writeln!(f, "const ZOBRIST_CASTLES: [[u64; 4]; NUM_COLORS] = [[").unwrap();
     for i in 0..NUM_COLORS {
         for _ in 0..4 {
-            write!(f, "    {},\n", rng.next_u64()).unwrap();
+            writeln!(f, "    {},", rng.next_u64()).unwrap();
         }
         if i != NUM_COLORS - 1 {
-            write!(f, "  ], [\n").unwrap();
+            writeln!(f, "  ], [").unwrap();
         }
     }
     write!(f, "]];\n\n").unwrap();
 
-    write!(f, "const ZOBRIST_EP: [[u64; NUM_FILES]; NUM_COLORS] = [[\n").unwrap();
+    writeln!(f, "const ZOBRIST_EP: [[u64; NUM_FILES]; NUM_COLORS] = [[").unwrap();
     for i in 0..NUM_COLORS {
         for _ in 0..NUM_FILES {
-            write!(f, "    {},\n", rng.next_u64()).unwrap();
+            writeln!(f, "    {},", rng.next_u64()).unwrap();
         }
         if i != NUM_COLORS - 1 {
-            write!(f, "], [\n").unwrap();
+            writeln!(f, "], [").unwrap();
         }
     }
     write!(f, "]];\n\n").unwrap();

@@ -22,7 +22,7 @@ impl SquareAndBitBoard {
         SquareAndBitBoard {
             square: sq,
             bitboard: bb,
-            promotion: promotion,
+            promotion,
         }
     }
 }
@@ -98,21 +98,21 @@ impl MoveGen {
         let mut movelist = NoDrop::new(ArrayVec::<SquareAndBitBoard, 18>::new());
 
         if checkers == EMPTY {
-            PawnType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            KnightType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            BishopType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            RookType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            QueenType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            KingType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+            PawnType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            KnightType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            BishopType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            RookType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            QueenType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            KingType::legals::<NotInCheckType>(&mut movelist, board, mask);
         } else if checkers.popcnt() == 1 {
-            PawnType::legals::<InCheckType>(&mut movelist, &board, mask);
-            KnightType::legals::<InCheckType>(&mut movelist, &board, mask);
-            BishopType::legals::<InCheckType>(&mut movelist, &board, mask);
-            RookType::legals::<InCheckType>(&mut movelist, &board, mask);
-            QueenType::legals::<InCheckType>(&mut movelist, &board, mask);
-            KingType::legals::<InCheckType>(&mut movelist, &board, mask);
+            PawnType::legals::<InCheckType>(&mut movelist, board, mask);
+            KnightType::legals::<InCheckType>(&mut movelist, board, mask);
+            BishopType::legals::<InCheckType>(&mut movelist, board, mask);
+            RookType::legals::<InCheckType>(&mut movelist, board, mask);
+            QueenType::legals::<InCheckType>(&mut movelist, board, mask);
+            KingType::legals::<InCheckType>(&mut movelist, board, mask);
         } else {
-            KingType::legals::<InCheckType>(&mut movelist, &board, mask);
+            KingType::legals::<InCheckType>(&mut movelist, board, mask);
         }
 
         movelist

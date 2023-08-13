@@ -38,7 +38,7 @@ pub fn generate_all_tables() {
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let magic_path = Path::new(&out_dir).join("magic_gen.rs");
-    let mut f = File::create(&magic_path).unwrap();
+    let mut f = File::create(magic_path).unwrap();
 
     write_king_moves(&mut f);
     write_knight_moves(&mut f);
@@ -53,7 +53,7 @@ pub fn generate_all_tables() {
     write_bitboard_data(&mut f);
 
     let zobrist_path = Path::new(&out_dir).join("zobrist_gen.rs");
-    let mut z = File::create(&zobrist_path).unwrap();
+    let mut z = File::create(zobrist_path).unwrap();
 
     write_zobrist(&mut z);
 }

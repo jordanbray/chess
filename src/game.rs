@@ -105,7 +105,7 @@ impl Game {
             }
             BoardStatus::Stalemate => Some(GameResult::Stalemate),
             BoardStatus::Ongoing => {
-                if self.moves.len() == 0 {
+                if self.moves.is_empty() {
                     None
                 } else if self.moves[self.moves.len() - 1] == Action::AcceptDraw {
                     Some(GameResult::DrawAccepted)
@@ -254,7 +254,7 @@ impl Game {
             }
         }
 
-        return false;
+        false
     }
 
     /// Declare a draw by 3-fold repitition or 50-move rule.
@@ -361,7 +361,7 @@ impl Game {
             return false;
         }
         self.moves.push(Action::OfferDraw(color));
-        return true;
+        true
     }
 
     /// Accept a draw offer from my opponent.
@@ -383,20 +383,14 @@ impl Game {
         if self.result().is_some() {
             return false;
         }
-        if self.moves.len() > 0 {
-            if self.moves[self.moves.len() - 1] == Action::OfferDraw(Color::White)
-                || self.moves[self.moves.len() - 1] == Action::OfferDraw(Color::Black)
-            {
-                self.moves.push(Action::AcceptDraw);
-                return true;
-            }
+        if !self.moves.is_empty() && (self.moves[self.moves.len() - 1] == Action::OfferDraw(Color::White) || self.moves[self.moves.len() - 1] == Action::OfferDraw(Color::Black)) {
+            self.moves.push(Action::AcceptDraw);
+            return true;
         }
 
-        if self.moves.len() > 1 {
-            if self.moves[self.moves.len() - 2] == Action::OfferDraw(!self.side_to_move()) {
-                self.moves.push(Action::AcceptDraw);
-                return true;
-            }
+        if self.moves.len() > 1 && self.moves[self.moves.len() - 2] == Action::OfferDraw(!self.side_to_move()) {
+            self.moves.push(Action::AcceptDraw);
+            return true;
         }
 
         false
@@ -415,7 +409,7 @@ impl Game {
             return false;
         }
         self.moves.push(Action::Resign(color));
-        return true;
+        true
     }
 }
 
@@ -431,7 +425,7 @@ impl FromStr for Game {
 pub fn fake_pgn_parser(moves: &str) -> Game {
     moves
         .split_whitespace()
-        .filter(|s| !s.ends_with("."))
+        .filter(|s| !s.ends_with('.'))
         .fold(Game::new(), |mut g, m| {
             g.make_move(ChessMove::from_san(&g.current_position(), m).expect("Valid SAN Move"));
             g

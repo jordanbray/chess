@@ -77,7 +77,7 @@ impl ChessMove {
                 Square::make_square(rank, dest_file),
                 None,
             );
-            if MoveGen::new_legal(&board).any(|l| l == m) {
+            if MoveGen::new_legal(board).any(|l| l == m) {
                 return Ok(m);
             } else {
                 return Err(Error::InvalidSanMove);
@@ -360,16 +360,12 @@ impl ChessMove {
             }
 
             // takes is complicated, because of e.p.
-            if !takes {
-                if board.piece_on(m.get_dest()).is_some() {
-                    continue;
-                }
+            if !takes && board.piece_on(m.get_dest()).is_some() {
+                continue;
             }
 
-            if !ep && takes {
-                if board.piece_on(m.get_dest()).is_none() {
-                    continue;
-                }
+            if !ep && takes && board.piece_on(m.get_dest()).is_none() {
+                continue;
             }
 
             found_move = Some(m);

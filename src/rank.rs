@@ -72,7 +72,7 @@ impl FromStr for Rank {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() < 1 {
+        if s.is_empty() {
             return Err(Error::InvalidRank);
         }
         match s.chars().next().unwrap() {
