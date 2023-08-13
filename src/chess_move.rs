@@ -402,12 +402,7 @@ impl ChessMove {
         accum <<= 3;
         let prom_val = match promotion {
             None => 0,
-            Some(Piece::Pawn) => 1,
-            Some(Piece::Knight) => 2,
-            Some(Piece::Bishop) => 3,
-            Some(Piece::Rook) => 4,
-            Some(Piece::Queen) => 5,
-            Some(Piece::King) => 6,
+            Some(p) => p.to_index() as u16  + 1,
         };
         accum += prom_val;
         accum

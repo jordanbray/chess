@@ -364,7 +364,7 @@ impl Square {
     /// assert_eq!(Square::make_square(Rank::Eighth, File::H).to_index(), 63);
     /// ```
     #[inline]
-    pub fn to_index(&self) -> usize {
+    pub const fn to_index(&self) -> usize {
         self.0 as usize
     }
 

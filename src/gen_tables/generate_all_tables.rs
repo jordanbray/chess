@@ -4,8 +4,6 @@
 
 #![allow(dead_code)]
 
-// it to be easily followed.
-extern crate rand;
 
 use std::env;
 use std::fs::File;
