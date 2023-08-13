@@ -47,6 +47,7 @@ pub fn gen_lines() {
 }
 
 // Write the LINE array to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_lines(f: &mut File) {
     writeln!(f, "const LINE: [[BitBoard; 64]; 64] = [[").unwrap();
     for i in 0..64 {

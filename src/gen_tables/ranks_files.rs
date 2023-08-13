@@ -55,6 +55,7 @@ pub fn gen_bitboard_data() {
 }
 
 // Write the FILES array to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_bitboard_data(f: &mut File) {
     unsafe {
         writeln!(f, "const FILES: [BitBoard; 8] = [").unwrap();

@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::InvalidError;
 use std::str::FromStr;
 
 /// Describe a rank (row) on a chess board
@@ -63,17 +63,17 @@ impl Rank {
 
     /// Convert this `Rank` into a `usize` between 0 and 7 (inclusive).
     #[inline]
-    pub const fn to_index(&self) -> usize {
-        *self as usize
+    pub const fn to_index(self) -> usize {
+        self as usize
     }
 }
 
 impl FromStr for Rank {
-    type Err = Error;
+    type Err = InvalidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            return Err(Error::InvalidRank);
+            return Err(InvalidError::Rank);
         }
         match s.chars().next().unwrap() {
             '1' => Ok(Rank::First),
@@ -84,7 +84,7 @@ impl FromStr for Rank {
             '6' => Ok(Rank::Sixth),
             '7' => Ok(Rank::Seventh),
             '8' => Ok(Rank::Eighth),
-            _ => Err(Error::InvalidRank),
+            _ => Err(InvalidError::Rank),
         }
     }
 }

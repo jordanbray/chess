@@ -66,6 +66,7 @@ fn gen_castle_moves() -> BitBoard {
 }
 
 // Write the KING_MOVES array to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_king_moves(f: &mut File) {
     writeln!(f, "const KING_MOVES: [BitBoard; 64] = [").unwrap();
     for i in 0..64 {

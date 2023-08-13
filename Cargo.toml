@@ -16,7 +16,7 @@ documentation = "https://jordanbray.github.io/chess/chess/index.html"
 [dependencies]
 arrayvec = "0.7.2"
 nodrop = "0.1.14"
-failure = "0.1.6"
+thiserror = "1.0.44"
 
 [profile.release]
 opt-level = 3
@@ -39,5 +39,5 @@ opt-level = 3
 opt-level = 3
 
 [build-dependencies]
-rand = { version = "0.7.2", default_features = false, features = ["small_rng"] }
-failure = "0.1.6"
+rand = { version = "0.7.2", default-features = false, features = ["small_rng"] }
+thiserror = "1.0.44"

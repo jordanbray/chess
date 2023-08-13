@@ -1,7 +1,7 @@
 use crate::board::Board;
 use crate::castle_rights::CastleRights;
 use crate::color::Color;
-use crate::error::Error;
+use crate::error::InvalidError;
 use crate::file::{File, ALL_FILES};
 use crate::piece::Piece;
 use crate::rank::{Rank, ALL_RANKS};
@@ -346,7 +346,7 @@ impl Default for BoardBuilder {
 }
 
 impl FromStr for BoardBuilder {
-    type Err = Error;
+    type Err = InvalidError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let mut cur_rank = Rank::Eighth;
@@ -355,7 +355,7 @@ impl FromStr for BoardBuilder {
 
         let tokens: Vec<&str> = value.split(' ').collect();
         if tokens.len() < 4 {
-            return Err(Error::InvalidFen {
+            return Err(InvalidError::Fen {
                 fen: value.to_string(),
             });
         }
@@ -436,7 +436,7 @@ impl FromStr for BoardBuilder {
                     cur_file = cur_file.right();
                 }
                 _ => {
-                    return Err(Error::InvalidFen {
+                    return Err(InvalidError::Fen {
                         fen: value.to_string(),
                     });
                 }
@@ -446,7 +446,7 @@ impl FromStr for BoardBuilder {
             "w" | "W" => fen = fen.side_to_move(Color::White),
             "b" | "B" => fen = fen.side_to_move(Color::Black),
             _ => {
-                return Err(Error::InvalidFen {
+                return Err(InvalidError::Fen {
                     fen: value.to_string(),
                 })
             }

@@ -3,7 +3,7 @@ use crate::board_builder::BoardBuilder;
 use crate::castle_rights::CastleRights;
 use crate::chess_move::ChessMove;
 use crate::color::{Color, ALL_COLORS, NUM_COLORS};
-use crate::error::Error;
+use crate::error::InvalidError;
 use crate::file::File;
 use crate::magic::{
     between, get_adjacent_files, get_bishop_rays, get_castle_moves, get_file, get_king_moves,
@@ -1152,7 +1152,7 @@ impl fmt::Display for Board {
 }
 
 impl TryFrom<&BoardBuilder> for Board {
-    type Error = Error;
+    type Error = InvalidError;
 
     fn try_from(fen: &BoardBuilder) -> Result<Self, Self::Error> {
         let mut board = Board::new();
@@ -1181,13 +1181,13 @@ impl TryFrom<&BoardBuilder> for Board {
         if board.is_sane() {
             Ok(board)
         } else {
-            Err(Error::InvalidBoard)
+            Err(InvalidError::Board)
         }
     }
 }
 
 impl TryFrom<&mut BoardBuilder> for Board {
-    type Error = Error;
+    type Error = InvalidError;
 
     fn try_from(fen: &mut BoardBuilder) -> Result<Self, Self::Error> {
         (&*fen).try_into()
@@ -1195,7 +1195,7 @@ impl TryFrom<&mut BoardBuilder> for Board {
 }
 
 impl TryFrom<BoardBuilder> for Board {
-    type Error = Error;
+    type Error = InvalidError;
 
     fn try_from(fen: BoardBuilder) -> Result<Self, Self::Error> {
         (&fen).try_into()
@@ -1203,7 +1203,7 @@ impl TryFrom<BoardBuilder> for Board {
 }
 
 impl FromStr for Board {
-    type Err = Error;
+    type Err = InvalidError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         BoardBuilder::from_str(value)?.try_into()

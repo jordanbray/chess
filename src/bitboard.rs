@@ -297,7 +297,7 @@ impl BitBoard {
 
     /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`
     #[inline]
-    pub const fn to_square(&self) -> Square {
+    pub const fn to_square(self) -> Square {
         Square::new(self.0.trailing_zeros() as u8)
     }
 
@@ -315,7 +315,7 @@ impl BitBoard {
 
     /// Convert this `BitBoard` to a `usize` (for table lookups)
     #[inline]
-    pub const fn to_size(&self, rightshift: u8) -> usize {
+    pub const fn to_size(self, rightshift: u8) -> usize {
         (self.0 >> rightshift) as usize
     }
 }

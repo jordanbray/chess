@@ -1,5 +1,5 @@
 use crate::board::Board;
-use crate::error::Error;
+use crate::error::InvalidError;
 use crate::file::File;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;
@@ -14,7 +14,7 @@ use std::fmt;
 use std::str::FromStr;
 
 /// Represent a ChessMove in memory
-#[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug, Hash)]
+#[derive(Clone, Copy, Eq, PartialEq, Default, Debug, Hash)]
 pub struct ChessMove {
     source: Square,
     dest: Square,
@@ -65,7 +65,7 @@ impl ChessMove {
     ///     ChessMove::new(Square::E2, Square::E4, None)
     /// );
     /// ```
-    pub fn from_san(board: &Board, move_text: &str) -> Result<ChessMove, Error> {
+    pub fn from_san(board: &Board, move_text: &str) -> Result<ChessMove, InvalidError> {
         // Castles first...
         if move_text == "O-O" || move_text == "O-O-O" {
             let rank = board.side_to_move().to_my_backrank();
@@ -80,7 +80,7 @@ impl ChessMove {
             if MoveGen::new_legal(board).any(|l| l == m) {
                 return Ok(m);
             } else {
-                return Err(Error::InvalidSanMove);
+                return Err(InvalidError::SanMove);
             }
         }
 
@@ -134,7 +134,7 @@ impl ChessMove {
         // [Optional Check(mate) Specifier] ("" | "+" | "#")
         // [Optional En Passant Specifier] ("" | " e.p.")
 
-        let error = Error::InvalidSanMove;
+        let error = InvalidError::SanMove;
         let mut cur_index: usize = 0;
         let moving_piece = match move_text
             .get(cur_index..(cur_index + 1))
@@ -241,14 +241,9 @@ impl ChessMove {
             _ => None,
         };
 
-        let takes = if let Some(s) = move_text.get(cur_index..(cur_index + 1)) {
-            match s {
-                "x" => {
-                    cur_index += 1;
-                    true
-                }
-                _ => false,
-            }
+        let takes = if let Some("x") = move_text.get(cur_index..(cur_index + 1)) {
+            cur_index += 1;
+            true
         } else {
             false
         };
@@ -398,7 +393,7 @@ impl ChessMove {
         accum <<= 3;
         let prom_val = match promotion {
             None => 0,
-            Some(p) => p.to_index() as u16  + 1,
+            Some(p) => p.to_index() as u16 + 1,
         };
         accum += prom_val;
         accum
@@ -440,6 +435,12 @@ impl fmt::Display for ChessMove {
     }
 }
 
+impl PartialOrd for ChessMove {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(Ord::cmp(self, other))
+    }
+}
+
 impl Ord for ChessMove {
     fn cmp(&self, other: &ChessMove) -> Ordering {
         if self.source != other.source {
@@ -470,20 +471,20 @@ impl Ord for ChessMove {
 /// assert_eq!(ChessMove::from_str("e7e8q").expect("Valid Move"), mv);
 /// ```
 impl FromStr for ChessMove {
-    type Err = Error;
+    type Err = InvalidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let source = Square::from_str(s.get(0..2).ok_or(Error::InvalidUciMove)?)?;
-        let dest = Square::from_str(s.get(2..4).ok_or(Error::InvalidUciMove)?)?;
+        let source = Square::from_str(s.get(0..2).ok_or(InvalidError::UciMove)?)?;
+        let dest = Square::from_str(s.get(2..4).ok_or(InvalidError::UciMove)?)?;
 
         let mut promo = None;
         if s.len() == 5 {
-            promo = Some(match s.chars().last().ok_or(Error::InvalidUciMove)? {
+            promo = Some(match s.chars().last().ok_or(InvalidError::UciMove)? {
                 'q' => Piece::Queen,
                 'r' => Piece::Rook,
                 'n' => Piece::Knight,
                 'b' => Piece::Bishop,
-                _ => return Err(Error::InvalidUciMove),
+                _ => return Err(InvalidError::UciMove),
             });
         }
 

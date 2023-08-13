@@ -28,6 +28,7 @@ pub fn gen_knight_moves() {
 }
 
 // Write the KNIGHT_MOVES array to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_knight_moves(f: &mut File) {
     writeln!(f, "const KNIGHT_MOVES: [BitBoard; 64] = [").unwrap();
     for i in 0..64 {

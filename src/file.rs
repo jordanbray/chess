@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::InvalidError;
 use std::str::FromStr;
 
 /// Describe a file (column) on a chess board
@@ -62,17 +62,17 @@ impl File {
 
     /// Convert this `File` into a `usize` from 0 to 7 inclusive.
     #[inline]
-    pub const fn to_index(&self) -> usize {
-        *self as usize
+    pub const fn to_index(self) -> usize {
+        self as usize
     }
 }
 
 impl FromStr for File {
-    type Err = Error;
+    type Err = InvalidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            return Err(Error::InvalidFile);
+            return Err(InvalidError::File);
         }
         match s.chars().next().unwrap() {
             'a' => Ok(File::A),
@@ -83,7 +83,7 @@ impl FromStr for File {
             'f' => Ok(File::F),
             'g' => Ok(File::G),
             'h' => Ok(File::H),
-            _ => Err(Error::InvalidFile),
+            _ => Err(InvalidError::File),
         }
     }
 }

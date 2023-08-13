@@ -86,6 +86,7 @@ pub fn gen_dest_double_moves() -> BitBoard {
 }
 
 // Write the PAWN_MOVES array to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_pawn_moves(f: &mut File) {
     writeln!(f, "const PAWN_MOVES: [[BitBoard; 64]; 2] = [[").unwrap();
     for i in 0..2 {
@@ -100,6 +101,7 @@ pub fn write_pawn_moves(f: &mut File) {
 }
 
 // Write the PAWN_ATTACKS array to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_pawn_attacks(f: &mut File) {
     writeln!(f, "const PAWN_ATTACKS: [[BitBoard; 64]; 2] = [[").unwrap();
     for i in 0..2 {

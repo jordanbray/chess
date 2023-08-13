@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::error::Error;
+use crate::error::InvalidError;
 use crate::file::File;
 use crate::rank::Rank;
 use std::fmt;
@@ -349,7 +349,7 @@ impl Square {
     /// assert_eq!(Square::make_square(Rank::Eighth, File::H).to_int(), 63);
     /// ```
     #[inline]
-    pub const fn to_int(&self) -> u8 {
+    pub const fn to_int(self) -> u8 {
         self.0
     }
 
@@ -364,7 +364,7 @@ impl Square {
     /// assert_eq!(Square::make_square(Rank::Eighth, File::H).to_index(), 63);
     /// ```
     #[inline]
-    pub const fn to_index(&self) -> usize {
+    pub const fn to_index(self) -> usize {
         self.0 as usize
     }
 
@@ -974,23 +974,23 @@ impl fmt::Display for Square {
 }
 
 impl FromStr for Square {
-    type Err = Error;
+    type Err = InvalidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() < 2 {
-            return Err(Error::InvalidSquare);
+            return Err(InvalidError::Square);
         }
         let ch: Vec<char> = s.chars().collect();
         match ch[0] {
             'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' => {}
             _ => {
-                return Err(Error::InvalidSquare);
+                return Err(InvalidError::Square);
             }
         }
         match ch[1] {
             '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {}
             _ => {
-                return Err(Error::InvalidSquare);
+                return Err(InvalidError::Square);
             }
         }
         Ok(Square::make_square(

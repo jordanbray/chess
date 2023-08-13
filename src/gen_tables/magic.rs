@@ -135,6 +135,7 @@ pub fn gen_all_magic() {
 }
 
 // Write the MAGIC_NUMBERS and MOVES arrays to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_magic(f: &mut File) {
     writeln!(f, "#[derive(Copy, Clone)]").unwrap();
     writeln!(f, "struct Magic {{").unwrap();
@@ -162,7 +163,7 @@ pub fn write_magic(f: &mut File) {
     writeln!(f, "]];").unwrap();
 
     unsafe {
-        writeln!(f, "const MOVES: [BitBoard; {}] = [", GENERATED_NUM_MOVES).unwrap();
+        writeln!(f, "static MOVES: [BitBoard; {}] = [", GENERATED_NUM_MOVES).unwrap();
         for i in 0..GENERATED_NUM_MOVES {
             writeln!(f, "    BitBoard({}),", MOVES[i].0).unwrap();
         }

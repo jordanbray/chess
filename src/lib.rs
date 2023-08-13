@@ -73,4 +73,4 @@ mod board_builder;
 pub use crate::board_builder::BoardBuilder;
 
 mod error;
-pub use crate::error::Error;
+pub use crate::error::{Error, InvalidError};
