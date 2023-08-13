@@ -1,3 +1,5 @@
+use const_for::const_for;
+
 use crate::file::File;
 use crate::rank::Rank;
 use crate::square::*;
@@ -290,7 +292,10 @@ impl BitBoard {
 
     /// Convert an `Option<Square>` to an `Option<BitBoard>`
     #[inline]
-    #[deprecated(since = "3.3.0", note = "Method is considered an unnecessary shorthand for `square_option.map(BitBoard::from_square)`.")]
+    #[deprecated(
+        since = "3.3.0",
+        note = "Method is considered an unnecessary shorthand for `square_option.map(BitBoard::from_square)`."
+    )]
     pub fn from_maybe_square(sq: Option<Square>) -> Option<BitBoard> {
         sq.map(BitBoard::from_square)
     }
@@ -317,6 +322,17 @@ impl BitBoard {
     #[inline]
     pub const fn to_size(self, rightshift: u8) -> usize {
         (self.0 >> rightshift) as usize
+    }
+
+    pub(crate) const fn from_array(arr: [u64; 8]) -> Self {
+        let mut accum = 0;
+
+        const_for!(i in 0..8 => {
+            accum <<= 8;
+            accum |= arr[i];
+        });
+
+        BitBoard::new(accum)
     }
 }
 

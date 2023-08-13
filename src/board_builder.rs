@@ -196,11 +196,7 @@ impl BoardBuilder {
     /// let mut bb = BoardBuilder::new();
     /// bb.castle_rights(Color::Black, CastleRights::Both);
     /// ```
-    pub fn castle_rights(
-        &mut self,
-        color: Color,
-        castle_rights: CastleRights,
-    ) -> &mut Self {
+    pub fn castle_rights(&mut self, color: Color, castle_rights: CastleRights) -> &mut Self {
         self.castle_rights[color.to_index()] = castle_rights;
         self
     }

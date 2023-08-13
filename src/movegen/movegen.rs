@@ -9,7 +9,6 @@ use arrayvec::ArrayVec;
 use nodrop::NoDrop;
 use std::iter::ExactSizeIterator;
 
-
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
 pub struct SquareAndBitBoard {
     square: Square,

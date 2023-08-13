@@ -22,7 +22,7 @@ pub struct ChessMove {
 }
 
 impl ChessMove {
-    /// The null move is an invalid move. It can make encoding of Option<ChessMove> more memory
+    /// The null move is an invalid move. It can make encoding of `Option<ChessMove>` more memory
     /// efficient.
     pub const NULL_MOVE: Self = Self::new(Square::A1, Square::A1, None);
 

@@ -79,8 +79,7 @@ pub fn write_king_moves(f: &mut File) {
         writeln!(
             f,
             " BitBoard({}), BitBoard({})];",
-            KINGSIDE_CASTLE_SQUARES[0].0,
-            KINGSIDE_CASTLE_SQUARES[1].0
+            KINGSIDE_CASTLE_SQUARES[0].0, KINGSIDE_CASTLE_SQUARES[1].0
         )
         .unwrap()
     };
@@ -90,8 +89,7 @@ pub fn write_king_moves(f: &mut File) {
         writeln!(
             f,
             " BitBoard({}), BitBoard({})];",
-            QUEENSIDE_CASTLE_SQUARES[0].0,
-            QUEENSIDE_CASTLE_SQUARES[1].0
+            QUEENSIDE_CASTLE_SQUARES[0].0, QUEENSIDE_CASTLE_SQUARES[1].0
         )
         .unwrap()
     };

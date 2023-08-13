@@ -12,9 +12,11 @@ readme = "README.md"
 keywords = ["chess", "move", "generator"]
 license = "MIT"
 documentation = "https://jordanbray.github.io/chess/chess/index.html"
+rust-version = "1.56.0"
 
 [dependencies]
 arrayvec = "0.7.2"
+const_for = "0.1.2"
 nodrop = "0.1.14"
 thiserror = "1.0.44"
 
@@ -39,5 +41,6 @@ opt-level = 3
 opt-level = 3
 
 [build-dependencies]
+const_for = "0.1.2"
 rand = { version = "0.7.2", default-features = false, features = ["small_rng"] }
 thiserror = "1.0.44"
