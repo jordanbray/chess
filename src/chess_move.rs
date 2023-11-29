@@ -354,12 +354,14 @@ impl ChessMove {
                 return Err(error);
             }
 
+            let piece_exists = board.piece_on(m.get_dest()).is_some();
+
             // takes is complicated, because of e.p.
-            if !takes && board.piece_on(m.get_dest()).is_some() {
+            if !takes && piece_exists {
                 continue;
             }
 
-            if !ep && takes && board.piece_on(m.get_dest()).is_none() {
+            if !ep && takes && !piece_exists {
                 continue;
             }
 

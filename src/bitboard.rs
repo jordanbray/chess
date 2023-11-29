@@ -293,7 +293,7 @@ impl BitBoard {
     /// Convert an `Option<Square>` to an `Option<BitBoard>`
     #[inline]
     #[deprecated(
-        since = "3.3.0",
+        since = "4.0.0",
         note = "Method is considered an unnecessary shorthand for `square_option.map(BitBoard::from_square)`."
     )]
     pub fn from_maybe_square(sq: Option<Square>) -> Option<BitBoard> {
