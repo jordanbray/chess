@@ -8,7 +8,6 @@ use crate::square::Square;
 use arrayvec::ArrayVec;
 use nodrop::NoDrop;
 use std::iter::ExactSizeIterator;
-use std::mem;
 
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
 pub struct SquareAndBitBoard {
@@ -22,7 +21,7 @@ impl SquareAndBitBoard {
         SquareAndBitBoard {
             square: sq,
             bitboard: bb,
-            promotion: promotion,
+            promotion,
         }
     }
 }
@@ -98,21 +97,21 @@ impl MoveGen {
         let mut movelist = NoDrop::new(ArrayVec::<SquareAndBitBoard, 18>::new());
 
         if checkers == EMPTY {
-            PawnType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            KnightType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            BishopType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            RookType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            QueenType::legals::<NotInCheckType>(&mut movelist, &board, mask);
-            KingType::legals::<NotInCheckType>(&mut movelist, &board, mask);
+            PawnType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            KnightType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            BishopType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            RookType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            QueenType::legals::<NotInCheckType>(&mut movelist, board, mask);
+            KingType::legals::<NotInCheckType>(&mut movelist, board, mask);
         } else if checkers.popcnt() == 1 {
-            PawnType::legals::<InCheckType>(&mut movelist, &board, mask);
-            KnightType::legals::<InCheckType>(&mut movelist, &board, mask);
-            BishopType::legals::<InCheckType>(&mut movelist, &board, mask);
-            RookType::legals::<InCheckType>(&mut movelist, &board, mask);
-            QueenType::legals::<InCheckType>(&mut movelist, &board, mask);
-            KingType::legals::<InCheckType>(&mut movelist, &board, mask);
+            PawnType::legals::<InCheckType>(&mut movelist, board, mask);
+            KnightType::legals::<InCheckType>(&mut movelist, board, mask);
+            BishopType::legals::<InCheckType>(&mut movelist, board, mask);
+            RookType::legals::<InCheckType>(&mut movelist, board, mask);
+            QueenType::legals::<InCheckType>(&mut movelist, board, mask);
+            KingType::legals::<InCheckType>(&mut movelist, board, mask);
         } else {
-            KingType::legals::<InCheckType>(&mut movelist, &board, mask);
+            KingType::legals::<InCheckType>(&mut movelist, board, mask);
         }
 
         movelist
@@ -250,7 +249,7 @@ impl MoveGen {
         } else {
             iterable.set_iterator_mask(*targets);
             for x in &mut iterable {
-                let mut bresult = mem::MaybeUninit::<Board>::uninit();
+                let mut bresult = core::mem::MaybeUninit::<Board>::uninit();
                 unsafe {
                     board.make_move(x, &mut *bresult.as_mut_ptr());
                     result += MoveGen::movegen_perft_test(&*bresult.as_ptr(), depth - 1);
@@ -258,7 +257,7 @@ impl MoveGen {
             }
             iterable.set_iterator_mask(!EMPTY);
             for x in &mut iterable {
-                let mut bresult = mem::MaybeUninit::<Board>::uninit();
+                let mut bresult = core::mem::MaybeUninit::<Board>::uninit();
                 unsafe {
                     board.make_move(x, &mut *bresult.as_mut_ptr());
                     result += MoveGen::movegen_perft_test(&*bresult.as_ptr(), depth - 1);

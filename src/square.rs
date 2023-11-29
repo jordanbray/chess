@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::error::Error;
+use crate::error::InvalidError;
 use crate::file::File;
 use crate::rank::Rank;
 use std::fmt;
@@ -42,7 +42,7 @@ impl Square {
     /// assert_eq!(Square::default(), bad_sq);
     /// ```
     #[inline]
-    pub fn new(sq: u8) -> Square {
+    pub const fn new(sq: u8) -> Square {
         Square(sq & 63)
     }
 
@@ -64,7 +64,7 @@ impl Square {
     /// }
     /// ```
     #[inline]
-    pub fn make_square(rank: Rank, file: File) -> Square {
+    pub const fn make_square(rank: Rank, file: File) -> Square {
         Square((rank.to_index() as u8) << 3 ^ (file.to_index() as u8))
     }
 
@@ -78,7 +78,7 @@ impl Square {
     /// assert_eq!(sq.get_rank(), Rank::Seventh);
     /// ```
     #[inline]
-    pub fn get_rank(&self) -> Rank {
+    pub const fn get_rank(&self) -> Rank {
         Rank::from_index((self.0 >> 3) as usize)
     }
 
@@ -349,7 +349,7 @@ impl Square {
     /// assert_eq!(Square::make_square(Rank::Eighth, File::H).to_int(), 63);
     /// ```
     #[inline]
-    pub fn to_int(&self) -> u8 {
+    pub const fn to_int(self) -> u8 {
         self.0
     }
 
@@ -364,7 +364,7 @@ impl Square {
     /// assert_eq!(Square::make_square(Rank::Eighth, File::H).to_index(), 63);
     /// ```
     #[inline]
-    pub fn to_index(&self) -> usize {
+    pub const fn to_index(self) -> usize {
         self.0 as usize
     }
 
@@ -967,30 +967,30 @@ impl fmt::Display for Square {
         write!(
             f,
             "{}{}",
-            (('a' as u8) + ((self.0 & 7) as u8)) as char,
-            (('1' as u8) + ((self.0 >> 3) as u8)) as char
+            (b'a' + (self.0 & 7)) as char,
+            (b'1' + (self.0 >> 3)) as char
         )
     }
 }
 
 impl FromStr for Square {
-    type Err = Error;
+    type Err = InvalidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() < 2 {
-            return Err(Error::InvalidSquare);
+            return Err(InvalidError::Square);
         }
         let ch: Vec<char> = s.chars().collect();
         match ch[0] {
             'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' => {}
             _ => {
-                return Err(Error::InvalidSquare);
+                return Err(InvalidError::Square);
             }
         }
         match ch[1] {
             '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {}
             _ => {
-                return Err(Error::InvalidSquare);
+                return Err(InvalidError::Square);
             }
         }
         Ok(Square::make_square(

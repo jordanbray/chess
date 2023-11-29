@@ -14,7 +14,6 @@ use crate::magic::{
 pub trait PieceType {
     fn is(piece: Piece) -> bool;
     fn into_piece() -> Piece;
-    #[inline(always)]
     fn pseudo_legals(src: Square, color: Color, combined: BitBoard, mask: BitBoard) -> BitBoard;
     #[inline(always)]
     fn legals<T>(movelist: &mut MoveList, board: &Board, mask: BitBoard)
@@ -94,22 +93,21 @@ impl PawnType {
         let rooks = (board.pieces(Piece::Rook) | board.pieces(Piece::Queen))
             & board.color_combined(!board.side_to_move());
 
-        if (get_rook_rays(ksq) & rooks) != EMPTY {
-            if (get_rook_moves(ksq, combined) & rooks) != EMPTY {
-                return false;
-            }
+        if (get_rook_rays(ksq) & rooks) != EMPTY && (get_rook_moves(ksq, combined) & rooks) != EMPTY
+        {
+            return false;
         }
 
         let bishops = (board.pieces(Piece::Bishop) | board.pieces(Piece::Queen))
             & board.color_combined(!board.side_to_move());
 
-        if (get_bishop_rays(ksq) & bishops) != EMPTY {
-            if (get_bishop_moves(ksq, combined) & bishops) != EMPTY {
-                return false;
-            }
+        if (get_bishop_rays(ksq) & bishops) != EMPTY
+            && (get_bishop_moves(ksq, combined) & bishops) != EMPTY
+        {
+            return false;
         }
 
-        return true;
+        true
     }
 }
 
@@ -326,7 +324,7 @@ impl KingType {
             board.pieces(Piece::Pawn) & board.color_combined(!board.side_to_move()),
         );
 
-        return attackers == EMPTY;
+        attackers == EMPTY
     }
 }
 

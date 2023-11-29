@@ -5,7 +5,6 @@
 #![allow(dead_code)]
 
 // it to be easily followed.
-extern crate rand;
 mod bitboard;
 mod color;
 mod error;

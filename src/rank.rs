@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::InvalidError;
 use std::str::FromStr;
 
 /// Describe a rank (row) on a chess board
@@ -34,7 +34,7 @@ impl Rank {
     /// Convert a `usize` into a `Rank` (the inverse of to_index).  If the number is > 7, wrap
     /// around.
     #[inline]
-    pub fn from_index(i: usize) -> Rank {
+    pub const fn from_index(i: usize) -> Rank {
         // match is optimized to no-op with opt-level=1 with rustc 1.53.0
         match i & 7 {
             0 => Rank::First,
@@ -51,29 +51,29 @@ impl Rank {
 
     /// Go one rank down.  If impossible, wrap around.
     #[inline]
-    pub fn down(&self) -> Rank {
+    pub const fn down(&self) -> Rank {
         Rank::from_index(self.to_index().wrapping_sub(1))
     }
 
     /// Go one file up.  If impossible, wrap around.
     #[inline]
-    pub fn up(&self) -> Rank {
+    pub const fn up(&self) -> Rank {
         Rank::from_index(self.to_index() + 1)
     }
 
     /// Convert this `Rank` into a `usize` between 0 and 7 (inclusive).
     #[inline]
-    pub fn to_index(&self) -> usize {
-        *self as usize
+    pub const fn to_index(self) -> usize {
+        self as usize
     }
 }
 
 impl FromStr for Rank {
-    type Err = Error;
+    type Err = InvalidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() < 1 {
-            return Err(Error::InvalidRank);
+        if s.is_empty() {
+            return Err(InvalidError::Rank);
         }
         match s.chars().next().unwrap() {
             '1' => Ok(Rank::First),
@@ -84,7 +84,7 @@ impl FromStr for Rank {
             '6' => Ok(Rank::Sixth),
             '7' => Ok(Rank::Seventh),
             '8' => Ok(Rank::Eighth),
-            _ => Err(Error::InvalidRank),
+            _ => Err(InvalidError::Rank),
         }
     }
 }

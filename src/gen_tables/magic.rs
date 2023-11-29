@@ -75,7 +75,7 @@ fn generate_magic(sq: Square, piece: Piece, cur_offset: usize) -> usize {
 
     let mut new_magic = Magic {
         magic_number: EMPTY,
-        mask: mask,
+        mask,
         offset: new_offset as u32,
         rightshift: ((questions.len() as u64).leading_zeros() + 1) as u8,
     };
@@ -135,20 +135,21 @@ pub fn gen_all_magic() {
 }
 
 // Write the MAGIC_NUMBERS and MOVES arrays to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_magic(f: &mut File) {
-    write!(f, "#[derive(Copy, Clone)]\n").unwrap();
-    write!(f, "struct Magic {{\n").unwrap();
-    write!(f, "    magic_number: BitBoard,\n").unwrap();
-    write!(f, "    mask: BitBoard,\n").unwrap();
-    write!(f, "    offset: u32,\n").unwrap();
-    write!(f, "    rightshift: u8\n").unwrap();
+    writeln!(f, "#[derive(Copy, Clone)]").unwrap();
+    writeln!(f, "struct Magic {{").unwrap();
+    writeln!(f, "    magic_number: BitBoard,").unwrap();
+    writeln!(f, "    mask: BitBoard,").unwrap();
+    writeln!(f, "    offset: u32,").unwrap();
+    writeln!(f, "    rightshift: u8").unwrap();
     write!(f, "}}\n\n").unwrap();
 
-    write!(f, "const MAGIC_NUMBERS: [[Magic; 64]; 2] = [[\n").unwrap();
+    writeln!(f, "const MAGIC_NUMBERS: [[Magic; 64]; 2] = [[").unwrap();
     for i in 0..2 {
         for j in 0..64 {
             unsafe {
-                write!(f, "    Magic {{ magic_number: BitBoard({}), mask: BitBoard({}), offset: {}, rightshift: {} }},\n",
+                writeln!(f, "    Magic {{ magic_number: BitBoard({}), mask: BitBoard({}), offset: {}, rightshift: {} }},",
                     MAGIC_NUMBERS[i][j].magic_number.0,
                     MAGIC_NUMBERS[i][j].mask.0,
                     MAGIC_NUMBERS[i][j].offset,
@@ -156,16 +157,16 @@ pub fn write_magic(f: &mut File) {
             }
         }
         if i != 1 {
-            write!(f, "], [\n").unwrap();
+            writeln!(f, "], [").unwrap();
         }
     }
-    write!(f, "]];\n").unwrap();
+    writeln!(f, "]];").unwrap();
 
     unsafe {
-        write!(f, "const MOVES: [BitBoard; {}] = [\n", GENERATED_NUM_MOVES).unwrap();
+        writeln!(f, "static MOVES: [BitBoard; {}] = [", GENERATED_NUM_MOVES).unwrap();
         for i in 0..GENERATED_NUM_MOVES {
-            write!(f, "    BitBoard({}),\n", MOVES[i].0).unwrap();
+            writeln!(f, "    BitBoard({}),", MOVES[i].0).unwrap();
         }
     }
-    write!(f, "];\n").unwrap();
+    writeln!(f, "];").unwrap();
 }

@@ -66,38 +66,37 @@ fn gen_castle_moves() -> BitBoard {
 }
 
 // Write the KING_MOVES array to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_king_moves(f: &mut File) {
-    write!(f, "const KING_MOVES: [BitBoard; 64] = [\n").unwrap();
+    writeln!(f, "const KING_MOVES: [BitBoard; 64] = [").unwrap();
     for i in 0..64 {
-        unsafe { write!(f, "    BitBoard({}),\n", KING_MOVES[i].0).unwrap() };
+        unsafe { writeln!(f, "    BitBoard({}),", KING_MOVES[i].0).unwrap() };
     }
-    write!(f, "];\n").unwrap();
+    writeln!(f, "];").unwrap();
 
-    write!(f, "pub const KINGSIDE_CASTLE_SQUARES: [BitBoard; 2] = [\n").unwrap();
+    writeln!(f, "pub const KINGSIDE_CASTLE_SQUARES: [BitBoard; 2] = [").unwrap();
     unsafe {
-        write!(
+        writeln!(
             f,
-            " BitBoard({}), BitBoard({})];\n",
-            KINGSIDE_CASTLE_SQUARES[0].0,
-            KINGSIDE_CASTLE_SQUARES[1].0
+            " BitBoard({}), BitBoard({})];",
+            KINGSIDE_CASTLE_SQUARES[0].0, KINGSIDE_CASTLE_SQUARES[1].0
         )
         .unwrap()
     };
 
-    write!(f, "pub const QUEENSIDE_CASTLE_SQUARES: [BitBoard; 2] = [\n").unwrap();
+    writeln!(f, "pub const QUEENSIDE_CASTLE_SQUARES: [BitBoard; 2] = [").unwrap();
     unsafe {
-        write!(
+        writeln!(
             f,
-            " BitBoard({}), BitBoard({})];\n",
-            QUEENSIDE_CASTLE_SQUARES[0].0,
-            QUEENSIDE_CASTLE_SQUARES[1].0
+            " BitBoard({}), BitBoard({})];",
+            QUEENSIDE_CASTLE_SQUARES[0].0, QUEENSIDE_CASTLE_SQUARES[1].0
         )
         .unwrap()
     };
 
-    write!(
+    writeln!(
         f,
-        "const CASTLE_MOVES: BitBoard = BitBoard({});\n",
+        "const CASTLE_MOVES: BitBoard = BitBoard({});",
         gen_castle_moves().0
     )
     .unwrap();

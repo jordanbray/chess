@@ -1,3 +1,5 @@
+use const_for::const_for;
+
 use crate::file::File;
 use crate::rank::Rank;
 use crate::square::*;
@@ -262,7 +264,7 @@ impl fmt::Display for BitBoard {
                 s.push_str(". ");
             }
             if x % 8 == 7 {
-                s.push_str("\n");
+                s.push('\n');
             }
         }
         write!(f, "{}", s)
@@ -272,50 +274,65 @@ impl fmt::Display for BitBoard {
 impl BitBoard {
     /// Construct a new bitboard from a u64
     #[inline]
-    pub fn new(b: u64) -> BitBoard {
+    pub const fn new(b: u64) -> BitBoard {
         BitBoard(b)
     }
 
     /// Construct a new `BitBoard` with a particular `Square` set
     #[inline]
-    pub fn set(rank: Rank, file: File) -> BitBoard {
+    pub const fn set(rank: Rank, file: File) -> BitBoard {
         BitBoard::from_square(Square::make_square(rank, file))
     }
 
     /// Construct a new `BitBoard` with a particular `Square` set
     #[inline]
-    pub fn from_square(sq: Square) -> BitBoard {
+    pub const fn from_square(sq: Square) -> BitBoard {
         BitBoard(1u64 << sq.to_int())
     }
 
     /// Convert an `Option<Square>` to an `Option<BitBoard>`
     #[inline]
+    #[deprecated(
+        since = "4.0.0",
+        note = "Method is considered an unnecessary shorthand for `square_option.map(BitBoard::from_square)`."
+    )]
     pub fn from_maybe_square(sq: Option<Square>) -> Option<BitBoard> {
-        sq.map(|s| BitBoard::from_square(s))
+        sq.map(BitBoard::from_square)
     }
 
     /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`
     #[inline]
-    pub fn to_square(&self) -> Square {
+    pub const fn to_square(self) -> Square {
         Square::new(self.0.trailing_zeros() as u8)
     }
 
     /// Count the number of `Squares` set in this `BitBoard`
     #[inline]
-    pub fn popcnt(&self) -> u32 {
+    pub const fn popcnt(&self) -> u32 {
         self.0.count_ones()
     }
 
     /// Reverse this `BitBoard`.  Look at it from the opponents perspective.
     #[inline]
-    pub fn reverse_colors(&self) -> BitBoard {
+    pub const fn reverse_colors(&self) -> BitBoard {
         BitBoard(self.0.swap_bytes())
     }
 
     /// Convert this `BitBoard` to a `usize` (for table lookups)
     #[inline]
-    pub fn to_size(&self, rightshift: u8) -> usize {
+    pub const fn to_size(self, rightshift: u8) -> usize {
         (self.0 >> rightshift) as usize
+    }
+
+    pub(crate) const fn from_array(arr: [u64; 8]) -> Self {
+        let mut accum = 0;
+
+        const_for!(i in 0..8 => {
+            accum <<= 8;
+            accum |= arr[i];
+        });
+
+        BitBoard::new(accum)
     }
 }
 

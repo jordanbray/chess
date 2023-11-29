@@ -52,17 +52,18 @@ pub fn get_rays(sq: Square, piece: Piece) -> BitBoard {
 }
 
 // Write the RAYS array to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_rays(f: &mut File) {
-    write!(f, "const ROOK: usize = {};\n", 0).unwrap();
-    write!(f, "const BISHOP: usize = {};\n", 1).unwrap();
-    write!(f, "const RAYS: [[BitBoard; 64]; 2] = [[\n").unwrap();
+    writeln!(f, "const ROOK: usize = {};", 0).unwrap();
+    writeln!(f, "const BISHOP: usize = {};", 1).unwrap();
+    writeln!(f, "const RAYS: [[BitBoard; 64]; 2] = [[").unwrap();
     for i in 0..2 {
         for j in 0..64 {
-            unsafe { write!(f, "    BitBoard({}),\n", RAYS[i][j].0).unwrap() };
+            unsafe { writeln!(f, "    BitBoard({}),", RAYS[i][j].0).unwrap() };
         }
         if i != 1 {
-            write!(f, "  ], [\n").unwrap();
+            writeln!(f, "  ], [").unwrap();
         }
     }
-    write!(f, "]];\n").unwrap();
+    writeln!(f, "]];").unwrap();
 }

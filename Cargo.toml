@@ -1,7 +1,7 @@
 [package]
 name = "chess"
-version = "3.2.0"
-edition = "2018"
+version = "4.0.0"
+edition = "2021"
 authors = ["Jordan Bray <jordanbray@gmail.com>"]
 description = "This is a fast chess move generator.  It has a very good set of documentation, so you should take advantage of that.  It (now) generates all lookup tables with a build.rs file, which means that very little pseudo-legal move generation requires branching.  There are some convenience functions that are exposed to, for example, find all the squares between two squares.  This uses a copy-on-make style structure, and the Board structure is as slimmed down as possible to reduce the cost of copying the board.  There are places to improve perft-test performance further, but I instead opt to be more feature-complete to make it useful in real applications.  For example, I generate both a hash of the board and a pawn-hash of the board for use in evaluation lookup tables (using Zobrist hashing).  There are two ways to generate moves, one is faster, the other has more features that will be useful if making a chess engine.  See the documentation for more details."
 build = "src/build.rs"
@@ -12,15 +12,18 @@ readme = "README.md"
 keywords = ["chess", "move", "generator"]
 license = "MIT"
 documentation = "https://jordanbray.github.io/chess/chess/index.html"
+rust-version = "1.56.0"
 
 [dependencies]
 arrayvec = "0.7.2"
+const_for = "0.1.2"
 nodrop = "0.1.14"
-failure = "0.1.6"
+thiserror = "1.0.44"
 
 [profile.release]
 opt-level = 3
 debug = false
+lto = "yes"
 
 [profile.dev]
 opt-level = 3
@@ -38,5 +41,6 @@ opt-level = 3
 opt-level = 3
 
 [build-dependencies]
-rand = { version = "0.7.2", default_features = false, features = ["small_rng"] }
-failure = "0.1.6"
+const_for = "0.1.2"
+rand = { version = "0.7.2", default-features = false, features = ["small_rng"] }
+thiserror = "1.0.44"

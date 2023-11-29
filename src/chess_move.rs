@@ -1,17 +1,20 @@
 use crate::board::Board;
-use crate::error::Error;
+use crate::error::InvalidError;
 use crate::file::File;
 use crate::movegen::MoveGen;
 use crate::piece::Piece;
 use crate::rank::Rank;
 use crate::square::Square;
 
+#[cfg(test)]
+use crate::{ALL_PIECES, ALL_SQUARES};
+
 use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
 
 /// Represent a ChessMove in memory
-#[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug, Hash)]
+#[derive(Clone, Copy, Eq, PartialEq, Default, Debug, Hash)]
 pub struct ChessMove {
     source: Square,
     dest: Square,
@@ -19,32 +22,36 @@ pub struct ChessMove {
 }
 
 impl ChessMove {
+    /// The null move is an invalid move. It can make encoding of `Option<ChessMove>` more memory
+    /// efficient.
+    pub const NULL_MOVE: Self = Self::new(Square::A1, Square::A1, None);
+
     /// Create a new chess move, given a source `Square`, a destination `Square`, and an optional
     /// promotion `Piece`
     #[inline]
-    pub fn new(source: Square, dest: Square, promotion: Option<Piece>) -> ChessMove {
+    pub const fn new(source: Square, dest: Square, promotion: Option<Piece>) -> ChessMove {
         ChessMove {
-            source: source,
-            dest: dest,
-            promotion: promotion,
+            source,
+            dest,
+            promotion,
         }
     }
 
     /// Get the source square (square the piece is currently on).
     #[inline]
-    pub fn get_source(&self) -> Square {
+    pub const fn get_source(&self) -> Square {
         self.source
     }
 
     /// Get the destination square (square the piece is going to).
     #[inline]
-    pub fn get_dest(&self) -> Square {
+    pub const fn get_dest(&self) -> Square {
         self.dest
     }
 
     /// Get the promotion piece (maybe).
     #[inline]
-    pub fn get_promotion(&self) -> Option<Piece> {
+    pub const fn get_promotion(&self) -> Option<Piece> {
         self.promotion
     }
     /// Convert a SAN (Standard Algebraic Notation) move into a `ChessMove`
@@ -58,7 +65,7 @@ impl ChessMove {
     ///     ChessMove::new(Square::E2, Square::E4, None)
     /// );
     /// ```
-    pub fn from_san(board: &Board, move_text: &str) -> Result<ChessMove, Error> {
+    pub fn from_san(board: &Board, move_text: &str) -> Result<ChessMove, InvalidError> {
         // Castles first...
         if move_text == "O-O" || move_text == "O-O-O" {
             let rank = board.side_to_move().to_my_backrank();
@@ -70,10 +77,10 @@ impl ChessMove {
                 Square::make_square(rank, dest_file),
                 None,
             );
-            if MoveGen::new_legal(&board).any(|l| l == m) {
+            if MoveGen::new_legal(board).any(|l| l == m) {
                 return Ok(m);
             } else {
-                return Err(Error::InvalidSanMove);
+                return Err(InvalidError::SanMove);
             }
         }
 
@@ -127,7 +134,7 @@ impl ChessMove {
         // [Optional Check(mate) Specifier] ("" | "+" | "#")
         // [Optional En Passant Specifier] ("" | " e.p.")
 
-        let error = Error::InvalidSanMove;
+        let error = InvalidError::SanMove;
         let mut cur_index: usize = 0;
         let moving_piece = match move_text
             .get(cur_index..(cur_index + 1))
@@ -234,14 +241,9 @@ impl ChessMove {
             _ => None,
         };
 
-        let takes = if let Some(s) = move_text.get(cur_index..(cur_index + 1)) {
-            match s {
-                "x" => {
-                    cur_index += 1;
-                    true
-                }
-                _ => false,
-            }
+        let takes = if let Some("x") = move_text.get(cur_index..(cur_index + 1)) {
+            cur_index += 1;
+            true
         } else {
             false
         };
@@ -352,23 +354,77 @@ impl ChessMove {
                 return Err(error);
             }
 
+            let piece_exists = board.piece_on(m.get_dest()).is_some();
+
             // takes is complicated, because of e.p.
-            if !takes {
-                if board.piece_on(m.get_dest()).is_some() {
-                    continue;
-                }
+            if !takes && piece_exists {
+                continue;
             }
 
-            if !ep && takes {
-                if board.piece_on(m.get_dest()).is_none() {
-                    continue;
-                }
+            if !ep && takes && !piece_exists {
+                continue;
             }
 
             found_move = Some(m);
         }
 
         found_move.ok_or(error.clone())
+    }
+
+    /// Easy check if a move is a null move.
+    #[inline]
+    pub fn is_null_move(
+        Self {
+            source,
+            dest,
+            promotion,
+        }: &Self,
+    ) -> bool {
+        *source == Square::A1 && *dest == Square::A1 && promotion.is_none()
+    }
+
+    pub fn encode(&self) -> u16 {
+        let Self {
+            source,
+            dest,
+            promotion,
+        } = self;
+        let mut accum = source.to_int() as u16;
+        accum <<= 6;
+        accum += dest.to_int() as u16;
+        accum <<= 3;
+        let prom_val = match promotion {
+            None => 0,
+            Some(p) => p.to_index() as u16 + 1,
+        };
+        accum += prom_val;
+        accum
+    }
+
+    pub fn decode(coded: u16) -> Option<Self> {
+        const SOURCE_MASK: u16 = 0b1111_1111 << 9;
+        const DEST_MASK: u16 = 0b1111_1111 << 3;
+        const PROM_MASK: u16 = 0b111;
+        let source_int = (coded & SOURCE_MASK) >> 9;
+        let dest_int = (coded & DEST_MASK) >> 3;
+        let prom_int = coded & PROM_MASK;
+        let source = Square::new(source_int as u8);
+        let dest = Square::new(dest_int as u8);
+        let promotion = match prom_int {
+            0 => Some(None),
+            1 => Some(Some(Piece::Pawn)),
+            2 => Some(Some(Piece::Knight)),
+            3 => Some(Some(Piece::Bishop)),
+            4 => Some(Some(Piece::Rook)),
+            5 => Some(Some(Piece::Queen)),
+            6 => Some(Some(Piece::King)),
+            _ => None,
+        }?;
+        Some(Self {
+            source,
+            dest,
+            promotion,
+        })
     }
 }
 
@@ -378,6 +434,12 @@ impl fmt::Display for ChessMove {
             None => write!(f, "{}{}", self.source, self.dest),
             Some(x) => write!(f, "{}{}{}", self.source, self.dest, x),
         }
+    }
+}
+
+impl PartialOrd for ChessMove {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(Ord::cmp(self, other))
     }
 }
 
@@ -411,20 +473,20 @@ impl Ord for ChessMove {
 /// assert_eq!(ChessMove::from_str("e7e8q").expect("Valid Move"), mv);
 /// ```
 impl FromStr for ChessMove {
-    type Err = Error;
+    type Err = InvalidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let source = Square::from_str(s.get(0..2).ok_or(Error::InvalidUciMove)?)?;
-        let dest = Square::from_str(s.get(2..4).ok_or(Error::InvalidUciMove)?)?;
+        let source = Square::from_str(s.get(0..2).ok_or(InvalidError::UciMove)?)?;
+        let dest = Square::from_str(s.get(2..4).ok_or(InvalidError::UciMove)?)?;
 
         let mut promo = None;
         if s.len() == 5 {
-            promo = Some(match s.chars().last().ok_or(Error::InvalidUciMove)? {
+            promo = Some(match s.chars().last().ok_or(InvalidError::UciMove)? {
                 'q' => Piece::Queen,
                 'r' => Piece::Rook,
                 'n' => Piece::Knight,
                 'b' => Piece::Bishop,
-                _ => return Err(Error::InvalidUciMove),
+                _ => return Err(InvalidError::UciMove),
             });
         }
 
@@ -439,4 +501,21 @@ fn test_basic_moves() {
         ChessMove::from_san(&board, "e4").expect("e4 is valid in the initial position"),
         ChessMove::new(Square::E2, Square::E4, None)
     );
+}
+
+#[test]
+fn encoding_decoding() {
+    for source in ALL_SQUARES {
+        for dest in ALL_SQUARES {
+            for promotion in ALL_PIECES.iter().copied().map(Some).chain([None]) {
+                let mov = ChessMove::new(source, dest, promotion);
+                let encoded = mov.encode();
+                let decoded = ChessMove::decode(encoded);
+                assert!(decoded.is_some(), "Decoding didn't succeed");
+                if let Some(dec) = decoded {
+                    assert_eq!(mov, dec, "Successfully decoded");
+                }
+            }
+        }
+    }
 }

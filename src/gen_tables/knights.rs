@@ -28,10 +28,11 @@ pub fn gen_knight_moves() {
 }
 
 // Write the KNIGHT_MOVES array to the specified file.
+#[allow(clippy::needless_range_loop)]
 pub fn write_knight_moves(f: &mut File) {
-    write!(f, "const KNIGHT_MOVES: [BitBoard; 64] = [\n").unwrap();
+    writeln!(f, "const KNIGHT_MOVES: [BitBoard; 64] = [").unwrap();
     for i in 0..64 {
-        unsafe { write!(f, "    BitBoard({}),\n", KNIGHT_MOVES[i].0).unwrap() };
+        unsafe { writeln!(f, "    BitBoard({}),", KNIGHT_MOVES[i].0).unwrap() };
     }
-    write!(f, "];\n").unwrap();
+    writeln!(f, "];").unwrap();
 }
