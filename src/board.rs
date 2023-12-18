@@ -31,6 +31,7 @@ pub struct Board {
     pinned: BitBoard,
     checkers: BitBoard,
     hash: u64,
+    pawn_hash: u64,
     en_passant: Option<Square>,
 }
 
@@ -70,6 +71,7 @@ impl Board {
             pinned: EMPTY,
             checkers: EMPTY,
             hash: 0,
+            pawn_hash: 0,
             en_passant: None,
         }
     }
@@ -707,8 +709,19 @@ impl Board {
     ///
     /// Currently not implemented...
     #[inline]
-    pub fn get_pawn_hash(&self) -> u64 {
-        0
+    pub fn get_pawn_hash(&mut self) -> u64 {
+        let pawns = self.pieces(Piece::Pawn);
+
+        for pawn_square in pawns.into_iter() {
+            self.pawn_hash ^= Zobrist::piece(Piece::Pawn, pawn_square, self.color_on(pawn_square).unwrap());
+        }
+
+        self.pawn_hash
+            ^ if self.side_to_move == Color::Black {
+                Zobrist::color()
+            } else {
+                0
+            }
     }
 
     /// What piece is on a particular `Square`?  Is there even one?
