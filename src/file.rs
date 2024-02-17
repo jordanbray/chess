@@ -1,5 +1,6 @@
 use crate::error::Error;
 use std::str::FromStr;
+use std::fmt;
 
 /// Describe a file (column) on a chess board
 #[repr(u8)]
@@ -87,3 +88,15 @@ impl FromStr for File {
         }
     }
 }
+
+impl fmt::Display for File {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let uppercase_file = format!("{:?}", self);
+        write!(
+            f,
+            "{}",
+            uppercase_file.to_lowercase()
+        )
+    }
+}
+
