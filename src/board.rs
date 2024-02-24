@@ -21,6 +21,7 @@ use std::mem;
 use std::str::FromStr;
 
 /// A representation of a chess board.  That's why you're here, right?
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Board {
     pieces: [BitBoard; NUM_PIECES],
@@ -35,6 +36,7 @@ pub struct Board {
 }
 
 /// What is the status of this game?
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
 pub enum BoardStatus {
     Ongoing,

@@ -2,6 +2,7 @@ use crate::rank::Rank;
 use std::ops::Not;
 
 /// Represent a color.
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 #[derive(PartialOrd, PartialEq, Eq, Copy, Clone, Debug, Hash)]
 pub enum Color {
     White,

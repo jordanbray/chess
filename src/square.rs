@@ -6,6 +6,7 @@ use std::fmt;
 use std::str::FromStr;
 
 /// Represent a square on the chess board
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 #[derive(PartialEq, Ord, Eq, PartialOrd, Copy, Clone, Debug, Hash)]
 pub struct Square(u8);
 
