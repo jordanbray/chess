@@ -11,6 +11,7 @@ use std::fmt;
 use std::str::FromStr;
 
 /// Represent a ChessMove in memory
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug, Hash)]
 pub struct ChessMove {
     source: Square,

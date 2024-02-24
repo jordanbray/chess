@@ -7,6 +7,7 @@ use crate::piece::Piece;
 use std::str::FromStr;
 
 /// Contains all actions supported within the game
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Eq)]
 pub enum Action {
     MakeMove(ChessMove),
@@ -33,6 +34,7 @@ pub enum GameResult {
 ///
 /// This structure is slow compared to using `Board` directly, so it is
 /// not recommended for engines.
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
 pub struct Game {
     start_pos: Board,

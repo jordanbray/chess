@@ -2,6 +2,7 @@ use crate::color::Color;
 use std::fmt;
 
 /// Represent a chess piece as a very simple enum
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
 pub enum Piece {
     Pawn,

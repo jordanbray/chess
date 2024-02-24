@@ -18,6 +18,9 @@
 //! ```
 //!
 
+#[cfg(feature = "serialize")]
+extern crate serde; 
+
 mod board;
 pub use crate::board::*;
 
