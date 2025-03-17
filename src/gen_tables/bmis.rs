@@ -45,9 +45,9 @@ fn generate_bmis(sq: Square, piece: Piece, cur_offset: usize) -> usize {
 
     unsafe {
         if piece == Piece::Rook {
-            ROOK_BMI_MASK[sq.to_index()] = bmi;
+            ROOK_BMI_MASK[sq.into_index()] = bmi;
         } else {
-            BISHOP_BMI_MASK[sq.to_index()] = bmi;
+            BISHOP_BMI_MASK[sq.into_index()] = bmi;
         }
     }
 

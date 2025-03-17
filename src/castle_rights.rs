@@ -10,7 +10,7 @@ use crate::magic::{KINGSIDE_CASTLE_SQUARES, QUEENSIDE_CASTLE_SQUARES};
 
 /// What castle rights does a particular player have?
 #[repr(u8)]
-#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 pub enum CastleRights {
     NoRights = 0b00,
@@ -71,13 +71,13 @@ const CASTLES_PER_SQUARE: [[u8; 64]; 2] = [
 
 impl CastleRights {
     /// Can I castle kingside?
-    pub fn has_kingside(&self) -> bool {
+    pub const fn has_kingside(&self) -> bool {
         // Self::Both == 3 -> 0b11 & 0b01 == 0b01 👍
         self.into_index() & 1 == 1
     }
 
     /// Can I castle queenside?
-    pub fn has_queenside(&self) -> bool {
+    pub const fn has_queenside(&self) -> bool {
         // Self::Both == 3 -> 0b11 & 0b10 == 0b10 👍
         self.into_index() & 2 == 2
     }
@@ -112,12 +112,12 @@ impl CastleRights {
     }
 
     /// Convert `CastleRights` to `usize` for table lookups
-    pub fn into_index(&self) -> usize {
+    pub const fn into_index(&self) -> usize {
         *self as usize
     }
 
     /// Convert this into a `&'static str` (for displaying)
-    fn to_str(&self) -> &'static str {
+    const fn to_str(&self) -> &'static str {
         match *self {
             CastleRights::NoRights => "",
             CastleRights::KingSide => "k",
@@ -127,7 +127,7 @@ impl CastleRights {
     }
 
     /// Convert `usize` to `CastleRights`.
-    pub fn from_index(i: usize) -> CastleRights {
+    pub const fn from_index(i: usize) -> CastleRights {
         match i & 3 {
             0 => CastleRights::NoRights,
             1 => CastleRights::KingSide,
@@ -162,7 +162,7 @@ impl CastleRights {
     /// assert_eq!(CastleRights::KingSide.to_string(Color::White), "K");
     /// assert_eq!(CastleRights::QueenSide.to_string(Color::Black), "q");
     /// ```
-    #[cfg(feature="std")]
+    #[cfg(feature = "std")]
     pub fn to_string(&self, color: Color) -> String {
         let result = match *self {
             CastleRights::NoRights => "",
@@ -179,7 +179,7 @@ impl CastleRights {
     }
 
     /// Given a square of a rook, which side is it on?
-    pub fn rook_square_to_castle_rights(square: Square) -> CastleRights {
+    pub const fn rook_square_to_castle_rights(square: Square) -> CastleRights {
         match square.get_file() {
             File::A => CastleRights::QueenSide,
             File::H => CastleRights::KingSide,
@@ -188,8 +188,11 @@ impl CastleRights {
     }
 
     /// Combine this `CastleRights` with a `Color` (to display)
-    pub fn with_color(&self, color: Color) -> CastleRightsWithColor {
-        CastleRightsWithColor { castle_rights: *self, color }
+    pub const fn with_color(&self, color: Color) -> CastleRightsWithColor {
+        CastleRightsWithColor {
+            castle_rights: *self,
+            color,
+        }
     }
 }
 

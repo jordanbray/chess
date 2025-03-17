@@ -1,9 +1,10 @@
 use crate::error::InvalidError;
+use std::hint::unreachable_unchecked;
 use std::str::FromStr;
 
 /// Describe a rank (row) on a chess board
 #[repr(u8)]
-#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 pub enum Rank {
     First = 0,
@@ -46,7 +47,7 @@ impl Rank {
             5 => Rank::Sixth,
             6 => Rank::Seventh,
             7 => Rank::Eighth,
-            _ => unreachable!(),
+            _ => unsafe { unreachable_unchecked() },
         }
     }
 

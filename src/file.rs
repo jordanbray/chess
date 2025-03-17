@@ -1,9 +1,10 @@
 use crate::error::InvalidError;
+use std::hint::unreachable_unchecked;
 use std::str::FromStr;
 
 /// Describe a file (column) on a chess board
 #[repr(u8)]
-#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug, Hash)]
 pub enum File {
     A = 0,
@@ -45,7 +46,7 @@ impl File {
             5 => File::F,
             6 => File::G,
             7 => File::H,
-            _ => unreachable!(),
+            _ => unsafe { unreachable_unchecked() },
         }
     }
 
@@ -75,7 +76,7 @@ impl FromStr for File {
         if s.is_empty() {
             return Err(InvalidError::File);
         }
-        
+
         match s.chars().next().unwrap() {
             'a' => Ok(File::A),
             'b' => Ok(File::B),
