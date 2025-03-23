@@ -13,15 +13,15 @@ pub fn gen_lines() {
     for src in ALL_SQUARES.iter() {
         for dest in ALL_SQUARES.iter() {
             unsafe {
-                LINE[src.to_index()][dest.to_index()] = ALL_SQUARES
+                LINE[src.into_index()][dest.into_index()] = ALL_SQUARES
                     .iter()
                     .filter(|test| {
-                        let src_rank = src.get_rank().to_index() as i8;
-                        let src_file = src.get_file().to_index() as i8;
-                        let dest_rank = dest.get_rank().to_index() as i8;
-                        let dest_file = dest.get_file().to_index() as i8;
-                        let test_rank = test.get_rank().to_index() as i8;
-                        let test_file = test.get_file().to_index() as i8;
+                        let src_rank = src.get_rank() as i8;
+                        let src_file = src.get_file() as i8;
+                        let dest_rank = dest.get_rank() as i8;
+                        let dest_file = dest.get_file() as i8;
+                        let test_rank = test.get_rank() as i8;
+                        let test_file = test.get_file() as i8;
 
                         // test diagonals first
                         if (src_rank - dest_rank).abs() == (src_file - dest_file).abs()
@@ -48,14 +48,14 @@ pub fn gen_lines() {
 
 // Write the LINE array to the specified file.
 pub fn write_lines(f: &mut File) {
-    write!(f, "const LINE: [[BitBoard; 64]; 64] = [[\n").unwrap();
+    writeln!(f, "const LINE: [[BitBoard; 64]; 64] = [[").unwrap();
     for i in 0..64 {
         for j in 0..64 {
-            unsafe { write!(f, "    BitBoard({}),\n", LINE[i][j].0).unwrap() };
+            unsafe { writeln!(f, "    BitBoard({}),", LINE[i][j].0).unwrap() };
         }
         if i != 63 {
-            write!(f, "  ], [\n").unwrap();
+            writeln!(f, "  ], [").unwrap();
         }
     }
-    write!(f, "]];\n").unwrap();
+    writeln!(f, "]];").unwrap();
 }

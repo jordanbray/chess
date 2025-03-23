@@ -15,13 +15,13 @@ static mut QUEENSIDE_CASTLE_SQUARES: [BitBoard; 2] = [EMPTY; 2];
 pub fn gen_king_moves() {
     for src in ALL_SQUARES.iter() {
         unsafe {
-            KING_MOVES[src.to_index()] = ALL_SQUARES
+            KING_MOVES[src.into_index()] = ALL_SQUARES
                 .iter()
                 .filter(|dest| {
-                    let src_rank = src.get_rank().to_index() as i8;
-                    let src_file = src.get_file().to_index() as i8;
-                    let dest_rank = dest.get_rank().to_index() as i8;
-                    let dest_file = dest.get_file().to_index() as i8;
+                    let src_rank = src.get_rank() as i8;
+                    let src_file = src.get_file() as i8;
+                    let dest_rank = dest.get_rank() as i8;
+                    let dest_file = dest.get_file() as i8;
 
                     ((src_rank - dest_rank).abs() == 1 || (src_rank - dest_rank).abs() == 0)
                         && ((src_file - dest_file).abs() == 1 || (src_file - dest_file).abs() == 0)
@@ -38,7 +38,7 @@ pub fn gen_king_moves() {
 fn gen_kingside_castle_squares() {
     for color in ALL_COLORS.iter() {
         unsafe {
-            KINGSIDE_CASTLE_SQUARES[color.to_index()] =
+            KINGSIDE_CASTLE_SQUARES[color.into_index()] =
                 BitBoard::set(color.to_my_backrank(), ChessFile::F)
                     ^ BitBoard::set(color.to_my_backrank(), ChessFile::G);
         }
@@ -48,7 +48,7 @@ fn gen_kingside_castle_squares() {
 fn gen_queenside_castle_squares() {
     for color in ALL_COLORS.iter() {
         unsafe {
-            QUEENSIDE_CASTLE_SQUARES[color.to_index()] =
+            QUEENSIDE_CASTLE_SQUARES[color.into_index()] =
                 BitBoard::set(color.to_my_backrank(), ChessFile::B)
                     ^ BitBoard::set(color.to_my_backrank(), ChessFile::C)
                     ^ BitBoard::set(color.to_my_backrank(), ChessFile::D);
@@ -67,37 +67,37 @@ fn gen_castle_moves() -> BitBoard {
 
 // Write the KING_MOVES array to the specified file.
 pub fn write_king_moves(f: &mut File) {
-    write!(f, "const KING_MOVES: [BitBoard; 64] = [\n").unwrap();
+    writeln!(f, "const KING_MOVES: [BitBoard; 64] = [").unwrap();
     for i in 0..64 {
-        unsafe { write!(f, "    BitBoard({}),\n", KING_MOVES[i].0).unwrap() };
+        unsafe { writeln!(f, "    BitBoard({}),", KING_MOVES[i].0).unwrap() };
     }
-    write!(f, "];\n").unwrap();
+    writeln!(f, "];").unwrap();
 
-    write!(f, "pub const KINGSIDE_CASTLE_SQUARES: [BitBoard; 2] = [\n").unwrap();
+    writeln!(f, "pub const KINGSIDE_CASTLE_SQUARES: [BitBoard; 2] = [").unwrap();
     unsafe {
-        write!(
+        writeln!(
             f,
-            " BitBoard({}), BitBoard({})];\n",
+            " BitBoard({}), BitBoard({})];",
             KINGSIDE_CASTLE_SQUARES[0].0,
             KINGSIDE_CASTLE_SQUARES[1].0
         )
         .unwrap()
     };
 
-    write!(f, "pub const QUEENSIDE_CASTLE_SQUARES: [BitBoard; 2] = [\n").unwrap();
+    writeln!(f, "pub const QUEENSIDE_CASTLE_SQUARES: [BitBoard; 2] = [").unwrap();
     unsafe {
-        write!(
+        writeln!(
             f,
-            " BitBoard({}), BitBoard({})];\n",
+            " BitBoard({}), BitBoard({})];",
             QUEENSIDE_CASTLE_SQUARES[0].0,
             QUEENSIDE_CASTLE_SQUARES[1].0
         )
         .unwrap()
     };
 
-    write!(
+    writeln!(
         f,
-        "const CASTLE_MOVES: BitBoard = BitBoard({});\n",
+        "const CASTLE_MOVES: BitBoard = BitBoard({});",
         gen_castle_moves().0
     )
     .unwrap();

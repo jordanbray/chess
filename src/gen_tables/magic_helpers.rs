@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use crate::bitboard::{BitBoard, EMPTY};
 use crate::file::File;
 use crate::gen_tables::rays::get_rays;
@@ -32,23 +34,27 @@ fn rook_directions() -> Vec<fn(Square) -> Option<Square>> {
     vec![left, right, up, down]
 }
 
+static ROOK_DIRECTIONS: LazyLock<Vec<fn(Square) -> Option<Square>>> = LazyLock::new(|| rook_directions());
+
 // Return a list of directions for the bishop.
 fn bishop_directions() -> Vec<fn(Square) -> Option<Square>> {
     fn nw(sq: Square) -> Option<Square> {
-        sq.left().map_or(None, |s| s.up())
+        sq.left().and_then(|s| s.up())
     }
     fn ne(sq: Square) -> Option<Square> {
-        sq.right().map_or(None, |s| s.up())
+        sq.right().and_then(|s| s.up())
     }
     fn sw(sq: Square) -> Option<Square> {
-        sq.left().map_or(None, |s| s.down())
+        sq.left().and_then(|s| s.down())
     }
     fn se(sq: Square) -> Option<Square> {
-        sq.right().map_or(None, |s| s.down())
+        sq.right().and_then(|s| s.down())
     }
 
     vec![nw, ne, sw, se]
 }
+
+static BISHOP_DIRECTIONS: LazyLock<Vec<fn(Square) -> Option<Square>>> = LazyLock::new(|| bishop_directions());
 
 // Generate a random bitboard with a small number of bits.
 pub fn random_bitboard<R: Rng>(rng: &mut R) -> BitBoard {
@@ -59,7 +65,7 @@ pub fn random_bitboard<R: Rng>(rng: &mut R) -> BitBoard {
 pub fn magic_mask(sq: Square, piece: Piece) -> BitBoard {
     get_rays(sq, piece)
         & if piece == Piece::Bishop {
-            !gen_edges()
+            !*EDGES
         } else {
             !ALL_SQUARES
                 .iter()
@@ -101,16 +107,16 @@ pub fn questions_and_answers(sq: Square, piece: Piece) -> (Vec<BitBoard>, Vec<Bi
     let mut answers = vec![];
 
     let movement = if piece == Piece::Bishop {
-        bishop_directions()
+        &BISHOP_DIRECTIONS
     } else {
-        rook_directions()
+        &ROOK_DIRECTIONS
     };
 
     for question in questions.iter() {
         let mut answer = EMPTY;
         for m in movement.iter() {
             let mut next = m(sq);
-            while next != None {
+            while next.is_some() {
                 answer ^= BitBoard::from_square(next.unwrap());
                 if (BitBoard::from_square(next.unwrap()) & *question) != EMPTY {
                     break;
@@ -136,3 +142,5 @@ fn gen_edges() -> BitBoard {
         })
         .fold(EMPTY, |b, s| b | BitBoard::from_square(*s))
 }
+
+static EDGES: LazyLock<BitBoard> = LazyLock::new(|| gen_edges());

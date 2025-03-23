@@ -48,10 +48,7 @@ impl<T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
     #[inline]
     pub fn add(&mut self, hash: u64, entry: T) {
         let e = unsafe { self.table.get_unchecked_mut((hash as usize) & self.mask) };
-        *e = CacheTableEntry {
-            hash: hash,
-            entry: entry,
-        };
+        *e = CacheTableEntry { hash, entry };
     }
 
     /// Replace an entry in the hash table with a user-specified replacement policy specified by
@@ -82,10 +79,7 @@ impl<T: Copy + Clone + PartialEq + PartialOrd> CacheTable<T> {
     pub fn replace_if<F: Fn(T) -> bool>(&mut self, hash: u64, entry: T, replace: F) {
         let e = unsafe { self.table.get_unchecked_mut((hash as usize) & self.mask) };
         if replace(e.entry) {
-            *e = CacheTableEntry {
-                hash: hash,
-                entry: entry,
-            };
+            *e = CacheTableEntry { hash, entry };
         }
     }
 }

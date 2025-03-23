@@ -37,17 +37,17 @@ pub fn gen_bitboard_data() {
         for i in 0..8 {
             RANKS[i] = ALL_SQUARES
                 .iter()
-                .filter(|x| x.get_rank().to_index() == i)
+                .filter(|x| x.get_rank().into_index() == i)
                 .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
             FILES[i] = ALL_SQUARES
                 .iter()
-                .filter(|x| x.get_file().to_index() == i)
+                .filter(|x| x.get_file().into_index() == i)
                 .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
             ADJACENT_FILES[i] = ALL_SQUARES
                 .iter()
                 .filter(|y| {
-                    ((y.get_file().to_index() as i8) == (i as i8) - 1)
-                        || ((y.get_file().to_index() as i8) == (i as i8) + 1)
+                    ((y.get_file().into_index() as i8) == (i as i8) - 1)
+                        || ((y.get_file().into_index() as i8) == (i as i8) + 1)
                 })
                 .fold(EMPTY, |v, s| v | BitBoard::from_square(*s));
         }
@@ -57,27 +57,23 @@ pub fn gen_bitboard_data() {
 // Write the FILES array to the specified file.
 pub fn write_bitboard_data(f: &mut File) {
     unsafe {
-        write!(f, "const FILES: [BitBoard; 8] = [\n").unwrap();
+        writeln!(f, "const FILES: [BitBoard; 8] = [").unwrap();
         for i in 0..8 {
-            write!(f, "    BitBoard({}),\n", FILES[i].0).unwrap();
+            writeln!(f, "    BitBoard({}),", FILES[i].0).unwrap();
         }
-        write!(f, "];\n").unwrap();
-        write!(f, "const ADJACENT_FILES: [BitBoard; 8] = [\n").unwrap();
+        writeln!(f, "];").unwrap();
+        writeln!(f, "const ADJACENT_FILES: [BitBoard; 8] = [").unwrap();
         for i in 0..8 {
-            write!(f, "    BitBoard({}),\n", ADJACENT_FILES[i].0).unwrap();
+            writeln!(f, "    BitBoard({}),", ADJACENT_FILES[i].0).unwrap();
         }
-        write!(f, "];\n").unwrap();
-        write!(f, "const RANKS: [BitBoard; 8] = [\n").unwrap();
+        writeln!(f, "];").unwrap();
+        writeln!(f, "const RANKS: [BitBoard; 8] = [").unwrap();
         for i in 0..8 {
-            write!(f, "    BitBoard({}),\n", RANKS[i].0).unwrap();
+            writeln!(f, "    BitBoard({}),", RANKS[i].0).unwrap();
         }
-        write!(f, "];\n").unwrap();
-        write!(f, "/// What are all the edge squares on the `BitBoard`?\n").unwrap();
-        write!(
-            f,
-            "pub const EDGES: BitBoard = BitBoard({});\n",
-            EDGES.0
-        )
-        .unwrap();
+        writeln!(f, "];").unwrap();
+        writeln!(f, "/// What are all the edge squares on the `BitBoard`?").unwrap();
+        #[allow(static_mut_refs)]
+        writeln!(f, "pub const EDGES: BitBoard = BitBoard({});", EDGES.0).unwrap();
     }
 }

@@ -74,43 +74,43 @@ pub fn gen_all_bmis() {
 }
 
 pub fn write_bmis(f: &mut File) {
-    write!(f, "#[derive(Copy, Clone)]\n").unwrap();
-    write!(f, "struct BmiMagic {{\n").unwrap();
-    write!(f, "    blockers_mask: BitBoard,\n").unwrap();
-    write!(f, "    offset: u32,\n").unwrap();
-    write!(f, "}}\n\n").unwrap();
+    writeln!(f, "#[derive(Copy, Clone)]").unwrap();
+    writeln!(f, "struct BmiMagic {{").unwrap();
+    writeln!(f, "    blockers_mask: BitBoard,").unwrap();
+    writeln!(f, "    offset: u32,").unwrap();
+    writeln!(f, "}}\n").unwrap();
 
-    write!(f, "const ROOK_BMI_MASK: [BmiMagic; 64] = [\n").unwrap();
+    writeln!(f, "const ROOK_BMI_MASK: [BmiMagic; 64] = [").unwrap();
     for i in 0..NUM_SQUARES {
         let bmi = unsafe { ROOK_BMI_MASK[i] };
-        write!(
+        writeln!(
             f,
-            "    BmiMagic {{ blockers_mask: BitBoard({}),\n",
+            "    BmiMagic {{ blockers_mask: BitBoard({}),",
             bmi.blockers_mask.0
         )
         .unwrap();
-        write!(f, "                offset: {} }},\n", bmi.offset).unwrap();
+        writeln!(f, "                offset: {} }},", bmi.offset).unwrap();
     }
-    write!(f, "];\n").unwrap();
+    writeln!(f, "];").unwrap();
 
-    write!(f, "const BISHOP_BMI_MASK: [BmiMagic; 64] = [\n").unwrap();
+    writeln!(f, "const BISHOP_BMI_MASK: [BmiMagic; 64] = [").unwrap();
     for i in 0..NUM_SQUARES {
         let bmi = unsafe { BISHOP_BMI_MASK[i] };
-        write!(
+        writeln!(
             f,
-            "    BmiMagic {{ blockers_mask: BitBoard({}),\n",
+            "    BmiMagic {{ blockers_mask: BitBoard({}),",
             bmi.blockers_mask.0
         )
         .unwrap();
-        write!(f, "                offset: {} }},\n", bmi.offset).unwrap();
+        writeln!(f, "                offset: {} }},", bmi.offset).unwrap();
     }
-    write!(f, "];\n").unwrap();
+    writeln!(f, "];").unwrap();
 
     let moves = unsafe { GENERATED_BMI_MOVES };
-    write!(f, "const BMI_MOVES: [u16; {}] = [\n", moves).unwrap();
+    writeln!(f, "const BMI_MOVES: [u16; {}] = [", moves).unwrap();
 
     for i in 0..moves {
-        write!(f, "    {},\n", unsafe { BMI_MOVES[i] }).unwrap();
+        writeln!(f, "    {},", unsafe { BMI_MOVES[i] }).unwrap();
     }
-    write!(f, "];\n\n").unwrap();
+    writeln!(f, "];\n").unwrap();
 }

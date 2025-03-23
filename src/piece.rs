@@ -2,6 +2,8 @@ use crate::color::Color;
 use std::fmt;
 
 /// Represent a chess piece as a very simple enum
+#[repr(u8)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
 pub enum Piece {
     Pawn,
@@ -33,9 +35,30 @@ pub const PROMOTION_PIECES: [Piece; 4] = [Piece::Queen, Piece::Knight, Piece::Ro
 
 impl Piece {
     /// Convert the `Piece` to a `usize` for table lookups.
-    #[inline]
-    pub fn to_index(&self) -> usize {
-        *self as usize
+    #[inline(always)]
+    pub const fn into_index(self) -> usize {
+        self as usize
+    }
+
+    /// Convert the `Piece` to its FEN `char`
+    #[inline(always)]
+    pub fn to_char(&self) -> char {
+        match *self {
+            Piece::Pawn => 'p',
+            Piece::Knight => 'n',
+            Piece::Bishop => 'b',
+            Piece::Rook => 'r',
+            Piece::Queen => 'q',
+            Piece::King => 'k',
+        }
+    }
+
+    #[inline(always)]
+    pub fn with_color(&self, color: Color) -> PieceWithColor {
+        PieceWithColor {
+            piece: *self,
+            color,
+        }
     }
 
     /// Convert a piece with a color to a string.  White pieces are uppercase, black pieces are
@@ -48,7 +71,8 @@ impl Piece {
     /// assert_eq!(Piece::Knight.to_string(Color::Black), "n");
     /// ```
     #[inline]
-    pub fn to_string(&self, color: Color) -> String {
+    #[cfg(feature = "std")]
+    pub fn to_string(self, color: Color) -> String {
         let piece = format!("{}", self);
         if color == Color::White {
             piece.to_uppercase()
@@ -59,17 +83,26 @@ impl Piece {
 }
 
 impl fmt::Display for Piece {
+    #[inline(always)]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_char())
+    }
+}
+
+pub struct PieceWithColor {
+    piece: Piece,
+    color: Color,
+}
+
+impl fmt::Display for PieceWithColor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}",
-            match *self {
-                Piece::Pawn => "p",
-                Piece::Knight => "n",
-                Piece::Bishop => "b",
-                Piece::Rook => "r",
-                Piece::Queen => "q",
-                Piece::King => "k",
+            if self.color.into() {
+                self.piece.to_char().to_ascii_uppercase()
+            } else {
+                self.piece.to_char()
             }
         )
     }
