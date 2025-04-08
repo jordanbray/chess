@@ -24,30 +24,22 @@ impl Default for Square {
     /// assert_eq!(explicit_sq, implicit_sq);
     /// ```
     fn default() -> Square {
-        unsafe { Square::new(0) }
+        Square::new(0)
     }
 }
 
 impl Square {
     /// Create a new square, given an index.
-    /// Note: It is invalid, but allowed, to pass in a number >= 64.  Doing so will crash stuff.
     ///
     /// ```
     ///
     /// use chess::{Square, Rank, File, EMPTY};
     ///
-    /// assert_eq!(unsafe { Square::new(0) }, Square::default());
-    ///
-    /// let bad_sq = unsafe { Square::new(64) };
-    ///
-    /// // Iterate over all possible squares and ensure that *none* of them are equal to `bad_sq`.
-    /// for sq in !EMPTY {
-    ///     assert_ne!(bad_sq, sq);
-    /// }
+    /// assert_eq!(Square::new(0), Square::default());
     /// ```
     #[inline]
-    pub unsafe fn new(sq: u8) -> Square {
-        Square(sq)
+    pub fn new(sq: u8) -> Square {
+        Square(sq & 63)
     }
 
     /// Make a square given a rank and a file
