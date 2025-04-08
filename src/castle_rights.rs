@@ -62,11 +62,13 @@ impl CastleRights {
     }
 
     pub fn square_to_castle_rights(color: Color, sq: Square) -> CastleRights {
-        CastleRights::from_index(unsafe {
-            *CASTLES_PER_SQUARE
-                .get_unchecked(color.to_index())
-                .get_unchecked(sq.to_index())
-        } as usize)
+        unsafe {
+            CastleRights::from_index(
+                *CASTLES_PER_SQUARE
+                    .get_unchecked(color.to_index())
+                    .get_unchecked(sq.to_index()) as usize,
+            )
+        }
     }
 
     /// What squares need to be empty to castle kingside?
@@ -81,12 +83,12 @@ impl CastleRights {
 
     /// Remove castle rights, and return a new `CastleRights`.
     pub fn remove(&self, remove: CastleRights) -> CastleRights {
-        CastleRights::from_index(self.to_index() & !remove.to_index())
+        unsafe { CastleRights::from_index(self.to_index() & !remove.to_index()) }
     }
 
     /// Add some castle rights, and return a new `CastleRights`.
     pub fn add(&self, add: CastleRights) -> CastleRights {
-        CastleRights::from_index(self.to_index() | add.to_index())
+        unsafe { CastleRights::from_index(self.to_index() | add.to_index()) }
     }
 
     /// Convert `CastleRights` to `usize` for table lookups
@@ -94,8 +96,11 @@ impl CastleRights {
         *self as usize
     }
 
-    /// Convert `usize` to `CastleRights`.  Panic if invalid number.
-    pub fn from_index(i: usize) -> CastleRights {
+    /// Convert `usize` to `CastleRights`.
+    ///
+    /// SAFETY: If i is not 0, 1, 2, or 3, this invokes
+    /// undefined behavior.
+    unsafe fn from_index(i: usize) -> CastleRights {
         match i {
             0 => CastleRights::NoRights,
             1 => CastleRights::KingSide,
@@ -140,16 +145,6 @@ impl CastleRights {
             result.to_uppercase()
         } else {
             result.to_string()
-        }
-    }
-
-    /// Given a square of a rook, which side is it on?
-    /// Note: It is invalid to pass in a non-rook square.  The code may panic.
-    pub fn rook_square_to_castle_rights(square: Square) -> CastleRights {
-        match square.get_file() {
-            File::A => CastleRights::QueenSide,
-            File::H => CastleRights::KingSide,
-            _ => unsafe { unreachable_unchecked() },
         }
     }
 }
