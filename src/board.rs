@@ -1080,7 +1080,7 @@ impl TryFrom<&BoardBuilder> for Board {
         if board.is_sane() {
             Ok(board)
         } else {
-            Err(Error::InvalidBoard)
+            Err(Error::Board)
         }
     }
 }

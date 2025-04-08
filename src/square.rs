@@ -982,19 +982,19 @@ impl FromStr for Square {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() < 2 {
-            return Err(Error::InvalidSquare);
+            return Err(Error::Square);
         }
         let ch: Vec<char> = s.chars().collect();
         match ch[0] {
             'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' => {}
             _ => {
-                return Err(Error::InvalidSquare);
+                return Err(Error::Square);
             }
         }
         match ch[1] {
             '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {}
             _ => {
-                return Err(Error::InvalidSquare);
+                return Err(Error::Square);
             }
         }
         Ok(Square::make_square(

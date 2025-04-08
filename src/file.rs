@@ -61,7 +61,7 @@ impl FromStr for File {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() < 1 {
-            return Err(Error::InvalidFile);
+            return Err(Error::File);
         }
         match s.chars().next().unwrap() {
             'a' => Ok(File::A),
@@ -72,7 +72,7 @@ impl FromStr for File {
             'f' => Ok(File::F),
             'g' => Ok(File::G),
             'h' => Ok(File::H),
-            _ => Err(Error::InvalidFile),
+            _ => Err(Error::File),
         }
     }
 }

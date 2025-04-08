@@ -6,7 +6,6 @@ use crate::movegen::piece_type::*;
 use crate::piece::{Piece, NUM_PROMOTION_PIECES, PROMOTION_PIECES};
 use crate::square::Square;
 use arrayvec::ArrayVec;
-use nodrop::NoDrop;
 use std::iter::ExactSizeIterator;
 use std::mem;
 
@@ -22,12 +21,12 @@ impl SquareAndBitBoard {
         SquareAndBitBoard {
             square: sq,
             bitboard: bb,
-            promotion: promotion,
+            promotion,
         }
     }
 }
 
-pub type MoveList = NoDrop<ArrayVec<[SquareAndBitBoard; 18]>>;
+pub type MoveList = ArrayVec<SquareAndBitBoard, 18>;
 
 /// An incremental move generator
 ///
@@ -95,7 +94,7 @@ impl MoveGen {
     fn enumerate_moves(board: &Board) -> MoveList {
         let checkers = *board.checkers();
         let mask = !board.color_combined(board.side_to_move());
-        let mut movelist = NoDrop::new(ArrayVec::<[SquareAndBitBoard; 18]>::new());
+        let mut movelist = ArrayVec::<SquareAndBitBoard, 18>::new();
 
         if checkers == EMPTY {
             PawnType::legals::<NotInCheckType>(&mut movelist, &board, mask);

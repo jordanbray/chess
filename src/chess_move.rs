@@ -73,7 +73,7 @@ impl ChessMove {
             if MoveGen::new_legal(&board).any(|l| l == m) {
                 return Ok(m);
             } else {
-                return Err(Error::InvalidSanMove);
+                return Err(Error::SanMove);
             }
         }
 
@@ -127,7 +127,7 @@ impl ChessMove {
         // [Optional Check(mate) Specifier] ("" | "+" | "#")
         // [Optional En Passant Specifier] ("" | " e.p.")
 
-        let error = Error::InvalidSanMove;
+        let error = Error::SanMove;
         let mut cur_index: usize = 0;
         let moving_piece = match move_text
             .get(cur_index..(cur_index + 1))
@@ -414,17 +414,17 @@ impl FromStr for ChessMove {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let source = Square::from_str(s.get(0..2).ok_or(Error::InvalidUciMove)?)?;
-        let dest = Square::from_str(s.get(2..4).ok_or(Error::InvalidUciMove)?)?;
+        let source = Square::from_str(s.get(0..2).ok_or(Error::UciMove)?)?;
+        let dest = Square::from_str(s.get(2..4).ok_or(Error::UciMove)?)?;
 
         let mut promo = None;
         if s.len() == 5 {
-            promo = Some(match s.chars().last().ok_or(Error::InvalidUciMove)? {
+            promo = Some(match s.chars().last().ok_or(Error::UciMove)? {
                 'q' => Piece::Queen,
                 'r' => Piece::Rook,
                 'n' => Piece::Knight,
                 'b' => Piece::Bishop,
-                _ => return Err(Error::InvalidUciMove),
+                _ => return Err(Error::UciMove),
             });
         }
 

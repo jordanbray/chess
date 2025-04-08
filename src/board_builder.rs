@@ -355,7 +355,7 @@ impl FromStr for BoardBuilder {
 
         let tokens: Vec<&str> = value.split(' ').collect();
         if tokens.len() < 4 {
-            return Err(Error::InvalidFen {
+            return Err(Error::Fen {
                 fen: value.to_string(),
             });
         }
@@ -436,7 +436,7 @@ impl FromStr for BoardBuilder {
                     cur_file = cur_file.right();
                 }
                 _ => {
-                    return Err(Error::InvalidFen {
+                    return Err(Error::Fen {
                         fen: value.to_string(),
                     });
                 }
@@ -446,7 +446,7 @@ impl FromStr for BoardBuilder {
             "w" | "W" => fen = fen.side_to_move(Color::White),
             "b" | "B" => fen = fen.side_to_move(Color::Black),
             _ => {
-                return Err(Error::InvalidFen {
+                return Err(Error::Fen {
                     fen: value.to_string(),
                 })
             }

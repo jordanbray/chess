@@ -1,35 +1,40 @@
-use failure::Fail;
+use std::fmt;
 
 /// Sometimes, bad stuff happens.
-#[derive(Clone, Debug, Fail)]
+#[derive(Clone, Debug)]
 pub enum Error {
     /// The FEN string is invalid
-    #[fail(display = "Invalid FEN string: {}", fen)]
-    InvalidFen { fen: String },
+    Fen { fen: String },
 
     /// The board created from BoardBuilder was found to be invalid
-    #[fail(
-        display = "The board specified did not pass sanity checks.  Are you sure the kings exist and the side to move cannot capture the opposing king?"
-    )]
-    InvalidBoard,
+    Board,
 
     /// An attempt was made to create a square from an invalid string
-    #[fail(display = "The string specified does not contain a valid algebraic notation square")]
-    InvalidSquare,
+    Square,
 
     /// An attempt was made to create a move from an invalid SAN string
-    #[fail(display = "The string specified does not contain a valid SAN notation move")]
-    InvalidSanMove,
+    SanMove,
 
     /// An atempt was made to create a move from an invalid UCI string
-    #[fail(display = "The string specified does not contain a valid UCI notation move")]
-    InvalidUciMove,
+    UciMove,
 
     /// An attempt was made to convert a string not equal to "1"-"8" to a rank
-    #[fail(display = "The string specified does not contain a valid rank")]
-    InvalidRank,
+    Rank,
 
     /// An attempt was made to convert a string not equal to "a"-"h" to a file
-    #[fail(display = "The string specified does not contain a valid file")]
-    InvalidFile,
+    File,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Fen { fen: s } => write!(f, "Invalid FEN string: {}", s),
+            Self::Board => write!(f, "The board specified did not pass sanity checks.  Are you sure the kings exist and the side to move cannot capture the opposing king?"),
+            Self::Square => write!(f, "The string specified does not contain a valid algebraic notation square."),
+            Self::SanMove => write!(f, "The string specified does not contain a valid SAN notation move"),
+            Self::UciMove => write!(f, "The string specified does not contain a valid UCI notation move"),
+            Self::Rank => write!(f, "The string specified does not contain a valid rank."),
+            Self::File => write!(f, "The string specified does not contain a valid file.")
+        }
+    }
 }

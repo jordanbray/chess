@@ -14,13 +14,13 @@ license = "MIT"
 documentation = "https://jordanbray.github.io/chess/chess/index.html"
 
 [dependencies]
-arrayvec = "0.5.1"
-nodrop = "0.1.14"
-failure = "0.1.6"
+arrayvec = { version = "0.7.2", default-features = false }
+serde = { version = "1", default-features = false, features = ["derive"] }
 
 [profile.release]
 opt-level = 3
 debug = false
+lto = true
 
 [profile.dev]
 opt-level = 3
@@ -29,6 +29,16 @@ debug = true
 [profile.test]
 opt-level = 3
 
+[profile.dev.build-override]
+opt-level = 3
+
+[profile.release.build-override]
+opt-level = 3
+
+[profile.test.build-override]
+opt-level = 3
+
 [build-dependencies]
 rand = { version = "0.7.2", default_features = false, features = ["small_rng"] }
+serde = { version = "1", default-features = false, optional = true, features = ["derive"] }
 failure = "0.1.6"
