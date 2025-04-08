@@ -1,5 +1,4 @@
 use crate::error::Error;
-use std::mem::transmute;
 use std::str::FromStr;
 
 /// Describe a rank (row) on a chess board
@@ -35,7 +34,16 @@ impl Rank {
     /// around.
     #[inline]
     pub fn from_index(i: usize) -> Rank {
-        unsafe { transmute((i as u8) & 7) }
+        match i & 7 {
+            0 => Rank::First,
+            1 => Rank::Second,
+            2 => Rank::Third,
+            3 => Rank::Fourth,
+            4 => Rank::Fifth,
+            5 => Rank::Sixth,
+            6 => Rank::Seventh,
+            _ => Rank::Eighth,
+        }
     }
 
     /// Go one rank down.  If impossible, wrap around.
