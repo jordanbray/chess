@@ -294,10 +294,42 @@ impl BitBoard {
         sq.map(|s| BitBoard::from_square(s))
     }
 
-    /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`
+    /// Convert a `BitBoard` to a `Square`.  This grabs the least-significant `Square`.
+    ///
+    /// The `BitBoard` is assumed to be non-empty.  On an empty `BitBoard` this
+    /// returns [`Square::A1`], which is indistinguishable from a `BitBoard` with
+    /// only A1 set; use [`BitBoard::to_maybe_square`] (or iterate the `BitBoard`)
+    /// when it may be empty.
+    ///
+    /// ```
+    /// use chess::{BitBoard, Square};
+    ///
+    /// assert_eq!(BitBoard::from_square(Square::H8).to_square(), Square::H8);
+    /// ```
     #[inline]
     pub fn to_square(&self) -> Square {
         Square::new(self.0.trailing_zeros() as u8)
+    }
+
+    /// Convert a `BitBoard` to an `Option<Square>`, grabbing the least-significant
+    /// `Square`.  Returns `None` if the `BitBoard` is empty.
+    ///
+    /// This is the checked counterpart of [`BitBoard::to_square`], mirroring
+    /// [`BitBoard::from_maybe_square`].
+    ///
+    /// ```
+    /// use chess::{BitBoard, Square, EMPTY};
+    ///
+    /// assert_eq!(EMPTY.to_maybe_square(), None);
+    /// assert_eq!(BitBoard::from_square(Square::A1).to_maybe_square(), Some(Square::A1));
+    /// ```
+    #[inline]
+    pub fn to_maybe_square(&self) -> Option<Square> {
+        if self.0 == 0 {
+            None
+        } else {
+            Some(Square::new(self.0.trailing_zeros() as u8))
+        }
     }
 
     /// Count the number of `Squares` set in this `BitBoard`
