@@ -328,7 +328,7 @@ impl BitBoard {
         if self.0 == 0 {
             None
         } else {
-            Some(Square::new(self.0.trailing_zeros() as u8))
+            Some(self.to_square())
         }
     }
 
